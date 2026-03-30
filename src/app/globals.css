@@ -1,26 +1,115 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Design tokens — Budgetify dark theme
+   All tokens mirror app/lib/core/theme/app_colors.dart exactly.
+   Using @theme (not inline) so tokens are also available as CSS vars
+   via var(--color-*) for glassmorphism rgba calculations.
+───────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* Brand */
+  --color-primary:              #C7BFA7;
+  --color-primary-muted:        #8A826D;
+
+  /* Backgrounds */
+  --color-background:           #0B0D10;
+  --color-background-secondary: #12161B;
+
+  /* Surfaces */
+  --color-surface:              #171C22;
+  --color-surface-elevated:     #1E242C;
+
+  /* Border */
+  --color-border:               #2A313A;
+
+  /* Text */
+  --color-text-primary:         #F4F1EA;
+  --color-text-secondary:       #AEA792;
+
+  /* Semantic */
+  --color-success:              #6FCF97;
+  --color-danger:               #FF7A7A;
+
+  /* Typography — DM Sans (injected by layout.tsx via next/font) */
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+
+  /* Letter spacing — matches Flutter heading tracking (-0.6 to -1.2) */
+  --tracking-heading-sm: -0.6px;
+  --tracking-heading-md: -0.8px;
+  --tracking-heading-lg: -1.2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Base styles
+───────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #0B0D10;
+  color: #F4F1EA;
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Glassmorphism utilities
+   Three tiers mirroring the Flutter pattern: panel → elevated → subtle.
+   Apply these directly to elements — compose with rounded-* for border-radius.
+───────────────────────────────────────────────────────────────────────────── */
+
+@layer utilities {
+  /*
+   * glass-panel — standard cards and page sections
+   * Mirrors: ClipRRect(radius: 28) + BackdropFilter(blur: 24) + gradient
+   */
+  .glass-panel {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.13) 0%,
+      rgba(255, 255, 255, 0.07) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /*
+   * glass-elevated — modals, drawers, dropdowns
+   * Mirrors: BackdropFilter(blur: 18) + surfaceElevated @ 88% opacity
+   */
+  .glass-elevated {
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    background-color: rgba(30, 36, 44, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+  }
+
+  /*
+   * glass-subtle — list rows, inline chips, minor containers
+   */
+  .glass-subtle {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Typography utilities
+───────────────────────────────────────────────────────────────────────────── */
+
+@layer utilities {
+  .tracking-heading-sm { letter-spacing: -0.6px; }
+  .tracking-heading-md { letter-spacing: -0.8px; }
+  .tracking-heading-lg { letter-spacing: -1.2px; }
 }
