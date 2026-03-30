@@ -1,0 +1,31 @@
+export type IncomeCategory =
+  | "SALARY"
+  | "FREELANCE"
+  | "DIVIDENDS"
+  | "RENTAL"
+  | "SIDE_HUSTLE"
+  | "OTHER";
+
+export interface IncomeResponse {
+  id: string;
+  label: string;
+  amount: number;
+  category: IncomeCategory;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateIncomeRequest {
+  label: string;
+  amount: number;
+  category: IncomeCategory;
+  date: string;
+}
+
+export interface UpdateIncomeRequest {
+  label?: string;
+  amount?: number;
+  category?: IncomeCategory;
+  date?: string;
+}
