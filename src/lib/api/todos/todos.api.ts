@@ -6,6 +6,35 @@ import type {
   UpdateTodoRequest,
 } from "../../types/todo.types";
 
+function buildTodoMultipartBody(
+  body: CreateTodoRequest | UpdateTodoRequest,
+  images: File[] = [],
+): FormData {
+  const formData = new FormData();
+
+  if (body.name !== undefined) {
+    formData.append("name", body.name);
+  }
+
+  if (body.price !== undefined) {
+    formData.append("price", String(body.price));
+  }
+
+  if (body.priority !== undefined) {
+    formData.append("priority", body.priority);
+  }
+
+  if ("primaryImageId" in body && body.primaryImageId !== undefined) {
+    formData.append("primaryImageId", body.primaryImageId);
+  }
+
+  for (const image of images) {
+    formData.append("images", image);
+  }
+
+  return formData;
+}
+
 export async function listTodos(token: string): Promise<TodoResponse[]> {
   return apiFetch<TodoResponse[]>(TODOS_ROUTES.list, { token });
 }
@@ -13,11 +42,12 @@ export async function listTodos(token: string): Promise<TodoResponse[]> {
 export async function createTodo(
   token: string,
   body: CreateTodoRequest,
+  images: File[],
 ): Promise<TodoResponse> {
   return apiFetch<TodoResponse>(TODOS_ROUTES.create, {
     method: "POST",
     token,
-    body,
+    body: buildTodoMultipartBody(body, images),
   });
 }
 
@@ -25,11 +55,12 @@ export async function updateTodo(
   token: string,
   id: string,
   body: UpdateTodoRequest,
+  images: File[] = [],
 ): Promise<TodoResponse> {
   return apiFetch<TodoResponse>(TODOS_ROUTES.byId(id), {
     method: "PATCH",
     token,
-    body,
+    body: buildTodoMultipartBody(body, images),
   });
 }
 
