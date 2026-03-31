@@ -2,7 +2,6 @@ import type { TodoResponse } from "@/lib/types/todo.types";
 import { rwf } from "@/lib/utils/currency";
 import { TodoImageCarousel } from "./todo-image-carousel";
 import { PRIORITY_META } from "./todos.constants";
-import { formatTodoDate } from "./todos.utils";
 
 interface TodoCardProps {
   entry: TodoResponse;
@@ -20,22 +19,22 @@ export function TodoCard({
   const meta = PRIORITY_META[entry.priority];
 
   return (
-    <article className="glass-subtle rounded-[26px] p-3 md:p-4">
+    <article className="overflow-hidden rounded-[28px] border border-white/8 bg-background-secondary/72 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
       <TodoImageCarousel
         images={entry.images}
         emptyDescription="Open edit to manage synced images when this item has them."
         emptyTitle="No preview image"
-        heightClass="h-44"
+        heightClass="h-48"
         onImageClick={(index) => onOpenGallery(entry.id, index)}
       />
 
-      <div className="mt-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-base font-semibold text-text-primary">
+      <div className="mt-4 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-semibold text-text-primary md:text-lg">
             {entry.name}
           </p>
-          <p className="mt-1 text-sm text-text-secondary">
-            Updated {formatTodoDate(entry.updatedAt)}
+          <p className="mt-2 text-lg font-semibold text-text-primary">
+            {rwf(Number(entry.price))}
           </p>
         </div>
 
@@ -46,32 +45,21 @@ export function TodoCard({
         </span>
       </div>
 
-      <div className="mt-4 flex items-end justify-between gap-3">
-        <div>
-          <p className="text-lg font-semibold text-text-primary">
-            {rwf(Number(entry.price))}
-          </p>
-          <p className="text-xs uppercase tracking-[0.18em] text-text-secondary/60">
-            {entry.imageCount} {entry.imageCount === 1 ? "image" : "images"}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onEdit(entry)}
-            className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(entry)}
-            className="rounded-full border border-danger/25 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16"
-          >
-            Delete
-          </button>
-        </div>
+      <div className="mt-4 flex items-center justify-end gap-2 border-t border-white/8 pt-4">
+        <button
+          type="button"
+          onClick={() => onEdit(entry)}
+          className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(entry)}
+          className="rounded-full border border-danger/25 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16"
+        >
+          Delete
+        </button>
       </div>
     </article>
   );
