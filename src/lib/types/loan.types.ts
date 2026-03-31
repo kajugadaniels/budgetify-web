@@ -1,3 +1,5 @@
+import type { ExpenseResponse } from "./expense.types";
+
 export interface LoanResponse {
   id: string;
   label: string;
@@ -23,4 +25,14 @@ export interface UpdateLoanRequest {
   date?: string;
   paid?: boolean;
   note?: string;
+}
+
+export interface SendLoanToExpenseRequest {
+  date: string;
+  note?: string;
+}
+
+export interface LoanSettlementResponse {
+  loan: LoanResponse;
+  expense: ExpenseResponse;
 }
