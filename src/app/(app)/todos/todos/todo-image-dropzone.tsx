@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
+import { MAX_TODO_IMAGES } from "@/constant/todos/upload";
 import { cn } from "@/lib/utils/cn";
-import { MAX_TODO_IMAGES } from "./todos.constants";
 import { formatTodoFileSize } from "./todos.utils";
 
 interface TodoImageDropzoneProps {
