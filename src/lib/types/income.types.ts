@@ -6,6 +6,11 @@ export type IncomeCategory =
   | "SIDE_HUSTLE"
   | "OTHER";
 
+export interface IncomeCategoryOptionResponse {
+  value: IncomeCategory;
+  label: string;
+}
+
 export interface IncomeResponse {
   id: string;
   label: string;
