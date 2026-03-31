@@ -2,6 +2,7 @@ export type ExpenseCategory =
   | "FOOD_DINING"
   | "TRANSPORT"
   | "HOUSING"
+  | "LOAN"
   | "UTILITIES"
   | "HEALTHCARE"
   | "EDUCATION"
@@ -11,6 +12,11 @@ export type ExpenseCategory =
   | "TRAVEL"
   | "SAVINGS"
   | "OTHER";
+
+export interface ExpenseCategoryOptionResponse {
+  value: ExpenseCategory;
+  label: string;
+}
 
 export interface ExpenseResponse {
   id: string;
