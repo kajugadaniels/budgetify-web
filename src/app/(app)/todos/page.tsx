@@ -17,6 +17,9 @@ import type { CreateTodoRequest, TodoResponse } from "@/lib/types/todo.types";
 import { rwfCompact } from "@/lib/utils/currency";
 import { TodoFormDialog } from "./todos/todo-form-dialog";
 import { TodoGalleryDialog } from "./todos/todo-gallery-dialog";
+import {
+  MAX_TODO_IMAGES,
+} from "./todos/todos.constants";
 import { TodosBoard } from "./todos/todos-board";
 import { TodosBoardSkeleton } from "./todos/todos-board-skeleton";
 import { TodosHeader } from "./todos/todos-header";
@@ -31,6 +34,7 @@ import {
   createTodoFormFromEntry,
   groupTodosByPriority,
   sortTodos,
+  validateTodoUploadFile,
 } from "./todos/todos.utils";
 
 export default function TodosPage() {
@@ -46,6 +50,7 @@ export default function TodosPage() {
   const [deleteTarget, setDeleteTarget] = useState<TodoResponse | null>(null);
   const [galleryTarget, setGalleryTarget] = useState<TodoGalleryState>(null);
   const [form, setForm] = useState<TodoFormValues>(() => createEmptyTodoForm());
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -104,17 +109,20 @@ export default function TodosPage() {
 
   function openCreateDialog() {
     setForm(createEmptyTodoForm());
+    setPendingImages([]);
     setFormDialog({ mode: "create" });
   }
 
   function openEditDialog(entry: TodoResponse) {
     setForm(createTodoFormFromEntry(entry));
+    setPendingImages([]);
     setFormDialog({ mode: "edit", entry });
   }
 
   function closeFormDialog() {
     setFormDialog(null);
     setForm(createEmptyTodoForm());
+    setPendingImages([]);
   }
 
   function updateForm(next: Partial<TodoFormValues>) {
@@ -123,6 +131,47 @@ export default function TodosPage() {
 
   function openGallery(todoId: string, index: number) {
     setGalleryTarget({ todoId, index });
+  }
+
+  function handleAddPendingImages(files: File[]) {
+    if (files.length === 0) return;
+
+    const nextFiles: File[] = [];
+    const errors: string[] = [];
+    const remainingSlots = Math.max(MAX_TODO_IMAGES - pendingImages.length, 0);
+
+    if (remainingSlots === 0) {
+      toast.error(`You can attach up to ${MAX_TODO_IMAGES} images per save.`);
+      return;
+    }
+
+    for (const file of files) {
+      const validationError = validateTodoUploadFile(file);
+
+      if (validationError) {
+        errors.push(validationError);
+        continue;
+      }
+
+      if (nextFiles.length >= remainingSlots) {
+        errors.push(`You can attach up to ${MAX_TODO_IMAGES} images per save.`);
+        break;
+      }
+
+      nextFiles.push(file);
+    }
+
+    if (nextFiles.length > 0) {
+      setPendingImages((current) => [...current, ...nextFiles]);
+    }
+
+    if (errors.length > 0) {
+      toast.error(errors[0] ?? "Some images could not be added.");
+    }
+  }
+
+  function handleRemovePendingImage(index: number) {
+    setPendingImages((current) => current.filter((_, fileIndex) => fileIndex !== index));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -142,11 +191,21 @@ export default function TodosPage() {
       priority: form.priority,
     };
 
+    if (formDialog.mode === "create" && pendingImages.length === 0) {
+      toast.error("Add at least one image before creating a wishlist item.");
+      return;
+    }
+
     setSaving(true);
 
     try {
       if (formDialog.mode === "edit") {
-        const updated = await updateTodo(token, formDialog.entry.id, payload);
+        const updated = await updateTodo(
+          token,
+          formDialog.entry.id,
+          payload,
+          pendingImages,
+        );
         setEntries((current) =>
           sortTodos(
             current.map((entry) => (entry.id === updated.id ? updated : entry)),
@@ -154,7 +213,7 @@ export default function TodosPage() {
         );
         toast.success("Wishlist item updated.");
       } else {
-        const created = await createTodo(token, payload);
+        const created = await createTodo(token, payload, pendingImages);
         setEntries((current) => sortTodos([created, ...current]));
         toast.success("Wishlist item added.");
       }
@@ -349,7 +408,9 @@ export default function TodosPage() {
           form={form}
           imageBusyKey={imageBusyKey}
           mode={formDialog.mode}
+          pendingImages={pendingImages}
           saving={saving}
+          onAddPendingImages={handleAddPendingImages}
           onChange={updateForm}
           onClose={closeFormDialog}
           onDeleteImage={handleDeleteImage}
@@ -358,6 +419,7 @@ export default function TodosPage() {
               openGallery(editingEntry.id, index);
             }
           }}
+          onRemovePendingImage={handleRemovePendingImage}
           onSetCover={handleSetCover}
           onSubmit={handleSubmit}
         />
