@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
+import { MAX_PROFILE_AVATAR_SIZE_BYTES } from "@/constant/profile/avatar-upload";
 import { cn } from "@/lib/utils/cn";
 import {
   formatProfileFileSize,
-  MAX_PROFILE_AVATAR_SIZE_BYTES,
 } from "./profile.utils";
 
 interface ProfileAvatarDropzoneProps {
