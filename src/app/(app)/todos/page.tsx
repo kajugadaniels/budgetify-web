@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MAX_TODO_IMAGES } from "@/constant/todos/upload";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
@@ -17,9 +18,6 @@ import type { CreateTodoRequest, TodoResponse } from "@/lib/types/todo.types";
 import { rwfCompact } from "@/lib/utils/currency";
 import { TodoFormDialog } from "./todos/todo-form-dialog";
 import { TodoGalleryDialog } from "./todos/todo-gallery-dialog";
-import {
-  MAX_TODO_IMAGES,
-} from "./todos/todos.constants";
 import { TodosBoard } from "./todos/todos-board";
 import { TodosBoardSkeleton } from "./todos/todos-board-skeleton";
 import { TodosHeader } from "./todos/todos-header";
