@@ -15,6 +15,7 @@ export function createEmptyIncomeForm(): IncomeFormValues {
     amount: "",
     category: "",
     date: getTodayString(),
+    received: false,
   };
 }
 
@@ -26,6 +27,7 @@ export function createIncomeFormFromCategories(
     amount: "",
     category: categories[0]?.value ?? "",
     date: getTodayString(),
+    received: false,
   };
 }
 
@@ -37,6 +39,7 @@ export function createIncomeFormFromEntry(
     amount: String(entry.amount),
     category: entry.category,
     date: entry.date.split("T")[0] ?? getTodayString(),
+    received: entry.received,
   };
 }
 
