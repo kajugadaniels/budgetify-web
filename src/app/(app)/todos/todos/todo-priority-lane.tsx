@@ -3,17 +3,21 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { TodoCard } from "./todo-card";
 
 interface TodoPriorityLaneProps {
+  busyDoneId: string | null;
   entries: TodoResponse[];
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
   onOpenGallery: (todoId: string, index: number) => void;
+  onToggleDone: (entry: TodoResponse) => void;
 }
 
 export function TodoPriorityLane({
+  busyDoneId,
   entries,
   onDelete,
   onEdit,
   onOpenGallery,
+  onToggleDone,
 }: TodoPriorityLaneProps) {
   return (
     <section>
@@ -22,10 +26,12 @@ export function TodoPriorityLane({
           {entries.map((entry) => (
             <TodoCard
               key={entry.id}
+              busyDone={busyDoneId === entry.id}
               entry={entry}
               onDelete={onDelete}
               onEdit={onEdit}
               onOpenGallery={onOpenGallery}
+              onToggleDone={onToggleDone}
             />
           ))}
         </div>
