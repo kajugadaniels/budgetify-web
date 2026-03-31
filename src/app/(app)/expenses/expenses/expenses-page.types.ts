@@ -3,6 +3,8 @@ import type {
   ExpenseResponse,
 } from "@/lib/types/expense.types";
 
+export type ExpenseLedgerCategoryFilter = ExpenseCategory | "ALL";
+
 export interface ExpenseFormValues {
   label: string;
   amount: string;
