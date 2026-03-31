@@ -24,6 +24,10 @@ function buildTodoMultipartBody(
     formData.append("priority", body.priority);
   }
 
+  if ("done" in body && body.done !== undefined) {
+    formData.append("done", String(body.done));
+  }
+
   if ("primaryImageId" in body && body.primaryImageId !== undefined) {
     formData.append("primaryImageId", body.primaryImageId);
   }
