@@ -1,15 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { ROUTE_TITLES } from "@/constant/navigation/route-titles";
 import { useAuth } from "@/hooks/use-auth";
-
-const ROUTE_TITLES: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/income": "Income",
-  "/expenses": "Expenses",
-  "/todos": "Todos",
-  "/profile": "Profile",
-};
 
 export function AppHeader() {
   const pathname = usePathname();
