@@ -3,6 +3,14 @@ import type { IncomeResponse } from "@/lib/types/income.types";
 
 export const CURRENT_YEAR = new Date().getFullYear();
 
+export interface DashboardDailyBarDatum {
+  day: number;
+  expense: number;
+  hasActivity: boolean;
+  income: number;
+  total: number;
+}
+
 export const MONTH_OPTIONS = [
   { label: "January", value: 0 },
   { label: "February", value: 1 },
@@ -36,6 +44,54 @@ export function filterEntriesByMonth<T extends { date: string }>(
 
 export function sumIncomeAmounts(entries: IncomeResponse[]): number {
   return entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+}
+
+export function getDaysInMonth(month: number, year: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+export function buildMonthlyBarChartData(
+  incomeEntries: IncomeResponse[],
+  expenseEntries: ExpenseResponse[],
+  month: number,
+  year: number,
+): DashboardDailyBarDatum[] {
+  const points = Array.from(
+    { length: getDaysInMonth(month, year) },
+    (_, index): DashboardDailyBarDatum => ({
+      day: index + 1,
+      expense: 0,
+      hasActivity: false,
+      income: 0,
+      total: 0,
+    }),
+  );
+
+  incomeEntries.forEach((entry) => {
+    const dayIndex = new Date(entry.date).getDate() - 1;
+
+    if (points[dayIndex]) {
+      points[dayIndex].income += Number(entry.amount);
+    }
+  });
+
+  expenseEntries.forEach((entry) => {
+    const dayIndex = new Date(entry.date).getDate() - 1;
+
+    if (points[dayIndex]) {
+      points[dayIndex].expense += Number(entry.amount);
+    }
+  });
+
+  return points.map((point) => {
+    const total = point.income + point.expense;
+
+    return {
+      ...point,
+      hasActivity: total > 0,
+      total,
+    };
+  });
 }
 
 export function sumExpenseAmounts(entries: ExpenseResponse[]): number {
