@@ -48,6 +48,7 @@ export default function IncomePage() {
   const [error, setError] = useState<string | null>(null);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [receivedBusyId, setReceivedBusyId] = useState<string | null>(null);
   const [formDialog, setFormDialog] = useState<IncomeFormDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<IncomeResponse | null>(null);
   const [form, setForm] = useState<IncomeFormValues>(() => createEmptyIncomeForm());
@@ -160,6 +161,7 @@ export default function IncomePage() {
       amount,
       category: form.category,
       date: form.date,
+      received: form.received,
     };
 
     setSaving(true);
@@ -215,6 +217,39 @@ export default function IncomePage() {
           ? deleteError.message
           : "Income could not be deleted right now.",
       );
+    }
+  }
+
+  async function handleToggleReceived(entry: IncomeResponse) {
+    if (!token) return;
+
+    const nextReceived = !entry.received;
+    setReceivedBusyId(entry.id);
+
+    try {
+      const updated = await updateIncome(token, entry.id, {
+        received: nextReceived,
+      });
+      setEntries((current) =>
+        sortIncomeEntries(
+          current.map((currentEntry) =>
+            currentEntry.id === updated.id ? updated : currentEntry,
+          ),
+        ),
+      );
+      toast.success(
+        nextReceived
+          ? "Income marked as received."
+          : "Income marked as pending.",
+      );
+    } catch (toggleError) {
+      toast.error(
+        toggleError instanceof ApiError
+          ? toggleError.message
+          : "Income receipt state could not be updated right now.",
+      );
+    } finally {
+      setReceivedBusyId(null);
     }
   }
 
@@ -308,11 +343,13 @@ export default function IncomePage() {
             </div>
           ) : (
             <IncomeTable
+              busyReceivedId={receivedBusyId}
               canEdit={canManageCategories}
               categories={categories}
               entries={entries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
+              onToggleReceived={handleToggleReceived}
             />
           )}
         </section>
