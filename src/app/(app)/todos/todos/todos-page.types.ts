@@ -1,5 +1,8 @@
 import type { TodoPriority, TodoResponse } from "@/lib/types/todo.types";
 
+export type TodoBoardPriorityFilter = TodoPriority | "ALL";
+export type TodoBoardDoneFilter = "ALL" | "DONE" | "NOT_DONE";
+
 export interface TodoFormValues {
   name: string;
   price: string;
