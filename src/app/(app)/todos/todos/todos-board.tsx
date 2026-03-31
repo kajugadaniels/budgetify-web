@@ -2,17 +2,21 @@ import type { TodoResponse } from "@/lib/types/todo.types";
 import { TodoPriorityLane } from "./todo-priority-lane";
 
 interface TodosBoardProps {
+  busyDoneId: string | null;
   entries: TodoResponse[];
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
   onOpenGallery: (todoId: string, index: number) => void;
+  onToggleDone: (entry: TodoResponse) => void;
 }
 
 export function TodosBoard({
+  busyDoneId,
   entries,
   onDelete,
   onEdit,
   onOpenGallery,
+  onToggleDone,
 }: TodosBoardProps) {
   return (
     <div className="space-y-4">
@@ -31,10 +35,12 @@ export function TodosBoard({
       </div>
 
       <TodoPriorityLane
+        busyDoneId={busyDoneId}
         entries={entries}
         onDelete={onDelete}
         onEdit={onEdit}
         onOpenGallery={onOpenGallery}
+        onToggleDone={onToggleDone}
       />
     </div>
   );
