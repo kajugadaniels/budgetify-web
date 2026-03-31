@@ -19,9 +19,12 @@ import { rwfCompact } from "@/lib/utils/currency";
 import { TodoFormDialog } from "./todos/todo-form-dialog";
 import { TodoGalleryDialog } from "./todos/todo-gallery-dialog";
 import { TodosBoard } from "./todos/todos-board";
+import { TodosBoardFilters } from "./todos/todos-board-filters";
 import { TodosBoardSkeleton } from "./todos/todos-board-skeleton";
 import { TodosHeader } from "./todos/todos-header";
 import type {
+  TodoBoardDoneFilter,
+  TodoBoardPriorityFilter,
   TodoFormDialogState,
   TodoFormValues,
   TodoGalleryState,
@@ -30,6 +33,7 @@ import { TodosSummaryCard } from "./todos/todos-summary-card";
 import {
   createEmptyTodoForm,
   createTodoFormFromEntry,
+  filterTodos,
   sortTodos,
   validateTodoUploadFile,
 } from "./todos/todos.utils";
@@ -49,6 +53,10 @@ export default function TodosPage() {
   const [galleryTarget, setGalleryTarget] = useState<TodoGalleryState>(null);
   const [form, setForm] = useState<TodoFormValues>(() => createEmptyTodoForm());
   const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [selectedPriority, setSelectedPriority] =
+    useState<TodoBoardPriorityFilter>("ALL");
+  const [selectedDone, setSelectedDone] =
+    useState<TodoBoardDoneFilter>("ALL");
 
   useEffect(() => {
     if (!token) return;
@@ -103,6 +111,12 @@ export default function TodosPage() {
     (entry) => entry.priority === "TOP_PRIORITY",
   ).length;
   const withImagesCount = entries.filter((entry) => entry.imageCount > 0).length;
+  const filteredEntries = filterTodos(entries, {
+    priority: selectedPriority,
+    done: selectedDone,
+  });
+  const hasActiveBoardFilters =
+    selectedPriority !== "ALL" || selectedDone !== "ALL";
 
   function openCreateDialog() {
     setForm(createEmptyTodoForm());
@@ -367,6 +381,8 @@ export default function TodosPage() {
             <TodosSummaryCard
               eyebrow="Top priority"
               value={String(topPriorityCount)}
+              eyebrowClassName="text-success/75"
+              valueClassName="text-success"
               detail={
                 topPriorityCount > 0
                   ? "Items worth protecting room for first"
@@ -396,9 +412,23 @@ export default function TodosPage() {
               </h2>
             </div>
             <p className="text-sm text-text-secondary">
-              {entries.length} {entries.length === 1 ? "item" : "items"}
+              {filteredEntries.length}
+              {hasActiveBoardFilters ? ` of ${entries.length}` : ""}{" "}
+              {filteredEntries.length === 1 ? "item" : "items"}
             </p>
           </div>
+
+          <TodosBoardFilters
+            done={selectedDone}
+            hasActiveFilters={hasActiveBoardFilters}
+            priority={selectedPriority}
+            onClear={() => {
+              setSelectedPriority("ALL");
+              setSelectedDone("ALL");
+            }}
+            onDoneChange={setSelectedDone}
+            onPriorityChange={setSelectedPriority}
+          />
 
           <div className="mt-6">
             {loading ? (
@@ -421,10 +451,22 @@ export default function TodosPage() {
                   onClick: openCreateDialog,
                 }}
               />
+            ) : filteredEntries.length === 0 ? (
+              <EmptyState
+                title="No wishlist matches"
+                description="Try another priority or done state to reveal more wishlist items."
+                action={{
+                  label: "Clear filters",
+                  onClick: () => {
+                    setSelectedPriority("ALL");
+                    setSelectedDone("ALL");
+                  },
+                }}
+              />
             ) : (
               <TodosBoard
                 busyDoneId={doneBusyId}
-                entries={entries}
+                entries={filteredEntries}
                 onDelete={setDeleteTarget}
                 onEdit={openEditDialog}
                 onOpenGallery={openGallery}
