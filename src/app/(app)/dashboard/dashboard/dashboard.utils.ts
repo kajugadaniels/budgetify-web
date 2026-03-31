@@ -1,6 +1,7 @@
 import { MONTH_OPTIONS } from "@/constant/months";
 import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
+import type { LoanResponse } from "@/lib/types/loan.types";
 
 export const CURRENT_YEAR = new Date().getFullYear();
 
@@ -10,6 +11,18 @@ export interface DashboardDailyBarDatum {
   hasActivity: boolean;
   income: number;
   total: number;
+}
+
+export interface DashboardLoanDateRange {
+  from: string;
+  to: string;
+}
+
+export interface DashboardLoanStatusDatum {
+  description: string;
+  label: string;
+  tone: "paid" | "unpaid";
+  value: number;
 }
 
 export function formatDashboardMonthLabel(month: number): string {
@@ -29,7 +42,10 @@ export function filterEntriesByMonth<T extends { date: string }>(
 }
 
 export function sumIncomeAmounts(entries: IncomeResponse[]): number {
-  return entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+  return entries.reduce(
+    (sum, entry) => sum + (entry.received ? Number(entry.amount) : 0),
+    0,
+  );
 }
 
 export function getDaysInMonth(month: number, year: number): number {
@@ -54,6 +70,10 @@ export function buildMonthlyBarChartData(
   );
 
   incomeEntries.forEach((entry) => {
+    if (!entry.received) {
+      return;
+    }
+
     const dayIndex = new Date(entry.date).getDate() - 1;
 
     if (points[dayIndex]) {
@@ -82,4 +102,80 @@ export function buildMonthlyBarChartData(
 
 export function sumExpenseAmounts(entries: ExpenseResponse[]): number {
   return entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+}
+
+export function resolveDashboardLoanDateRange(
+  entries: LoanResponse[],
+): DashboardLoanDateRange | null {
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const timestamps = entries.map((entry) => new Date(entry.date).getTime());
+  const earliest = Math.min(...timestamps);
+  const latest = Math.max(...timestamps);
+
+  return {
+    from: toDateInputValue(new Date(earliest)),
+    to: toDateInputValue(new Date(latest)),
+  };
+}
+
+export function filterLoansByDateRange(
+  entries: LoanResponse[],
+  range: DashboardLoanDateRange,
+): LoanResponse[] {
+  const fromTimestamp = range.from
+    ? new Date(`${range.from}T00:00:00.000Z`).getTime()
+    : Number.NEGATIVE_INFINITY;
+  const toTimestamp = range.to
+    ? new Date(`${range.to}T23:59:59.999Z`).getTime()
+    : Number.POSITIVE_INFINITY;
+
+  return entries.filter((entry) => {
+    const entryTimestamp = new Date(entry.date).getTime();
+
+    return entryTimestamp >= fromTimestamp && entryTimestamp <= toTimestamp;
+  });
+}
+
+export function buildDashboardLoanStatusData(
+  entries: LoanResponse[],
+): DashboardLoanStatusDatum[] {
+  const paidCount = entries.filter((entry) => entry.paid).length;
+  const unpaidCount = entries.length - paidCount;
+
+  return [
+    {
+      description: `${paidCount} ${paidCount === 1 ? "loan is" : "loans are"} fully cleared`,
+      label: "Paid",
+      tone: "paid",
+      value: paidCount,
+    },
+    {
+      description: `${unpaidCount} ${
+        unpaidCount === 1 ? "loan still needs" : "loans still need"
+      } settlement`,
+      label: "Not paid",
+      tone: "unpaid",
+      value: unpaidCount,
+    },
+  ];
+}
+
+export function formatDashboardDateLabel(value: string): string {
+  if (!value) {
+    return "No date";
+  }
+
+  return new Date(`${value}T00:00:00.000Z`).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function toDateInputValue(date: Date): string {
+  return date.toISOString().split("T")[0] ?? "";
 }
