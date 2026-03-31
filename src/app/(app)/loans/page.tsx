@@ -10,24 +10,34 @@ import {
   createLoan,
   deleteLoan,
   listLoans,
+  sendLoanToExpense,
   updateLoan,
 } from "@/lib/api/loans/loans.api";
-import type { CreateLoanRequest, LoanResponse } from "@/lib/types/loan.types";
+import type {
+  CreateLoanRequest,
+  LoanResponse,
+  SendLoanToExpenseRequest,
+} from "@/lib/types/loan.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import { LoanFormDialog } from "./loans/loan-form-dialog";
 import { LoansHeader } from "./loans/loans-header";
 import { LoansLedgerFilters } from "./loans/loans-ledger-filters";
+import { LoanSettlementDialog } from "./loans/loan-settlement-dialog";
 import type {
   LoanFormDialogState,
   LoanFormValues,
   LoanLedgerPaidFilter,
+  LoanSettlementDialogState,
+  LoanSettlementFormValues,
 } from "./loans/loans-page.types";
 import { LoansSummaryCard } from "./loans/loans-summary-card";
 import { LoansTable } from "./loans/loans-table";
 import { LoansTableSkeleton } from "./loans/loans-table-skeleton";
 import {
   createEmptyLoanForm,
+  createEmptyLoanSettlementForm,
   createLoanFormFromEntry,
+  createLoanSettlementFormFromEntry,
   filterLoanEntries,
   getCurrentMonthIndex,
   getCurrentYear,
@@ -45,13 +55,18 @@ export default function LoansPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [settling, setSettling] = useState(false);
   const [paidBusyId, setPaidBusyId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedPaid, setSelectedPaid] =
     useState<LoanLedgerPaidFilter>("ALL");
   const [formDialog, setFormDialog] = useState<LoanFormDialogState>(null);
+  const [settlementDialog, setSettlementDialog] =
+    useState<LoanSettlementDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<LoanResponse | null>(null);
   const [form, setForm] = useState<LoanFormValues>(() => createEmptyLoanForm());
+  const [settlementForm, setSettlementForm] =
+    useState<LoanSettlementFormValues>(() => createEmptyLoanSettlementForm());
 
   useEffect(() => {
     if (!token) return;
@@ -121,8 +136,27 @@ export default function LoansPage() {
     setForm(createEmptyLoanForm(selectedMonth, selectedYear));
   }
 
+  function openSettlementDialog(entry: LoanResponse) {
+    if (entry.paid) {
+      toast.info("This loan is already settled.");
+      return;
+    }
+
+    setSettlementForm(createLoanSettlementFormFromEntry(entry));
+    setSettlementDialog({ entry });
+  }
+
+  function closeSettlementDialog() {
+    setSettlementDialog(null);
+    setSettlementForm(createEmptyLoanSettlementForm());
+  }
+
   function updateForm(next: Partial<LoanFormValues>) {
     setForm((current) => ({ ...current, ...next }));
+  }
+
+  function updateSettlementForm(next: Partial<LoanSettlementFormValues>) {
+    setSettlementForm((current) => ({ ...current, ...next }));
   }
 
   async function refreshLoans() {
@@ -201,6 +235,51 @@ export default function LoansPage() {
           ? deleteError.message
           : "Loan could not be deleted right now.",
       );
+    }
+  }
+
+  async function handleSendToExpense(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!token || !settlementDialog) return;
+
+    if (!settlementForm.date) {
+      toast.error("Choose the expense date for this settlement.");
+      return;
+    }
+
+    const payload: SendLoanToExpenseRequest = {
+      date: settlementForm.date,
+      ...(settlementForm.note.trim()
+        ? { note: settlementForm.note.trim() }
+        : {}),
+    };
+
+    setSettling(true);
+
+    try {
+      await sendLoanToExpense(token, settlementDialog.entry.id, payload);
+      await refreshLoans();
+
+      if (
+        formDialog?.mode === "edit" &&
+        formDialog.entry.id === settlementDialog.entry.id
+      ) {
+        closeFormDialog();
+      }
+
+      closeSettlementDialog();
+      toast.success("Loan sent to expenses and marked as paid.");
+    } catch (settleError) {
+      toast.error(
+        settleError instanceof ApiError
+          ? settleError.message
+          : "Loan could not be sent to expenses right now.",
+      );
+    } finally {
+      setSettling(false);
     }
   }
 
@@ -348,6 +427,7 @@ export default function LoansPage() {
               entries={filteredEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
+              onSendToExpense={openSettlementDialog}
               onTogglePaid={handleTogglePaid}
             />
           )}
@@ -362,6 +442,17 @@ export default function LoansPage() {
           onChange={updateForm}
           onClose={closeFormDialog}
           onSubmit={handleSubmit}
+        />
+      ) : null}
+
+      {settlementDialog ? (
+        <LoanSettlementDialog
+          entry={settlementDialog.entry}
+          form={settlementForm}
+          saving={settling}
+          onChange={updateSettlementForm}
+          onClose={closeSettlementDialog}
+          onSubmit={handleSendToExpense}
         />
       ) : null}
 
