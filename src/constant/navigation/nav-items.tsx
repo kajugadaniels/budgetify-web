@@ -2,7 +2,9 @@ import {
   DashboardIcon,
   ExpensesIcon,
   IncomeIcon,
+  LoansIcon,
   ProfileIcon,
+  SavingIcon,
   TodosIcon,
 } from "./nav-icons";
 
@@ -37,6 +39,18 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Todos",
     shortLabel: "Todos",
     icon: <TodosIcon />,
+  },
+  {
+    href: "/saving",
+    label: "Saving",
+    shortLabel: "Saving",
+    icon: <SavingIcon />,
+  },
+  {
+    href: "/loans",
+    label: "Loans",
+    shortLabel: "Loans",
+    icon: <LoansIcon />,
   },
   {
     href: "/profile",
