@@ -3,7 +3,11 @@ import {
   MAX_TODO_IMAGE_SIZE_BYTES,
 } from "@/constant/todos/upload";
 import type { TodoResponse } from "@/lib/types/todo.types";
-import type { TodoFormValues } from "./todos-page.types";
+import type {
+  TodoBoardDoneFilter,
+  TodoBoardPriorityFilter,
+  TodoFormValues,
+} from "./todos-page.types";
 
 export function createEmptyTodoForm(): TodoFormValues {
   return {
@@ -60,4 +64,23 @@ export function validateTodoUploadFile(file: File): string | null {
   }
 
   return null;
+}
+
+export function filterTodos(
+  entries: TodoResponse[],
+  filters: {
+    priority: TodoBoardPriorityFilter;
+    done: TodoBoardDoneFilter;
+  },
+): TodoResponse[] {
+  return entries.filter((entry) => {
+    const priorityMatches =
+      filters.priority === "ALL" || entry.priority === filters.priority;
+    const doneMatches =
+      filters.done === "ALL" ||
+      (filters.done === "DONE" && entry.done) ||
+      (filters.done === "NOT_DONE" && !entry.done);
+
+    return priorityMatches && doneMatches;
+  });
 }
