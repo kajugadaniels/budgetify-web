@@ -29,6 +29,7 @@
 
   /* Semantic */
   --color-success:              #6FCF97;
+  --color-warning:              #E4C063;
   --color-danger:               #FF7A7A;
 
   /* Typography — DM Sans (injected by layout.tsx via next/font) */
