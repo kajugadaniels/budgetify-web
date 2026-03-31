@@ -9,9 +9,11 @@ import { listIncome } from "@/lib/api/income/income.api";
 import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
 import { rwfCompact } from "@/lib/utils/currency";
+import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardMonthSwitcher } from "./dashboard/dashboard-month-switcher";
 import { DashboardSummaryCard } from "./dashboard/dashboard-summary-card";
 import {
+  buildMonthlyBarChartData,
   CURRENT_YEAR,
   MONTH_OPTIONS,
   filterEntriesByMonth,
@@ -81,11 +83,20 @@ export default function DashboardPage() {
     () => filterEntriesByMonth(expenses, selectedMonth, CURRENT_YEAR),
     [expenses, selectedMonth],
   );
+  const dailyChartData = useMemo(
+    () =>
+      buildMonthlyBarChartData(
+        monthIncome,
+        monthExpenses,
+        selectedMonth,
+        CURRENT_YEAR,
+      ),
+    [monthExpenses, monthIncome, selectedMonth],
+  );
 
   const totalIncome = sumIncomeAmounts(monthIncome);
   const totalExpenses = sumExpenseAmounts(monthExpenses);
   const totalSaving = totalIncome - totalExpenses;
-  const hasMonthData = monthIncome.length > 0 || monthExpenses.length > 0;
 
   if (loading) {
     return (
@@ -93,6 +104,7 @@ export default function DashboardPage() {
         <div className="mx-auto flex max-w-7xl flex-col gap-6">
           <div className="glass-panel h-[120px] animate-pulse rounded-[32px]" />
           <div className="glass-panel h-[88px] animate-pulse rounded-[28px]" />
+          <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
           <div className="grid gap-4 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
               <div
@@ -155,14 +167,12 @@ export default function DashboardPage() {
           onSelect={setSelectedMonth}
         />
 
-        {!hasMonthData ? (
-          <section className="glass-panel rounded-[32px] p-6">
-            <EmptyState
-              title={`No data for ${formatDashboardMonthLabel(selectedMonth)}`}
-              description="Income and expense totals will appear here once this month has recorded entries."
-            />
-          </section>
-        ) : null}
+        <DashboardBarChart
+          key={`${selectedMonth}-${CURRENT_YEAR}`}
+          data={dailyChartData}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
 
         <section className="grid gap-4 xl:grid-cols-3">
           <DashboardSummaryCard
