@@ -1,7 +1,7 @@
+import { PRIORITY_META } from "@/constant/todos/priority-meta";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { rwf } from "@/lib/utils/currency";
 import { TodoImageCarousel } from "./todo-image-carousel";
-import { PRIORITY_META } from "./todos.constants";
 
 interface TodoCardProps {
   entry: TodoResponse;
