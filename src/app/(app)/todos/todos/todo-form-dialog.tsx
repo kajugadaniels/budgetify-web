@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
+import { PRIORITY_META } from "@/constant/todos/priority-meta";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { cn } from "@/lib/utils/cn";
 import { TodoImageCarousel } from "./todo-image-carousel";
 import { TodoImageDropzone } from "./todo-image-dropzone";
-import { PRIORITY_META } from "./todos.constants";
 import type { TodoFormValues } from "./todos-page.types";
 
 const INPUT_CLASS =
