@@ -18,6 +18,7 @@ export interface TodoResponse {
   name: string;
   price: number;
   priority: TodoPriority;
+  done: boolean;
   coverImageUrl: string | null;
   imageCount: number;
   images: TodoImageResponse[];
@@ -29,11 +30,13 @@ export interface CreateTodoRequest {
   name: string;
   price: number;
   priority: TodoPriority;
+  done: boolean;
 }
 
 export interface UpdateTodoRequest {
   name?: string;
   price?: number;
   priority?: TodoPriority;
+  done?: boolean;
   primaryImageId?: string;
 }
