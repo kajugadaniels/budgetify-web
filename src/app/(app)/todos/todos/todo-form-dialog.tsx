@@ -64,7 +64,7 @@ export function TodoFormDialog({
         : "Upload more images and manage the ones already synced.";
 
   return (
-    <Dialog onClose={onClose} className="sm:max-w-4xl">
+    <Dialog onClose={onClose} className="sm:w-[70vw] sm:max-w-[70vw]">
       <form className="space-y-6" onSubmit={onSubmit}>
         <div className="flex flex-col gap-4 border-b border-white/8 pb-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
