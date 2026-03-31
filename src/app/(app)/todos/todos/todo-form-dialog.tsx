@@ -12,6 +12,11 @@ import type { TodoFormValues } from "./todos-page.types";
 const INPUT_CLASS =
   "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 focus:border-primary/60 focus:outline-none transition-colors";
 
+const DONE_STATE_OPTIONS = [
+  { value: false, label: "Not done" },
+  { value: true, label: "Done" },
+] as const;
+
 interface TodoFormDialogProps {
   editingEntry: TodoResponse | null;
   form: TodoFormValues;
@@ -177,6 +182,43 @@ export function TodoFormDialog({
                           ✓
                         </span>
                         {meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+
+              <Field label="Progress" className="md:col-span-2">
+                <div className="flex flex-wrap gap-2">
+                  {DONE_STATE_OPTIONS.map((option) => {
+                    const selected = form.done === option.value;
+
+                    return (
+                      <button
+                        key={option.label}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => onChange({ done: option.value })}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
+                          selected
+                            ? option.value
+                              ? "border-success bg-success text-background"
+                              : "border-primary bg-primary text-background"
+                            : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
+                            selected
+                              ? "border-background/20 bg-background/15 text-background"
+                              : "border-white/10 bg-white/6 text-transparent",
+                          )}
+                        >
+                          ✓
+                        </span>
+                        {option.label}
                       </button>
                     );
                   })}
