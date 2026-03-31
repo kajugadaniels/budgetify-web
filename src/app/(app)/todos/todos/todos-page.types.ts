@@ -4,6 +4,7 @@ export interface TodoFormValues {
   name: string;
   price: string;
   priority: TodoPriority;
+  done: boolean;
 }
 
 export type TodoFormDialogState =
