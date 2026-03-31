@@ -1,4 +1,4 @@
-// Shared navigation configuration — imported by Sidebar and BottomTabBar.
+// Shared navigation configuration — imported by the app shell navigation.
 // No "use client" needed: this file only exports data + JSX, not hooks.
 
 export interface NavItem {
