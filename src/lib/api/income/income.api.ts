@@ -2,9 +2,18 @@ import { apiFetch } from "../client";
 import { INCOME_ROUTES } from "./income.routes";
 import type {
   CreateIncomeRequest,
+  IncomeCategoryOptionResponse,
   IncomeResponse,
   UpdateIncomeRequest,
 } from "../../types/income.types";
+
+export async function listIncomeCategories(
+  token: string,
+): Promise<IncomeCategoryOptionResponse[]> {
+  return apiFetch<IncomeCategoryOptionResponse[]>(INCOME_ROUTES.categories, {
+    token,
+  });
+}
 
 export async function listIncome(token: string): Promise<IncomeResponse[]> {
   return apiFetch<IncomeResponse[]>(INCOME_ROUTES.list, { token });
