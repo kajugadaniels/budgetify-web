@@ -4,7 +4,11 @@ import type {
   IncomeCategoryOptionResponse,
   IncomeResponse,
 } from "@/lib/types/income.types";
-import type { IncomeFormValues } from "./income-page.types";
+import type {
+  IncomeFormValues,
+  IncomeLedgerCategoryFilter,
+  IncomeLedgerReceivedFilter,
+} from "./income-page.types";
 
 export function getTodayString(): string {
   return new Date().toISOString().split("T")[0] ?? "";
@@ -102,4 +106,48 @@ export function resolveIncomeCategoryLabel(
   value: IncomeCategory,
 ): string {
   return categories.find((category) => category.value === value)?.label ?? value;
+}
+
+export function filterIncomeEntries(
+  entries: IncomeResponse[],
+  filters: {
+    category: IncomeLedgerCategoryFilter;
+    received: IncomeLedgerReceivedFilter;
+  },
+): IncomeResponse[] {
+  return entries.filter((entry) => {
+    const categoryMatches =
+      filters.category === "ALL" || entry.category === filters.category;
+    const receivedMatches =
+      filters.received === "ALL" ||
+      (filters.received === "RECEIVED" && entry.received) ||
+      (filters.received === "PENDING" && !entry.received);
+
+    return categoryMatches && receivedMatches;
+  });
+}
+
+export function buildIncomeLedgerCategoryOptions(
+  categories: IncomeCategoryOptionResponse[],
+  entries: IncomeResponse[],
+): IncomeCategoryOptionResponse[] {
+  if (categories.length > 0) {
+    return categories;
+  }
+
+  const seen = new Set<IncomeCategory>();
+
+  return entries.reduce<IncomeCategoryOptionResponse[]>((result, entry) => {
+    if (seen.has(entry.category)) {
+      return result;
+    }
+
+    seen.add(entry.category);
+    result.push({
+      value: entry.category,
+      label: entry.category,
+    });
+
+    return result;
+  }, []);
 }
