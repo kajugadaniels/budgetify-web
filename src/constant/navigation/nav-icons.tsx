@@ -96,3 +96,46 @@ export function ProfileIcon() {
     </svg>
   );
 }
+
+export function SavingIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z" />
+      <path d="M8 10.5h8" />
+      <path d="M9.5 14.5h5" />
+      <path d="M12 5v14" opacity="0.45" />
+    </svg>
+  );
+}
+
+export function LoansIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M7 7h10" />
+      <path d="M7 12h10" />
+      <path d="M7 17h6" />
+      <path d="M4 4h16v16H4z" opacity="0.35" />
+      <path d="m15 17 2 2 3-4" />
+    </svg>
+  );
+}
