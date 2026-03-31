@@ -5,6 +5,7 @@ import { Dialog } from "@/components/ui/dialog";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { cn } from "@/lib/utils/cn";
 import { TodoImageCarousel } from "./todo-image-carousel";
+import { TodoImageDropzone } from "./todo-image-dropzone";
 import { PRIORITY_META } from "./todos.constants";
 import type { TodoFormValues } from "./todos-page.types";
 
@@ -16,11 +17,14 @@ interface TodoFormDialogProps {
   form: TodoFormValues;
   imageBusyKey: string | null;
   mode: "create" | "edit";
+  pendingImages: File[];
   saving: boolean;
+  onAddPendingImages: (files: File[]) => void;
   onChange: (next: Partial<TodoFormValues>) => void;
   onClose: () => void;
   onDeleteImage: (imageId: string) => void;
   onOpenGallery: (index: number) => void;
+  onRemovePendingImage: (index: number) => void;
   onSetCover: (imageId: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }
@@ -30,11 +34,14 @@ export function TodoFormDialog({
   form,
   imageBusyKey,
   mode,
+  pendingImages,
   saving,
+  onAddPendingImages,
   onChange,
   onClose,
   onDeleteImage,
   onOpenGallery,
+  onRemovePendingImage,
   onSetCover,
   onSubmit,
 }: TodoFormDialogProps) {
@@ -117,6 +124,13 @@ export function TodoFormDialog({
           </div>
         </Field>
 
+        <TodoImageDropzone
+          files={pendingImages}
+          mode={mode}
+          onAddFiles={onAddPendingImages}
+          onRemoveFile={onRemovePendingImage}
+        />
+
         {mode === "edit" ? (
           <section className="rounded-[24px] border border-white/8 bg-background-secondary/70 p-4">
             <div className="mb-4">
@@ -185,7 +199,7 @@ export function TodoFormDialog({
           </button>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || (mode === "create" && pendingImages.length === 0)}
             className="flex-1 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {saving
