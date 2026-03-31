@@ -8,6 +8,7 @@ export interface IncomeFormValues {
   amount: string;
   category: IncomeCategory | "";
   date: string;
+  received: boolean;
 }
 
 export type IncomeFormDialogState =
