@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { cn } from "@/lib/utils/cn";
@@ -55,187 +55,133 @@ export function TodoFormDialog({
     form.name.trim().length > 0 &&
     form.price.trim().length > 0 &&
     Number(form.price) > 0;
-  const stepItems = useMemo(
-    () => [
-      {
-        index: 0 as const,
-        eyebrow: "Step 1",
-        title: "Details",
-        description: "Name, amount, and priority for the item.",
-      },
-      {
-        index: 1 as const,
-        eyebrow: "Step 2",
-        title: "Images",
-        description:
-          mode === "create"
-            ? "Add the product images required for creation."
-            : "Upload more images and manage the ones already synced.",
-      },
-    ],
-    [mode],
-  );
+
+  const stepDescription =
+    step === 0
+      ? "Start with the name, planned price, and priority."
+      : mode === "create"
+        ? "Add the product images required before creating this item."
+        : "Upload more images and manage the ones already synced.";
 
   return (
-    <Dialog onClose={onClose} className="sm:max-w-5xl">
-      <form className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]" onSubmit={onSubmit}>
-        <aside className="rounded-[28px] border border-white/8 bg-background-secondary/70 p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
-            {mode === "edit" ? "Edit item" : "New item"}
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-heading-md text-text-primary">
-            {mode === "edit" ? "Update wishlist item" : "Add wishlist item"}
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-text-secondary">
-            Move through two short steps: capture the purchase details first,
-            then handle the images before saving.
-          </p>
-
-          <div className="mt-6 space-y-3">
-            {stepItems.map((item) => {
-              const active = step === item.index;
-              const complete = step > item.index;
-
-              return (
-                <button
-                  key={item.index}
-                  type="button"
-                  onClick={() => setStep(item.index)}
-                  className={cn(
-                    "flex w-full items-start gap-3 rounded-[22px] border px-4 py-4 text-left transition-all",
-                    active
-                      ? "border-primary/35 bg-primary/10"
-                      : "border-white/8 bg-white/3 hover:border-white/14",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
-                      active || complete
-                        ? "border-primary/30 bg-primary text-background"
-                        : "border-white/10 bg-white/5 text-text-secondary",
-                    )}
-                  >
-                    {complete ? "✓" : item.index + 1}
-                  </span>
-
-                  <span className="block min-w-0">
-                    <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/60">
-                      {item.eyebrow}
-                    </span>
-                    <span className="mt-1 block text-sm font-semibold text-text-primary">
-                      {item.title}
-                    </span>
-                    <span className="mt-1 block text-sm leading-6 text-text-secondary">
-                      {item.description}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
+    <Dialog onClose={onClose} className="sm:max-w-4xl">
+      <form className="space-y-6" onSubmit={onSubmit}>
+        <div className="flex flex-col gap-4 border-b border-white/8 pb-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
+              {mode === "edit" ? "Edit item" : "New item"}
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-heading-md text-text-primary">
+              {mode === "edit" ? "Update wishlist item" : "Add wishlist item"}
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
+              {stepDescription}
+            </p>
           </div>
-        </aside>
+
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-text-secondary">
+            {step + 1} / 2
+          </span>
+        </div>
+
+        <div className="flex gap-2 rounded-[22px] border border-white/8 bg-background-secondary/60 p-1.5">
+          <StepButton
+            active={step === 0}
+            title="Details"
+            eyebrow="Step 1"
+            onClick={() => setStep(0)}
+          />
+          <StepButton
+            active={step === 1}
+            disabled={!canContinue}
+            title="Images"
+            eyebrow="Step 2"
+            onClick={() => {
+              if (canContinue) {
+                setStep(1);
+              }
+            }}
+          />
+        </div>
 
         <section className="rounded-[28px] border border-white/8 bg-background-secondary/70 p-5 md:p-6">
-          <div className="mb-6 flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
-                {stepItems[step].eyebrow}
-              </p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-heading-md text-text-primary">
-                {stepItems[step].title}
-              </h3>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-                {stepItems[step].description}
-              </p>
-            </div>
-
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-text-secondary">
-              {step + 1} / 2
-            </span>
+          <div className="mb-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
+              {step === 0 ? "Step 1" : "Step 2"}
+            </p>
+            <h3 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
+              {step === 0 ? "Item details" : "Images"}
+            </h3>
           </div>
 
           {step === 0 ? (
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_260px]">
-              <div className="space-y-4">
-                <Field label="Item name">
-                  <input
-                    type="text"
-                    value={form.name}
-                    onChange={(event) => onChange({ name: event.target.value })}
-                    className={INPUT_CLASS}
-                    placeholder="MacBook Air"
-                    maxLength={120}
-                    required
-                  />
-                </Field>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Item name" className="md:col-span-2">
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(event) => onChange({ name: event.target.value })}
+                  className={INPUT_CLASS}
+                  placeholder="MacBook Air"
+                  maxLength={120}
+                  required
+                />
+              </Field>
 
-                <Field label="Planned price">
-                  <input
-                    type="number"
-                    value={form.price}
-                    onChange={(event) => onChange({ price: event.target.value })}
-                    className={INPUT_CLASS}
-                    placeholder="1750000"
-                    min={1}
-                    required
-                  />
-                </Field>
+              <Field label="Planned price">
+                <input
+                  type="number"
+                  value={form.price}
+                  onChange={(event) => onChange({ price: event.target.value })}
+                  className={INPUT_CLASS}
+                  placeholder="1750000"
+                  min={1}
+                  required
+                />
+              </Field>
 
-                <Field label="Priority">
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(PRIORITY_META).map(([value, meta]) => {
-                      const selected = form.priority === value;
+              <Field label="Selected priority">
+                <div className="flex h-full items-center rounded-2xl border border-white/8 bg-surface-elevated px-4 py-3 text-sm font-medium text-text-primary">
+                  {PRIORITY_META[form.priority].label}
+                </div>
+              </Field>
 
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-pressed={selected}
-                          onClick={() =>
-                            onChange({ priority: value as TodoFormValues["priority"] })
-                          }
+              <Field label="Priority" className="md:col-span-2">
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(PRIORITY_META).map(([value, meta]) => {
+                    const selected = form.priority === value;
+
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() =>
+                          onChange({ priority: value as TodoFormValues["priority"] })
+                        }
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
+                          selected
+                            ? "border-primary bg-primary text-background"
+                            : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+                        )}
+                      >
+                        <span
                           className={cn(
-                            "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
+                            "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
                             selected
-                              ? "border-primary bg-primary text-background"
-                              : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+                              ? "border-background/20 bg-background/15 text-background"
+                              : "border-white/10 bg-white/6 text-transparent",
                           )}
                         >
-                          <span
-                            className={cn(
-                              "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
-                              selected
-                                ? "border-background/20 bg-background/15 text-background"
-                                : "border-white/10 bg-white/6 text-transparent",
-                            )}
-                          >
-                            ✓
-                          </span>
-                          {meta.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Field>
-              </div>
-
-              <div className="rounded-[24px] border border-white/8 bg-surface-elevated/85 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/60">
-                  Quick preview
-                </p>
-                <div className="mt-4 rounded-[22px] border border-white/8 bg-background/45 p-4">
-                  <p className="truncate text-lg font-semibold text-text-primary">
-                    {form.name.trim() || "Untitled wishlist item"}
-                  </p>
-                  <p className="mt-2 text-sm text-text-secondary">
-                    Priority: {PRIORITY_META[form.priority].label}
-                  </p>
-                  <p className="mt-5 text-2xl font-semibold tracking-heading-sm text-text-primary">
-                    {form.price.trim().length > 0 ? `RWF ${form.price}` : "RWF 0"}
-                  </p>
+                          ✓
+                        </span>
+                        {meta.label}
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
+              </Field>
             </div>
           ) : (
             <div className="space-y-4">
@@ -253,8 +199,8 @@ export function TodoFormDialog({
                       Synced images
                     </p>
                     <p className="mt-2 text-sm leading-6 text-text-secondary">
-                      Swipe through existing product images, open them large,
-                      choose the cover, or remove extras.
+                      Review the images already attached, open them large, set the
+                      cover, or remove extras.
                     </p>
                   </div>
 
@@ -356,15 +302,62 @@ export function TodoFormDialog({
   );
 }
 
+interface StepButtonProps {
+  active: boolean;
+  disabled?: boolean;
+  eyebrow: string;
+  onClick: () => void;
+  title: string;
+}
+
+function StepButton({
+  active,
+  disabled = false,
+  eyebrow,
+  onClick,
+  title,
+}: StepButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex-1 rounded-[18px] px-4 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-45",
+        active ? "bg-primary text-background" : "text-text-secondary hover:text-text-primary",
+      )}
+    >
+      <p
+        className={cn(
+          "text-[11px] font-semibold uppercase tracking-[0.22em]",
+          active ? "text-background/70" : "text-text-secondary/60",
+        )}
+      >
+        {eyebrow}
+      </p>
+      <p
+        className={cn(
+          "mt-1 text-sm font-semibold",
+          active ? "text-background" : "text-text-primary",
+        )}
+      >
+        {title}
+      </p>
+    </button>
+  );
+}
+
 function Field({
   label,
+  className,
   children,
 }: {
   label: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <label className="block">
+    <label className={cn("block", className)}>
       <span className="mb-2 block text-sm font-medium text-text-secondary">
         {label}
       </span>
