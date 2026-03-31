@@ -155,21 +155,16 @@ export function GoogleSignInButton({ clientId }: GoogleSignInButtonProps) {
         onError={() => setScriptError(true)}
       />
 
-      <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/62">
-              Google
-            </p>
-            <p className="mt-1 text-sm text-text-secondary">
-              Server-verified sign-in with your Google identity
-            </p>
-          </div>
+      <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-background-secondary/55 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <div className="mb-2 flex items-center gap-2 px-1">
           <GoogleMark />
+          <span className="text-sm font-medium text-text-secondary">
+            Continue with Google
+          </span>
         </div>
 
         {isUnavailable ? (
-          <div className="rounded-full border border-danger/20 bg-danger/8 px-4 py-3 text-sm text-danger">
+          <div className="rounded-xl border border-danger/20 bg-danger/8 px-4 py-3 text-sm text-danger">
             Google sign-in is unavailable. Check the client ID configuration.
           </div>
         ) : (
@@ -189,11 +184,6 @@ export function GoogleSignInButton({ clientId }: GoogleSignInButtonProps) {
             ) : null}
           </div>
         )}
-
-        <p className="mt-3 text-xs leading-5 text-text-secondary/72">
-          Budgetify never uses a Google client secret in the browser. Your ID
-          token is verified on the server before an app session is created.
-        </p>
       </div>
     </>
   );
