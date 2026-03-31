@@ -4,17 +4,21 @@ import { rwf } from "@/lib/utils/currency";
 import { TodoImageCarousel } from "./todo-image-carousel";
 
 interface TodoCardProps {
+  busyDone: boolean;
   entry: TodoResponse;
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
   onOpenGallery: (todoId: string, index: number) => void;
+  onToggleDone: (entry: TodoResponse) => void;
 }
 
 export function TodoCard({
+  busyDone,
   entry,
   onDelete,
   onEdit,
   onOpenGallery,
+  onToggleDone,
 }: TodoCardProps) {
   const meta = PRIORITY_META[entry.priority];
 
@@ -33,11 +37,27 @@ export function TodoCard({
       <div className="mt-3 rounded-[24px] border border-white/8 bg-background/42 p-4 backdrop-blur-sm">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <span
-              className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${meta.chipClass}`}
-            >
-              {meta.label}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${meta.chipClass}`}
+              >
+                {meta.label}
+              </span>
+              <button
+                type="button"
+                onClick={() => onToggleDone(entry)}
+                disabled={busyDone}
+                className={
+                  busyDone
+                    ? "inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-text-secondary opacity-70"
+                    : entry.done
+                      ? "inline-flex rounded-full border border-success/30 bg-success/16 px-2.5 py-1 text-[11px] font-medium text-success transition-all hover:bg-success/22"
+                      : "inline-flex rounded-full border border-primary/25 bg-primary/12 px-2.5 py-1 text-[11px] font-medium text-primary transition-all hover:bg-primary/18"
+                }
+              >
+                {busyDone ? "Updating..." : entry.done ? "Done" : "Not done"}
+              </button>
+            </div>
             <p className="mt-3 truncate text-lg font-semibold tracking-heading-sm text-text-primary">
               {entry.name}
             </p>
