@@ -1,9 +1,13 @@
+import { MONTH_OPTIONS } from "@/constant/months";
 import type {
   ExpenseCategory,
   ExpenseCategoryOptionResponse,
   ExpenseResponse,
 } from "@/lib/types/expense.types";
-import type { ExpenseFormValues } from "./expenses-page.types";
+import type {
+  ExpenseFormValues,
+  ExpenseLedgerCategoryFilter,
+} from "./expenses-page.types";
 
 export function getTodayString(): string {
   return new Date().toISOString().split("T")[0] ?? "";
@@ -21,12 +25,14 @@ export function createEmptyExpenseForm(): ExpenseFormValues {
 
 export function createExpenseFormFromCategories(
   categories: ExpenseCategoryOptionResponse[],
+  month = getCurrentMonthIndex(),
+  year = getCurrentYear(),
 ): ExpenseFormValues {
   return {
     label: "",
     amount: "",
     category: categories[0]?.value ?? "",
-    date: getTodayString(),
+    date: getMonthDefaultDate(month, year),
     note: "",
   };
 }
@@ -55,16 +61,20 @@ export function formatExpenseDate(value: string): string {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
-export function isCurrentMonth(value: string): boolean {
-  const now = new Date();
-  const date = new Date(value);
+export function getCurrentMonthIndex(): number {
+  return new Date().getMonth();
+}
 
-  return (
-    date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
-  );
+export function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
+export function resolveExpenseMonthLabel(month: number): string {
+  return MONTH_OPTIONS.find((option) => option.value === month)?.label ?? "Month";
 }
 
 export function resolveExpenseCategoryLabel(
@@ -74,8 +84,53 @@ export function resolveExpenseCategoryLabel(
   return categories.find((category) => category.value === value)?.label ?? value;
 }
 
+export function buildExpenseLedgerCategoryOptions(
+  categories: ExpenseCategoryOptionResponse[],
+  entries: ExpenseResponse[],
+): ExpenseCategoryOptionResponse[] {
+  if (categories.length > 0) {
+    return categories;
+  }
+
+  const seen = new Set<ExpenseCategory>();
+
+  return entries.reduce<ExpenseCategoryOptionResponse[]>((result, entry) => {
+    if (seen.has(entry.category)) {
+      return result;
+    }
+
+    seen.add(entry.category);
+    result.push({
+      value: entry.category,
+      label: entry.category,
+    });
+
+    return result;
+  }, []);
+}
+
+export function filterExpenseEntries(
+  entries: ExpenseResponse[],
+  category: ExpenseLedgerCategoryFilter,
+): ExpenseResponse[] {
+  return entries.filter(
+    (entry) => category === "ALL" || entry.category === category,
+  );
+}
+
 export function formatExpenseNote(note: string | null): string {
   const trimmed = note?.trim();
 
   return trimmed && trimmed.length > 0 ? trimmed : "No note";
+}
+
+function getMonthDefaultDate(month: number, year: number): string {
+  const currentMonth = getCurrentMonthIndex();
+  const currentYear = getCurrentYear();
+
+  if (month === currentMonth && year === currentYear) {
+    return getTodayString();
+  }
+
+  return `${year}-${String(month + 1).padStart(2, "0")}-01`;
 }
