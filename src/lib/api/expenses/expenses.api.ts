@@ -15,8 +15,11 @@ export async function listExpenseCategories(
   });
 }
 
-export async function listExpenses(token: string): Promise<ExpenseResponse[]> {
-  return apiFetch<ExpenseResponse[]>(EXPENSES_ROUTES.list, { token });
+export async function listExpenses(
+  token: string,
+  params?: { month?: number; year?: number },
+): Promise<ExpenseResponse[]> {
+  return apiFetch<ExpenseResponse[]>(EXPENSES_ROUTES.list(params), { token });
 }
 
 export async function createExpense(
