@@ -46,6 +46,8 @@
 
 :root {
   color-scheme: dark;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body {
@@ -112,4 +114,36 @@ body {
   .tracking-heading-sm { letter-spacing: -0.6px; }
   .tracking-heading-md { letter-spacing: -0.8px; }
   .tracking-heading-lg { letter-spacing: -1.2px; }
+
+  .animate-dashboard-rise {
+    animation: dashboard-rise 720ms var(--ease-out-expo) both;
+  }
+
+  .animate-dashboard-fade {
+    animation: dashboard-fade 720ms var(--ease-out-expo) both;
+  }
+}
+
+@keyframes dashboard-rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scaleY(0.28);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes dashboard-fade {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
