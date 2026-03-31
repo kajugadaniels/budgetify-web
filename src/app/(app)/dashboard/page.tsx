@@ -16,6 +16,7 @@ const EXPENSE_LABELS: Record<ExpenseCategory, string> = {
   FOOD_DINING: "Food and dining",
   TRANSPORT: "Transport",
   HOUSING: "Housing",
+  LOAN: "Loan",
   UTILITIES: "Utilities",
   HEALTHCARE: "Healthcare",
   EDUCATION: "Education",
