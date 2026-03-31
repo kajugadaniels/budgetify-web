@@ -1,6 +1,10 @@
 import { MONTH_OPTIONS } from "@/constant/months";
 import type { LoanResponse } from "@/lib/types/loan.types";
-import type { LoanFormValues, LoanLedgerPaidFilter } from "./loans-page.types";
+import type {
+  LoanFormValues,
+  LoanLedgerPaidFilter,
+  LoanSettlementFormValues,
+} from "./loans-page.types";
 
 export function getTodayString(): string {
   return new Date().toISOString().split("T")[0] ?? "";
@@ -33,6 +37,22 @@ export function createLoanFormFromEntry(entry: LoanResponse): LoanFormValues {
     amount: String(entry.amount),
     date: entry.date.split("T")[0] ?? getTodayString(),
     paid: entry.paid,
+    note: entry.note ?? "",
+  };
+}
+
+export function createEmptyLoanSettlementForm(): LoanSettlementFormValues {
+  return {
+    date: getTodayString(),
+    note: "",
+  };
+}
+
+export function createLoanSettlementFormFromEntry(
+  entry: LoanResponse,
+): LoanSettlementFormValues {
+  return {
+    date: entry.date.split("T")[0] ?? getTodayString(),
     note: entry.note ?? "",
   };
 }
