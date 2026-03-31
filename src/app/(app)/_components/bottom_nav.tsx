@@ -2,12 +2,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { NAV_ITEMS } from "@/constant/navigation/nav-items";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils/cn";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    if (loggingOut) {
+      return;
+    }
+
+    setLoggingOut(true);
+
+    try {
+      await logout();
+      router.replace("/login");
+      router.refresh();
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <nav
@@ -76,10 +97,14 @@ export function BottomNav() {
               </div>
             </div>
 
-            <div
-              aria-hidden="true"
-              className="ml-1 h-12 w-12 shrink-0 opacity-0 md:ml-2 md:h-14 md:w-14"
-            />
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              disabled={loggingOut}
+              className="ml-1 inline-flex h-12 shrink-0 items-center justify-center rounded-full px-4 text-xs font-semibold uppercase tracking-[0.16em] text-danger transition-[transform,color,background-color] duration-300 hover:bg-danger/10 hover:text-danger motion-safe:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 md:ml-2 md:h-14 md:px-5"
+            >
+              {loggingOut ? "Logging out" : "Logout"}
+            </button>
           </div>
         </div>
       </div>
