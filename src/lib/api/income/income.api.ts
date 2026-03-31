@@ -15,8 +15,11 @@ export async function listIncomeCategories(
   });
 }
 
-export async function listIncome(token: string): Promise<IncomeResponse[]> {
-  return apiFetch<IncomeResponse[]>(INCOME_ROUTES.list, { token });
+export async function listIncome(
+  token: string,
+  params?: { month?: number; year?: number },
+): Promise<IncomeResponse[]> {
+  return apiFetch<IncomeResponse[]>(INCOME_ROUTES.list(params), { token });
 }
 
 export async function createIncome(
