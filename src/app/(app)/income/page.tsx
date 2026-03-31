@@ -21,17 +21,22 @@ import type {
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import { IncomeFormDialog } from "./income/income-form-dialog";
 import { IncomeHeader } from "./income/income-header";
+import { IncomeLedgerFilters } from "./income/income-ledger-filters";
 import type {
   IncomeFormDialogState,
   IncomeFormValues,
+  IncomeLedgerCategoryFilter,
+  IncomeLedgerReceivedFilter,
 } from "./income/income-page.types";
 import { IncomeSummaryCard } from "./income/income-summary-card";
 import { IncomeTable } from "./income/income-table";
 import { IncomeTableSkeleton } from "./income/income-table-skeleton";
 import {
+  buildIncomeLedgerCategoryOptions,
   createEmptyIncomeForm,
   createIncomeFormFromCategories,
   createIncomeFormFromEntry,
+  filterIncomeEntries,
   formatIncomeDate,
   getCurrentMonthIndex,
   getCurrentYear,
@@ -55,6 +60,10 @@ export default function IncomePage() {
   const [deleteTarget, setDeleteTarget] = useState<IncomeResponse | null>(null);
   const [form, setForm] = useState<IncomeFormValues>(() => createEmptyIncomeForm());
   const [selectedMonth, setSelectedMonth] = useState(() => getCurrentMonthIndex());
+  const [selectedCategory, setSelectedCategory] =
+    useState<IncomeLedgerCategoryFilter>("ALL");
+  const [selectedReceived, setSelectedReceived] =
+    useState<IncomeLedgerReceivedFilter>("ALL");
   const selectedYear = getCurrentYear();
 
   useEffect(() => {
@@ -136,6 +145,16 @@ export default function IncomePage() {
     .filter((entry) => entry.received)
     .reduce((sum, entry) => sum + Number(entry.amount), 0);
   const selectedMonthLabel = resolveIncomeMonthLabel(selectedMonth);
+  const ledgerCategoryOptions = buildIncomeLedgerCategoryOptions(
+    categories,
+    entries,
+  );
+  const filteredEntries = filterIncomeEntries(entries, {
+    category: selectedCategory,
+    received: selectedReceived,
+  });
+  const hasActiveLedgerFilters =
+    selectedCategory !== "ALL" || selectedReceived !== "ALL";
   const mostRecentEntry = entries[0];
   const highestEntry = [...entries].sort(
     (left, right) => Number(right.amount) - Number(left.amount),
@@ -350,9 +369,23 @@ export default function IncomePage() {
             </div>
 
             <span className="rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs font-medium text-text-secondary">
-              {entries.length} rows
+              {filteredEntries.length}
+              {hasActiveLedgerFilters ? ` of ${entries.length}` : ""} rows
             </span>
           </div>
+
+          <IncomeLedgerFilters
+            category={selectedCategory}
+            categoryOptions={ledgerCategoryOptions}
+            hasActiveFilters={hasActiveLedgerFilters}
+            received={selectedReceived}
+            onCategoryChange={setSelectedCategory}
+            onClear={() => {
+              setSelectedCategory("ALL");
+              setSelectedReceived("ALL");
+            }}
+            onReceivedChange={setSelectedReceived}
+          />
 
           {loading ? (
             <IncomeTableSkeleton />
@@ -378,12 +411,26 @@ export default function IncomePage() {
                 }}
               />
             </div>
+          ) : filteredEntries.length === 0 ? (
+            <div className="px-5 py-10 md:px-6">
+              <EmptyState
+                title="No ledger matches"
+                description="Try a different category or received state to reveal more income rows for this month."
+                action={{
+                  label: "Clear filters",
+                  onClick: () => {
+                    setSelectedCategory("ALL");
+                    setSelectedReceived("ALL");
+                  },
+                }}
+              />
+            </div>
           ) : (
             <IncomeTable
               busyReceivedId={receivedBusyId}
               canEdit={canManageCategories}
               categories={categories}
-              entries={entries}
+              entries={filteredEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
               onToggleReceived={handleToggleReceived}
