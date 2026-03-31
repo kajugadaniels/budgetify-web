@@ -19,47 +19,56 @@ export function TodoCard({
   const meta = PRIORITY_META[entry.priority];
 
   return (
-    <article className="overflow-hidden rounded-[28px] border border-white/8 bg-background-secondary/72 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+    <article className="group relative overflow-hidden rounded-[30px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(199,191,167,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-3 shadow-[0_24px_44px_rgba(0,0,0,0.22)]">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/45 to-transparent" />
+
       <TodoImageCarousel
         images={entry.images}
-        emptyDescription="Open edit to manage synced images when this item has them."
-        emptyTitle="No preview image"
-        heightClass="h-48"
+        emptyDescription="Add a product image to give this wishlist item presence."
+        emptyTitle="No image yet"
+        heightClass="h-52"
         onImageClick={(index) => onOpenGallery(entry.id, index)}
       />
 
-      <div className="mt-4 flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold text-text-primary md:text-lg">
-            {entry.name}
-          </p>
-          <p className="mt-2 text-lg font-semibold text-text-primary">
-            {rwf(Number(entry.price))}
-          </p>
+      <div className="mt-3 rounded-[24px] border border-white/8 bg-background/42 p-4 backdrop-blur-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <span
+              className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${meta.chipClass}`}
+            >
+              {meta.label}
+            </span>
+            <p className="mt-3 truncate text-lg font-semibold tracking-heading-sm text-text-primary">
+              {entry.name}
+            </p>
+          </div>
+
+          <div className="shrink-0 rounded-[20px] px-4 py-3 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/65">
+              Price
+            </p>
+            <p className="mt-2 text-lg font-semibold text-text-primary">
+              {rwf(Number(entry.price))}
+            </p>
+          </div>
         </div>
 
-        <span
-          className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${meta.chipClass}`}
-        >
-          {meta.label}
-        </span>
-      </div>
-
-      <div className="mt-4 flex items-center justify-end gap-2 border-t border-white/8 pt-4">
-        <button
-          type="button"
-          onClick={() => onEdit(entry)}
-          className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
-        >
-          Edit
-        </button>
-        <button
-          type="button"
-          onClick={() => onDelete(entry)}
-          className="rounded-full border border-danger/25 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16"
-        >
-          Delete
-        </button>
+        <div className="mt-4 flex items-center justify-end gap-2 border-t border-white/8 pt-4">
+          <button
+            type="button"
+            onClick={() => onEdit(entry)}
+            className="rounded-full border border-white/10 bg-white/4 px-3.5 py-2 text-xs font-medium text-text-secondary transition-all hover:border-white/16 hover:text-text-primary"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(entry)}
+            className="rounded-full border border-danger/28 bg-danger/10 px-3.5 py-2 text-xs font-medium text-danger transition-all hover:bg-danger/16"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </article>
   );
