@@ -155,14 +155,7 @@ export function GoogleSignInButton({ clientId }: GoogleSignInButtonProps) {
         onError={() => setScriptError(true)}
       />
 
-      <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-background-secondary/55 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-        <div className="mb-2 flex items-center gap-2 px-1">
-          <GoogleMark />
-          <span className="text-sm font-medium text-text-secondary">
-            Continue with Google
-          </span>
-        </div>
-
+      <div className="relative overflow-hidden rounded-[22px] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         {isUnavailable ? (
           <div className="rounded-xl border border-danger/20 bg-danger/8 px-4 py-3 text-sm text-danger">
             Google sign-in is unavailable. Check the client ID configuration.
