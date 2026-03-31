@@ -48,6 +48,7 @@ import {
 export default function IncomePage() {
   const { token } = useAuth();
   const toast = useToast();
+  const defaultMonth = getCurrentMonthIndex();
 
   const [entries, setEntries] = useState<IncomeResponse[]>([]);
   const [categories, setCategories] = useState<IncomeCategoryOptionResponse[]>([]);
@@ -59,7 +60,7 @@ export default function IncomePage() {
   const [formDialog, setFormDialog] = useState<IncomeFormDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<IncomeResponse | null>(null);
   const [form, setForm] = useState<IncomeFormValues>(() => createEmptyIncomeForm());
-  const [selectedMonth, setSelectedMonth] = useState(() => getCurrentMonthIndex());
+  const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedCategory, setSelectedCategory] =
     useState<IncomeLedgerCategoryFilter>("ALL");
   const [selectedReceived, setSelectedReceived] =
@@ -154,7 +155,9 @@ export default function IncomePage() {
     received: selectedReceived,
   });
   const hasActiveLedgerFilters =
-    selectedCategory !== "ALL" || selectedReceived !== "ALL";
+    selectedMonth !== defaultMonth ||
+    selectedCategory !== "ALL" ||
+    selectedReceived !== "ALL";
   const mostRecentEntry = entries[0];
   const highestEntry = [...entries].sort(
     (left, right) => Number(right.amount) - Number(left.amount),
@@ -308,10 +311,7 @@ export default function IncomePage() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <IncomeHeader
           canCreate={canManageCategories}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
           onCreate={openCreateDialog}
-          onMonthChange={setSelectedMonth}
         />
 
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.75fr)]">
@@ -378,12 +378,15 @@ export default function IncomePage() {
             category={selectedCategory}
             categoryOptions={ledgerCategoryOptions}
             hasActiveFilters={hasActiveLedgerFilters}
+            month={selectedMonth}
             received={selectedReceived}
             onCategoryChange={setSelectedCategory}
             onClear={() => {
+              setSelectedMonth(defaultMonth);
               setSelectedCategory("ALL");
               setSelectedReceived("ALL");
             }}
+            onMonthChange={setSelectedMonth}
             onReceivedChange={setSelectedReceived}
           />
 
