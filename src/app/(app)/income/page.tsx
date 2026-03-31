@@ -33,7 +33,9 @@ import {
   createIncomeFormFromCategories,
   createIncomeFormFromEntry,
   formatIncomeDate,
-  isCurrentMonth,
+  getCurrentMonthIndex,
+  getCurrentYear,
+  resolveIncomeMonthLabel,
   resolveIncomeCategoryLabel,
   sortIncomeEntries,
 } from "./income/income.utils";
@@ -52,6 +54,8 @@ export default function IncomePage() {
   const [formDialog, setFormDialog] = useState<IncomeFormDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<IncomeResponse | null>(null);
   const [form, setForm] = useState<IncomeFormValues>(() => createEmptyIncomeForm());
+  const [selectedMonth, setSelectedMonth] = useState(() => getCurrentMonthIndex());
+  const selectedYear = getCurrentYear();
 
   useEffect(() => {
     if (!token) return;
@@ -59,52 +63,79 @@ export default function IncomePage() {
 
     let ignore = false;
 
-    async function loadIncomePage() {
-      setLoading(true);
-      setError(null);
+    async function loadIncomeCategories() {
       setCategoriesError(null);
 
-      const [incomeResult, categoryResult] = await Promise.allSettled([
-        listIncome(sessionToken),
-        listIncomeCategories(sessionToken),
-      ]);
+      try {
+        const response = await listIncomeCategories(sessionToken);
 
-      if (ignore) return;
-
-      if (incomeResult.status === "fulfilled") {
-        setEntries(sortIncomeEntries(incomeResult.value));
-      } else {
-        setError(
-          incomeResult.reason instanceof ApiError
-            ? incomeResult.reason.message
-            : "Income could not be loaded right now.",
-        );
+        if (!ignore) {
+          setCategories(response);
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          setCategoriesError(
+            loadError instanceof ApiError
+              ? loadError.message
+              : "Income categories are unavailable right now.",
+          );
+        }
       }
-
-      if (categoryResult.status === "fulfilled") {
-        setCategories(categoryResult.value);
-      } else {
-        setCategoriesError(
-          categoryResult.reason instanceof ApiError
-            ? categoryResult.reason.message
-            : "Income categories are unavailable right now.",
-        );
-      }
-
-      setLoading(false);
     }
 
-    void loadIncomePage();
+    void loadIncomeCategories();
 
     return () => {
       ignore = true;
     };
   }, [token]);
 
+  useEffect(() => {
+    if (!token) return;
+    const sessionToken = token;
+
+    let ignore = false;
+
+    async function loadIncomeEntries() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await listIncome(sessionToken, {
+          month: selectedMonth + 1,
+          year: selectedYear,
+        });
+
+        if (!ignore) {
+          setEntries(sortIncomeEntries(response));
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          setError(
+            loadError instanceof ApiError
+              ? loadError.message
+              : "Income could not be loaded right now.",
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadIncomeEntries();
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedMonth, selectedYear, token]);
+
   const totalIncome = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
-  const monthlyIncome = entries
-    .filter((entry) => isCurrentMonth(entry.date))
+  const receivedIncome = entries
+    .filter((entry) => entry.received)
     .reduce((sum, entry) => sum + Number(entry.amount), 0);
+  const selectedMonthLabel = resolveIncomeMonthLabel(selectedMonth);
   const mostRecentEntry = entries[0];
   const highestEntry = [...entries].sort(
     (left, right) => Number(right.amount) - Number(left.amount),
@@ -117,7 +148,7 @@ export default function IncomePage() {
       return;
     }
 
-    setForm(createIncomeFormFromCategories(categories));
+    setForm(createIncomeFormFromCategories(categories, selectedMonth, selectedYear));
     setFormDialog({ mode: "create" });
   }
 
@@ -168,18 +199,18 @@ export default function IncomePage() {
 
     try {
       if (formDialog.mode === "edit") {
-        const updated = await updateIncome(token, formDialog.entry.id, payload);
-        setEntries((current) =>
-          sortIncomeEntries(
-            current.map((entry) => (entry.id === updated.id ? updated : entry)),
-          ),
-        );
+        await updateIncome(token, formDialog.entry.id, payload);
         toast.success("Income entry updated.");
       } else {
-        const created = await createIncome(token, payload);
-        setEntries((current) => sortIncomeEntries([created, ...current]));
+        await createIncome(token, payload);
         toast.success("Income entry added.");
       }
+
+      const refreshed = await listIncome(token, {
+        month: selectedMonth + 1,
+        year: selectedYear,
+      });
+      setEntries(sortIncomeEntries(refreshed));
 
       closeFormDialog();
     } catch (saveError) {
@@ -198,9 +229,11 @@ export default function IncomePage() {
 
     try {
       await deleteIncome(token, deleteTarget.id);
-      setEntries((current) =>
-        current.filter((entry) => entry.id !== deleteTarget.id),
-      );
+      const refreshed = await listIncome(token, {
+        month: selectedMonth + 1,
+        year: selectedYear,
+      });
+      setEntries(sortIncomeEntries(refreshed));
       toast.success("Income entry deleted.");
 
       if (
@@ -227,16 +260,14 @@ export default function IncomePage() {
     setReceivedBusyId(entry.id);
 
     try {
-      const updated = await updateIncome(token, entry.id, {
+      await updateIncome(token, entry.id, {
         received: nextReceived,
       });
-      setEntries((current) =>
-        sortIncomeEntries(
-          current.map((currentEntry) =>
-            currentEntry.id === updated.id ? updated : currentEntry,
-          ),
-        ),
-      );
+      const refreshed = await listIncome(token, {
+        month: selectedMonth + 1,
+        year: selectedYear,
+      });
+      setEntries(sortIncomeEntries(refreshed));
       toast.success(
         nextReceived
           ? "Income marked as received."
@@ -256,12 +287,18 @@ export default function IncomePage() {
   return (
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <IncomeHeader canCreate={canManageCategories} onCreate={openCreateDialog} />
+        <IncomeHeader
+          canCreate={canManageCategories}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          onCreate={openCreateDialog}
+          onMonthChange={setSelectedMonth}
+        />
 
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.75fr)]">
           <div className="glass-panel rounded-[32px] p-6 md:p-7">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
-              Recorded income
+              {selectedMonthLabel} {selectedYear}
             </p>
             <p className="mt-4 text-[2.6rem] font-semibold tracking-heading-lg text-text-primary">
               {rwfCompact(totalIncome)}
@@ -269,20 +306,20 @@ export default function IncomePage() {
             <div className="mt-6 flex items-center gap-3 text-sm text-text-secondary">
               <span className="h-2.5 w-2.5 rounded-full bg-success" />
               <span>
-                {entries.length} {entries.length === 1 ? "entry" : "entries"} across
-                all recorded sources
+                {entries.length} {entries.length === 1 ? "entry" : "entries"} dated
+                inside {selectedMonthLabel}
               </span>
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
             <IncomeSummaryCard
-              eyebrow="This month"
-              value={rwfCompact(monthlyIncome)}
+              eyebrow="Received"
+              value={rwfCompact(receivedIncome)}
               detail={
                 mostRecentEntry
                   ? `Most recent on ${formatIncomeDate(mostRecentEntry.date)}`
-                  : "No income recorded yet"
+                  : `No income dated in ${selectedMonthLabel} ${selectedYear}`
               }
             />
             <IncomeSummaryCard
@@ -308,7 +345,7 @@ export default function IncomePage() {
                 Income ledger
               </p>
               <h2 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
-                All recorded income
+                {selectedMonthLabel} {selectedYear} income
               </h2>
             </div>
 
