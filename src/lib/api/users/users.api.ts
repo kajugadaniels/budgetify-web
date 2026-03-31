@@ -19,3 +19,17 @@ export async function updateProfile(
     body,
   });
 }
+
+export async function uploadProfileAvatar(
+  token: string,
+  file: File,
+): Promise<UserProfileResponse> {
+  const formData = new FormData();
+  formData.append("avatar", file);
+
+  return apiFetch<UserProfileResponse>(USERS_ROUTES.avatar, {
+    method: "PATCH",
+    token,
+    body: formData,
+  });
+}
