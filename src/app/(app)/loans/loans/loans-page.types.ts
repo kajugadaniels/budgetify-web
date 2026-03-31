@@ -10,7 +10,16 @@ export interface LoanFormValues {
   note: string;
 }
 
+export interface LoanSettlementFormValues {
+  date: string;
+  note: string;
+}
+
 export type LoanFormDialogState =
   | { mode: "create" }
   | { mode: "edit"; entry: LoanResponse }
+  | null;
+
+export type LoanSettlementDialogState =
+  | { entry: LoanResponse }
   | null;
