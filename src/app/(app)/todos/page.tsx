@@ -32,7 +32,6 @@ import { TodosSummaryCard } from "./todos/todos-summary-card";
 import {
   createEmptyTodoForm,
   createTodoFormFromEntry,
-  groupTodosByPriority,
   sortTodos,
   validateTodoUploadFile,
 } from "./todos/todos.utils";
@@ -105,7 +104,6 @@ export default function TodosPage() {
     (entry) => entry.priority === "TOP_PRIORITY",
   ).length;
   const withImagesCount = entries.filter((entry) => entry.imageCount > 0).length;
-  const groupedEntries = groupTodosByPriority(entries);
 
   function openCreateDialog() {
     setForm(createEmptyTodoForm());
@@ -360,7 +358,7 @@ export default function TodosPage() {
                 Wishlist board
               </p>
               <h2 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
-                Future purchases, grouped by intent
+                Wishlist items ordered by when you added them
               </h2>
             </div>
             <p className="text-sm text-text-secondary">
@@ -391,7 +389,7 @@ export default function TodosPage() {
               />
             ) : (
               <TodosBoard
-                groupedEntries={groupedEntries}
+                entries={entries}
                 onDelete={setDeleteTarget}
                 onEdit={openEditDialog}
                 onOpenGallery={openGallery}
