@@ -110,6 +110,52 @@ export function IncomeFormDialog({
           </div>
         </Field>
 
+        <Field label="Received state">
+          <div className="flex flex-wrap gap-2">
+            {[
+              {
+                label: "Received",
+                value: true,
+                selectedClass: "border-success bg-success text-background",
+              },
+              {
+                label: "Pending",
+                value: false,
+                selectedClass: "border-primary bg-primary text-background",
+              },
+            ].map((option) => {
+              const selected = form.received === option.value;
+
+              return (
+                <button
+                  key={option.label}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => onChange({ received: option.value })}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
+                    selected
+                      ? option.selectedClass
+                      : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
+                      selected
+                        ? "border-background/20 bg-background/15 text-background"
+                        : "border-white/10 bg-white/6 text-transparent",
+                    )}
+                  >
+                    ✓
+                  </span>
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
         <div className="flex gap-3 pt-2">
           <button
             type="button"
