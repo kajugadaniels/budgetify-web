@@ -72,6 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Best-effort — clear local state regardless of API response
       }
     }
+    if (typeof window !== "undefined") {
+      window.google?.accounts?.id.disableAutoSelect?.();
+    }
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(USER_KEY);
