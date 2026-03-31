@@ -1,4 +1,4 @@
-import type { TodoPriority, TodoResponse } from "@/lib/types/todo.types";
+import type { TodoResponse } from "@/lib/types/todo.types";
 import type { TodoFormValues } from "./todos-page.types";
 import {
   ALLOWED_TODO_IMAGE_MIME_TYPES,
@@ -21,31 +21,11 @@ export function createTodoFormFromEntry(entry: TodoResponse): TodoFormValues {
   };
 }
 
-export function getPriorityRank(priority: TodoPriority): number {
-  switch (priority) {
-    case "TOP_PRIORITY":
-      return 0;
-    case "PRIORITY":
-      return 1;
-    case "NOT_PRIORITY":
-      return 2;
-  }
-}
-
 export function sortTodos(entries: TodoResponse[]): TodoResponse[] {
   return [...entries].sort(
     (left, right) =>
-      getPriorityRank(left.priority) - getPriorityRank(right.priority) ||
-      new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
   );
-}
-
-export function groupTodosByPriority(entries: TodoResponse[]): Record<TodoPriority, TodoResponse[]> {
-  return {
-    TOP_PRIORITY: entries.filter((entry) => entry.priority === "TOP_PRIORITY"),
-    PRIORITY: entries.filter((entry) => entry.priority === "PRIORITY"),
-    NOT_PRIORITY: entries.filter((entry) => entry.priority === "NOT_PRIORITY"),
-  };
 }
 
 export function formatTodoDate(value: string): string {
