@@ -1,4 +1,4 @@
-import { MONTH_OPTIONS } from "@/constant/dashboard/months";
+import { MONTH_OPTIONS } from "@/constant/months";
 import { cn } from "@/lib/utils/cn";
 
 interface IncomeMonthFilterProps {
