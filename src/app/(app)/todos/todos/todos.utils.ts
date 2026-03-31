@@ -1,5 +1,9 @@
 import type { TodoPriority, TodoResponse } from "@/lib/types/todo.types";
 import type { TodoFormValues } from "./todos-page.types";
+import {
+  ALLOWED_TODO_IMAGE_MIME_TYPES,
+  MAX_TODO_IMAGE_SIZE_BYTES,
+} from "./todos.constants";
 
 export function createEmptyTodoForm(): TodoFormValues {
   return {
@@ -54,4 +58,24 @@ export function formatTodoDate(value: string): string {
 
 export function formatTodoSlideLabel(index: number, total: number): string {
   return `${index + 1} of ${total}`;
+}
+
+export function formatTodoFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
+export function validateTodoUploadFile(file: File): string | null {
+  if (!ALLOWED_TODO_IMAGE_MIME_TYPES.includes(file.type as (typeof ALLOWED_TODO_IMAGE_MIME_TYPES)[number])) {
+    return "Only JPEG, PNG, and WebP images are supported.";
+  }
+
+  if (file.size > MAX_TODO_IMAGE_SIZE_BYTES) {
+    return "Each image must be 10MB or smaller.";
+  }
+
+  return null;
 }
