@@ -10,6 +10,7 @@ export function createEmptyTodoForm(): TodoFormValues {
     name: "",
     price: "",
     priority: "TOP_PRIORITY",
+    done: false,
   };
 }
 
@@ -18,6 +19,7 @@ export function createTodoFormFromEntry(entry: TodoResponse): TodoFormValues {
     name: entry.name,
     price: String(entry.price),
     priority: entry.priority,
+    done: entry.done,
   };
 }
 
