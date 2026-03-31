@@ -7,6 +7,7 @@ interface LoansTableProps {
   entries: LoanResponse[];
   onDelete: (entry: LoanResponse) => void;
   onEdit: (entry: LoanResponse) => void;
+  onSendToExpense: (entry: LoanResponse) => void;
   onTogglePaid: (entry: LoanResponse) => void;
 }
 
@@ -15,6 +16,7 @@ export function LoansTable({
   entries,
   onDelete,
   onEdit,
+  onSendToExpense,
   onTogglePaid,
 }: LoansTableProps) {
   return (
@@ -83,6 +85,18 @@ export function LoansTable({
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onSendToExpense(entry)}
+                    disabled={entry.paid}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      entry.paid
+                        ? "cursor-not-allowed border-success/14 bg-success/8 text-success/65"
+                        : "border-primary/25 bg-primary/10 text-primary hover:bg-primary/16"
+                    }`}
+                  >
+                    {entry.paid ? "Settled" : "Send to expense"}
+                  </button>
                   <button
                     type="button"
                     onClick={() => onEdit(entry)}
