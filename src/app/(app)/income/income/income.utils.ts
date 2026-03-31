@@ -1,3 +1,4 @@
+import { MONTH_OPTIONS } from "@/constant/dashboard/months";
 import type {
   IncomeCategory,
   IncomeCategoryOptionResponse,
@@ -21,12 +22,14 @@ export function createEmptyIncomeForm(): IncomeFormValues {
 
 export function createIncomeFormFromCategories(
   categories: IncomeCategoryOptionResponse[],
+  month = getCurrentMonthIndex(),
+  year = getCurrentYear(),
 ): IncomeFormValues {
   return {
     label: "",
     amount: "",
     category: categories[0]?.value ?? "",
-    date: getTodayString(),
+    date: getMonthDefaultDate(month, year),
     received: false,
   };
 }
@@ -55,16 +58,43 @@ export function formatIncomeDate(value: string): string {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
-export function isCurrentMonth(value: string): boolean {
-  const now = new Date();
+export function getCurrentMonthIndex(): number {
+  return new Date().getMonth();
+}
+
+export function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
+export function isIncomeInMonth(
+  value: string,
+  month: number,
+  year: number,
+): boolean {
   const date = new Date(value);
 
   return (
-    date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
+    date.getUTCMonth() === month && date.getUTCFullYear() === year
   );
+}
+
+export function resolveIncomeMonthLabel(month: number): string {
+  return MONTH_OPTIONS.find((option) => option.value === month)?.label ?? "Month";
+}
+
+function getMonthDefaultDate(month: number, year: number): string {
+  const currentMonth = getCurrentMonthIndex();
+  const currentYear = getCurrentYear();
+
+  if (month === currentMonth && year === currentYear) {
+    return getTodayString();
+  }
+
+  return `${year}-${String(month + 1).padStart(2, "0")}-01`;
 }
 
 export function resolveIncomeCategoryLabel(
