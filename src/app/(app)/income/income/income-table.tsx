@@ -9,26 +9,30 @@ import {
 } from "./income.utils";
 
 interface IncomeTableProps {
+  busyReceivedId: string | null;
   categories: IncomeCategoryOptionResponse[];
   canEdit: boolean;
   entries: IncomeResponse[];
   onDelete: (entry: IncomeResponse) => void;
   onEdit: (entry: IncomeResponse) => void;
+  onToggleReceived: (entry: IncomeResponse) => void;
 }
 
 export function IncomeTable({
+  busyReceivedId,
   categories,
   canEdit,
   entries,
   onDelete,
   onEdit,
+  onToggleReceived,
 }: IncomeTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] border-separate border-spacing-0">
+      <table className="w-full min-w-[900px] border-separate border-spacing-0">
         <thead>
           <tr className="text-left">
-            {["Source", "Category", "Date", "Amount", "Actions"].map((label) => (
+            {["Source", "Category", "Date", "Received", "Amount", "Actions"].map((label) => (
               <th
                 key={label}
                 className="px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/55 md:px-6"
@@ -58,6 +62,25 @@ export function IncomeTable({
               </td>
               <td className="border-t border-white/6 px-5 py-4 text-sm text-text-secondary md:px-6">
                 {formatIncomeDate(entry.date)}
+              </td>
+              <td className="border-t border-white/6 px-5 py-4 md:px-6">
+                <button
+                  type="button"
+                  onClick={() => onToggleReceived(entry)}
+                  disabled={busyReceivedId === entry.id}
+                  aria-pressed={entry.received}
+                  className={`inline-flex min-w-[112px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition-all ${
+                    entry.received
+                      ? "border-success/25 bg-success/12 text-success"
+                      : "border-primary/25 bg-primary/10 text-primary"
+                  } disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  {busyReceivedId === entry.id
+                    ? "Updating..."
+                    : entry.received
+                      ? "Received"
+                      : "Pending"}
+                </button>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <p className="text-sm font-semibold tabular-nums text-success">
