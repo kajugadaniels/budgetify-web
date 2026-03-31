@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
-import { MONTH_OPTIONS } from "@/constant/dashboard/months";
+import { MONTH_OPTIONS } from "@/constant/months";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api/client";
 import { listExpenses } from "@/lib/api/expenses/expenses.api";
