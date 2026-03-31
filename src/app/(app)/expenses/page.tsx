@@ -20,20 +20,26 @@ import type {
 } from "@/lib/types/expense.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import { ExpenseFormDialog } from "./expenses/expense-form-dialog";
+import { ExpensesLedgerFilters } from "./expenses/expenses-ledger-filters";
 import { ExpensesHeader } from "./expenses/expenses-header";
 import type {
   ExpenseFormDialogState,
   ExpenseFormValues,
+  ExpenseLedgerCategoryFilter,
 } from "./expenses/expenses-page.types";
 import { ExpensesSummaryCard } from "./expenses/expenses-summary-card";
 import { ExpensesTable } from "./expenses/expenses-table";
 import { ExpensesTableSkeleton } from "./expenses/expenses-table-skeleton";
 import {
+  buildExpenseLedgerCategoryOptions,
   createEmptyExpenseForm,
   createExpenseFormFromCategories,
   createExpenseFormFromEntry,
+  filterExpenseEntries,
   formatExpenseDate,
-  isCurrentMonth,
+  getCurrentMonthIndex,
+  getCurrentYear,
+  resolveExpenseMonthLabel,
   resolveExpenseCategoryLabel,
   sortExpenseEntries,
 } from "./expenses/expenses.utils";
@@ -55,6 +61,11 @@ export default function ExpensesPage() {
   const [form, setForm] = useState<ExpenseFormValues>(() =>
     createEmptyExpenseForm(),
   );
+  const defaultMonth = getCurrentMonthIndex();
+  const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  const [selectedCategory, setSelectedCategory] =
+    useState<ExpenseLedgerCategoryFilter>("ALL");
+  const selectedYear = getCurrentYear();
 
   useEffect(() => {
     if (!token) return;
@@ -62,52 +73,83 @@ export default function ExpensesPage() {
 
     let ignore = false;
 
-    async function loadExpensesPage() {
-      setLoading(true);
-      setError(null);
+    async function loadExpenseCategories() {
       setCategoriesError(null);
 
-      const [expensesResult, categoryResult] = await Promise.allSettled([
-        listExpenses(sessionToken),
-        listExpenseCategories(sessionToken),
-      ]);
+      try {
+        const response = await listExpenseCategories(sessionToken);
 
-      if (ignore) return;
-
-      if (expensesResult.status === "fulfilled") {
-        setEntries(sortExpenseEntries(expensesResult.value));
-      } else {
-        setError(
-          expensesResult.reason instanceof ApiError
-            ? expensesResult.reason.message
-            : "Expenses could not be loaded right now.",
-        );
+        if (!ignore) {
+          setCategories(response);
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          setCategoriesError(
+            loadError instanceof ApiError
+              ? loadError.message
+              : "Expense categories are unavailable right now.",
+          );
+        }
       }
-
-      if (categoryResult.status === "fulfilled") {
-        setCategories(categoryResult.value);
-      } else {
-        setCategoriesError(
-          categoryResult.reason instanceof ApiError
-            ? categoryResult.reason.message
-            : "Expense categories are unavailable right now.",
-        );
-      }
-
-      setLoading(false);
     }
 
-    void loadExpensesPage();
+    void loadExpenseCategories();
 
     return () => {
       ignore = true;
     };
   }, [token]);
 
+  useEffect(() => {
+    if (!token) return;
+    const sessionToken = token;
+
+    let ignore = false;
+
+    async function loadExpenseEntries() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await listExpenses(sessionToken, {
+          month: selectedMonth + 1,
+          year: selectedYear,
+        });
+
+        if (!ignore) {
+          setEntries(sortExpenseEntries(response));
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          setError(
+            loadError instanceof ApiError
+              ? loadError.message
+              : "Expenses could not be loaded right now.",
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadExpenseEntries();
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedMonth, selectedYear, token]);
+
   const totalSpent = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
-  const monthlySpend = entries
-    .filter((entry) => isCurrentMonth(entry.date))
-    .reduce((sum, entry) => sum + Number(entry.amount), 0);
+  const selectedMonthLabel = resolveExpenseMonthLabel(selectedMonth);
+  const ledgerCategoryOptions = buildExpenseLedgerCategoryOptions(
+    categories,
+    entries,
+  );
+  const filteredEntries = filterExpenseEntries(entries, selectedCategory);
+  const hasActiveLedgerFilters =
+    selectedMonth !== defaultMonth || selectedCategory !== "ALL";
   const mostRecentEntry = entries[0];
   const largestExpense = [...entries].sort(
     (left, right) => Number(right.amount) - Number(left.amount),
@@ -120,7 +162,7 @@ export default function ExpensesPage() {
       return;
     }
 
-    setForm(createExpenseFormFromCategories(categories));
+    setForm(createExpenseFormFromCategories(categories, selectedMonth, selectedYear));
     setFormDialog({ mode: "create" });
   }
 
@@ -171,18 +213,18 @@ export default function ExpensesPage() {
 
     try {
       if (formDialog.mode === "edit") {
-        const updated = await updateExpense(token, formDialog.entry.id, payload);
-        setEntries((current) =>
-          sortExpenseEntries(
-            current.map((entry) => (entry.id === updated.id ? updated : entry)),
-          ),
-        );
+        await updateExpense(token, formDialog.entry.id, payload);
         toast.success("Expense updated.");
       } else {
-        const created = await createExpense(token, payload);
-        setEntries((current) => sortExpenseEntries([created, ...current]));
+        await createExpense(token, payload);
         toast.success("Expense added.");
       }
+
+      const refreshed = await listExpenses(token, {
+        month: selectedMonth + 1,
+        year: selectedYear,
+      });
+      setEntries(sortExpenseEntries(refreshed));
 
       closeFormDialog();
     } catch (saveError) {
@@ -201,9 +243,11 @@ export default function ExpensesPage() {
 
     try {
       await deleteExpense(token, deleteTarget.id);
-      setEntries((current) =>
-        current.filter((entry) => entry.id !== deleteTarget.id),
-      );
+      const refreshed = await listExpenses(token, {
+        month: selectedMonth + 1,
+        year: selectedYear,
+      });
+      setEntries(sortExpenseEntries(refreshed));
       toast.success("Expense deleted.");
 
       if (
@@ -231,7 +275,7 @@ export default function ExpensesPage() {
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.75fr)]">
           <div className="glass-panel rounded-[32px] p-6 md:p-7">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
-              Recorded spending
+              {selectedMonthLabel} {selectedYear}
             </p>
             <p className="mt-4 text-[2.6rem] font-semibold tracking-heading-lg text-text-primary">
               {rwfCompact(totalSpent)}
@@ -239,20 +283,20 @@ export default function ExpensesPage() {
             <div className="mt-6 flex items-center gap-3 text-sm text-text-secondary">
               <span className="h-2.5 w-2.5 rounded-full bg-danger" />
               <span>
-                {entries.length} {entries.length === 1 ? "entry" : "entries"} across
-                your recorded outflow
+                {entries.length} {entries.length === 1 ? "entry" : "entries"} dated
+                inside {selectedMonthLabel}
               </span>
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
             <ExpensesSummaryCard
-              eyebrow="This month"
-              value={rwfCompact(monthlySpend)}
+              eyebrow="Selected month"
+              value={rwfCompact(totalSpent)}
               detail={
                 mostRecentEntry
                   ? `Most recent on ${formatExpenseDate(mostRecentEntry.date)}`
-                  : "No expenses recorded yet"
+                  : `No expenses dated in ${selectedMonthLabel} ${selectedYear}`
               }
             />
             <ExpensesSummaryCard
@@ -278,13 +322,28 @@ export default function ExpensesPage() {
                 Expense ledger
               </p>
               <h2 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
-                Every outgoing entry in one calm view
+                {selectedMonthLabel} {selectedYear} expenses
               </h2>
             </div>
             <p className="text-sm text-text-secondary">
-              {entries.length} {entries.length === 1 ? "expense" : "expenses"}
+              {filteredEntries.length}
+              {hasActiveLedgerFilters ? ` of ${entries.length}` : ""}{" "}
+              {filteredEntries.length === 1 ? "expense" : "expenses"}
             </p>
           </div>
+
+          <ExpensesLedgerFilters
+            category={selectedCategory}
+            categoryOptions={ledgerCategoryOptions}
+            hasActiveFilters={hasActiveLedgerFilters}
+            month={selectedMonth}
+            onCategoryChange={setSelectedCategory}
+            onClear={() => {
+              setSelectedMonth(defaultMonth);
+              setSelectedCategory("ALL");
+            }}
+            onMonthChange={setSelectedMonth}
+          />
 
           {loading ? (
             <ExpensesTableSkeleton />
@@ -310,11 +369,25 @@ export default function ExpensesPage() {
                 }}
               />
             </div>
+          ) : filteredEntries.length === 0 ? (
+            <div className="px-5 pb-5 md:px-6 md:pb-6">
+              <EmptyState
+                title="No ledger matches"
+                description="Try another month or category to reveal more expense rows."
+                action={{
+                  label: "Clear filters",
+                  onClick: () => {
+                    setSelectedMonth(defaultMonth);
+                    setSelectedCategory("ALL");
+                  },
+                }}
+              />
+            </div>
           ) : (
             <ExpensesTable
               categories={categories}
               canEdit={canManageCategories}
-              entries={entries}
+              entries={filteredEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
             />
