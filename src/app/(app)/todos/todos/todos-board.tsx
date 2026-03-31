@@ -1,31 +1,41 @@
-import type { TodoPriority, TodoResponse } from "@/lib/types/todo.types";
+import type { TodoResponse } from "@/lib/types/todo.types";
 import { TodoPriorityLane } from "./todo-priority-lane";
 
 interface TodosBoardProps {
-  groupedEntries: Record<TodoPriority, TodoResponse[]>;
+  entries: TodoResponse[];
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
   onOpenGallery: (todoId: string, index: number) => void;
 }
 
 export function TodosBoard({
-  groupedEntries,
+  entries,
   onDelete,
   onEdit,
   onOpenGallery,
 }: TodosBoardProps) {
   return (
-    <div className="grid gap-4 xl:grid-cols-3">
-      {(Object.keys(groupedEntries) as TodoPriority[]).map((priority) => (
-        <TodoPriorityLane
-          key={priority}
-          priority={priority}
-          entries={groupedEntries[priority]}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          onOpenGallery={onOpenGallery}
-        />
-      ))}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 rounded-[22px] border border-white/8 bg-background-secondary/60 px-4 py-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/60">
+            Newest first
+          </p>
+          <p className="mt-1 text-sm text-text-secondary">
+            Ordered by the date each wishlist item was created
+          </p>
+        </div>
+        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+          {entries.length} items
+        </span>
+      </div>
+
+      <TodoPriorityLane
+        entries={entries}
+        onDelete={onDelete}
+        onEdit={onEdit}
+        onOpenGallery={onOpenGallery}
+      />
     </div>
   );
 }
