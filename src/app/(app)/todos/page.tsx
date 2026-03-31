@@ -42,6 +42,7 @@ export default function TodosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [doneBusyId, setDoneBusyId] = useState<string | null>(null);
   const [imageBusyKey, setImageBusyKey] = useState<string | null>(null);
   const [formDialog, setFormDialog] = useState<TodoFormDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<TodoResponse | null>(null);
@@ -185,6 +186,7 @@ export default function TodosPage() {
       name: form.name.trim(),
       price,
       priority: form.priority,
+      done: form.done,
     };
 
     if (formDialog.mode === "create" && pendingImages.length === 0) {
@@ -254,6 +256,40 @@ export default function TodosPage() {
           ? deleteError.message
           : "Wishlist item could not be deleted right now.",
       );
+    }
+  }
+
+  async function handleToggleDone(entry: TodoResponse) {
+    if (!token) return;
+
+    const nextDone = !entry.done;
+    setDoneBusyId(entry.id);
+
+    try {
+      const updated = await updateTodo(token, entry.id, {
+        done: nextDone,
+      });
+
+      setEntries((current) =>
+        sortTodos(
+          current.map((currentEntry) =>
+            currentEntry.id === updated.id ? updated : currentEntry,
+          ),
+        ),
+      );
+      toast.success(
+        nextDone
+          ? "Wishlist item marked as done."
+          : "Wishlist item marked as not done.",
+      );
+    } catch (updateError) {
+      toast.error(
+        updateError instanceof ApiError
+          ? updateError.message
+          : "Wishlist item status could not be updated right now.",
+      );
+    } finally {
+      setDoneBusyId(null);
     }
   }
 
@@ -387,10 +423,12 @@ export default function TodosPage() {
               />
             ) : (
               <TodosBoard
+                busyDoneId={doneBusyId}
                 entries={entries}
                 onDelete={setDeleteTarget}
                 onEdit={openEditDialog}
                 onOpenGallery={openGallery}
+                onToggleDone={handleToggleDone}
               />
             )}
           </div>
