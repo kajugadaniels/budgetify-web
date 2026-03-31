@@ -23,6 +23,7 @@ interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
   login: (auth: AuthResponse) => void;
+  updateUser: (user: UserProfileResponse) => void;
   logout: () => Promise<void>;
 }
 
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem(ACCESS_KEY);
   });
 
-  const [user, setUser] = useState<UserProfileResponse | null>(() => {
+  const [user, setUserState] = useState<UserProfileResponse | null>(() => {
     if (typeof window === "undefined") return null;
     const storedUser = localStorage.getItem(USER_KEY);
     if (!storedUser) return null;
@@ -50,13 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
+  const updateUser = useCallback((nextUser: UserProfileResponse) => {
+    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    setUserState(nextUser);
+  }, []);
+
   const login = useCallback((auth: AuthResponse) => {
     localStorage.setItem(ACCESS_KEY, auth.accessToken);
     localStorage.setItem(REFRESH_KEY, auth.refreshToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(auth.user));
     setToken(auth.accessToken);
-    setUser(auth.user);
-  }, []);
+    updateUser(auth.user);
+  }, [updateUser]);
 
   const logout = useCallback(async () => {
     const refreshToken = localStorage.getItem(REFRESH_KEY);
@@ -71,12 +76,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(USER_KEY);
     setToken(null);
-    setUser(null);
+    setUserState(null);
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isAuthenticated: !!token, login, logout }}
+      value={{
+        user,
+        token,
+        isAuthenticated: !!token,
+        login,
+        updateUser,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>
