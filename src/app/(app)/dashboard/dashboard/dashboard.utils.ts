@@ -1,4 +1,4 @@
-import { MONTH_OPTIONS } from "@/constant/dashboard/months";
+import { MONTH_OPTIONS } from "@/constant/months";
 import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
 
