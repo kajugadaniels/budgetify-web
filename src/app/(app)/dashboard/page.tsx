@@ -167,13 +167,6 @@ export default function DashboardPage() {
           onSelect={setSelectedMonth}
         />
 
-        <DashboardBarChart
-          key={`${selectedMonth}-${CURRENT_YEAR}`}
-          data={dailyChartData}
-          monthLabel={formatDashboardMonthLabel(selectedMonth)}
-          year={CURRENT_YEAR}
-        />
-
         <section className="grid gap-4 xl:grid-cols-3">
           <DashboardSummaryCard
             label="Total income"
@@ -194,6 +187,13 @@ export default function DashboardPage() {
             description="Income minus expense for the selected month"
           />
         </section>
+
+        <DashboardBarChart
+          key={`${selectedMonth}-${CURRENT_YEAR}`}
+          data={dailyChartData}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
       </div>
     </div>
   );
