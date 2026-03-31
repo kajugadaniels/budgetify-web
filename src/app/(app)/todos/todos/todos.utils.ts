@@ -1,9 +1,9 @@
-import type { TodoResponse } from "@/lib/types/todo.types";
-import type { TodoFormValues } from "./todos-page.types";
 import {
   ALLOWED_TODO_IMAGE_MIME_TYPES,
   MAX_TODO_IMAGE_SIZE_BYTES,
-} from "./todos.constants";
+} from "@/constant/todos/upload";
+import type { TodoResponse } from "@/lib/types/todo.types";
+import type { TodoFormValues } from "./todos-page.types";
 
 export function createEmptyTodoForm(): TodoFormValues {
   return {
