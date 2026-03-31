@@ -146,8 +146,15 @@ export function TodoFormDialog({
               </Field>
 
               <Field label="Selected priority">
-                <div className="flex h-full items-center rounded-2xl border border-white/8 bg-surface-elevated px-4 py-3 text-sm font-medium text-text-primary">
-                  {PRIORITY_META[form.priority].label}
+                <div className="flex h-full items-center rounded-2xl border border-white/8 bg-surface-elevated px-4 py-3">
+                  <span
+                    className={cn(
+                      "inline-flex rounded-full px-2.5 py-1 text-sm font-medium",
+                      PRIORITY_META[form.priority].chipClass,
+                    )}
+                  >
+                    {PRIORITY_META[form.priority].label}
+                  </span>
                 </div>
               </Field>
 
@@ -167,7 +174,7 @@ export function TodoFormDialog({
                         className={cn(
                           "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
                           selected
-                            ? "border-primary bg-primary text-background"
+                            ? meta.selectedClass
                             : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
                         )}
                       >
@@ -204,7 +211,7 @@ export function TodoFormDialog({
                           selected
                             ? option.value
                               ? "border-success bg-success text-background"
-                              : "border-primary bg-primary text-background"
+                              : "border-danger bg-danger text-background"
                             : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
                         )}
                       >
