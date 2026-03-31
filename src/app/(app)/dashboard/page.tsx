@@ -11,12 +11,12 @@ import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
 import { rwfCompact } from "@/lib/utils/currency";
 import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
+import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
 import { DashboardMonthSwitcher } from "./dashboard/dashboard-month-switcher";
 import { DashboardSummaryCard } from "./dashboard/dashboard-summary-card";
 import {
   buildMonthlyBarChartData,
   CURRENT_YEAR,
-  filterEntriesByMonth,
   formatDashboardMonthLabel,
   sumExpenseAmounts,
   sumIncomeAmounts,
@@ -45,8 +45,14 @@ export default function DashboardPage() {
 
       try {
         const [incomeResponse, expenseResponse] = await Promise.all([
-          listIncome(sessionToken),
-          listExpenses(sessionToken),
+          listIncome(sessionToken, {
+            month: selectedMonth + 1,
+            year: CURRENT_YEAR,
+          }),
+          listExpenses(sessionToken, {
+            month: selectedMonth + 1,
+            year: CURRENT_YEAR,
+          }),
         ]);
 
         if (!ignore) {
@@ -73,29 +79,15 @@ export default function DashboardPage() {
     return () => {
       ignore = true;
     };
-  }, [token]);
+  }, [selectedMonth, token]);
 
-  const monthIncome = useMemo(
-    () => filterEntriesByMonth(income, selectedMonth, CURRENT_YEAR),
-    [income, selectedMonth],
-  );
-  const monthExpenses = useMemo(
-    () => filterEntriesByMonth(expenses, selectedMonth, CURRENT_YEAR),
-    [expenses, selectedMonth],
-  );
   const dailyChartData = useMemo(
-    () =>
-      buildMonthlyBarChartData(
-        monthIncome,
-        monthExpenses,
-        selectedMonth,
-        CURRENT_YEAR,
-      ),
-    [monthExpenses, monthIncome, selectedMonth],
+    () => buildMonthlyBarChartData(income, expenses, selectedMonth, CURRENT_YEAR),
+    [expenses, income, selectedMonth],
   );
 
-  const totalIncome = sumIncomeAmounts(monthIncome);
-  const totalExpenses = sumExpenseAmounts(monthExpenses);
+  const totalIncome = sumIncomeAmounts(income);
+  const totalExpenses = sumExpenseAmounts(expenses);
   const totalSaving = totalIncome - totalExpenses;
 
   if (loading) {
@@ -172,7 +164,7 @@ export default function DashboardPage() {
             label="Total income"
             tone="income"
             value={rwfCompact(totalIncome)}
-            description={`Recorded for ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
+            description={`Received in ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
           />
           <DashboardSummaryCard
             label="Total expense"
@@ -184,7 +176,7 @@ export default function DashboardPage() {
             label="Total saving"
             tone={totalSaving >= 0 ? "saving" : "expense"}
             value={rwfCompact(totalSaving)}
-            description="Income minus expense for the selected month"
+            description="Received income minus expense for the selected month"
           />
         </section>
 
@@ -194,6 +186,8 @@ export default function DashboardPage() {
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
           year={CURRENT_YEAR}
         />
+
+        <DashboardLoansChart token={token} />
       </div>
     </div>
   );
