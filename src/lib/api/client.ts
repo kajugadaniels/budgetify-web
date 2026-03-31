@@ -21,6 +21,10 @@ interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
 }
 
+function isFormData(value: unknown): value is FormData {
+  return typeof FormData !== "undefined" && value instanceof FormData;
+}
+
 /**
  * Thin wrapper around `fetch` that:
  * - Prepends the API base URL
@@ -36,9 +40,12 @@ export async function apiFetch<T>(
   const { token, body, headers: extraHeaders, ...rest } = options;
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(extraHeaders as Record<string, string>),
   };
+
+  if (body !== undefined && !isFormData(body) && headers["Content-Type"] === undefined) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -47,7 +54,12 @@ export async function apiFetch<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body:
+      body === undefined
+        ? undefined
+        : isFormData(body)
+          ? body
+          : JSON.stringify(body),
   });
 
   if (response.status === 204) {
