@@ -17,6 +17,7 @@ export interface IncomeResponse {
   amount: number;
   category: IncomeCategory;
   date: string;
+  received: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +27,7 @@ export interface CreateIncomeRequest {
   amount: number;
   category: IncomeCategory;
   date: string;
+  received: boolean;
 }
 
 export interface UpdateIncomeRequest {
@@ -33,4 +35,5 @@ export interface UpdateIncomeRequest {
   amount?: number;
   category?: IncomeCategory;
   date?: string;
+  received?: boolean;
 }
