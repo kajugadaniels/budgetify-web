@@ -41,34 +41,28 @@ export function LoginPageClient({ googleClientId }: LoginPageClientProps) {
 
   return (
     <div className="w-full max-w-md">
-      <div className="mb-8 text-center">
-        <div className="glass-panel mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl">
-          <span className="text-2xl font-bold tracking-tight text-primary">B</span>
+      <div className="mb-7 text-center">
+        <div className="glass-panel mb-4 inline-flex h-14 w-14 items-center justify-center rounded-[20px]">
+          <span className="text-2xl font-bold tracking-tight text-primary">
+            B
+          </span>
         </div>
         <h1 className="text-2xl font-semibold tracking-heading-md text-text-primary">
           Budgetify
         </h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Your finances, simplified
+        <p className="mt-2 text-sm text-text-secondary">
+          Choose the sign-in option that fits you best
         </p>
       </div>
 
-      <div className="glass-panel rounded-3xl p-8">
-        <h2 className="mb-1 text-xl font-semibold tracking-heading-sm text-text-primary">
-          Sign in
-        </h2>
-        <p className="mb-6 text-sm text-text-secondary">
-          Continue with Google or request a one-time email code
-        </p>
-
+      <div className="glass-panel rounded-[30px] p-7 md:p-8">
         <div className="mb-6">
-          <GoogleSignInButton clientId={googleClientId} />
-        </div>
-
-        <div className="my-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs text-text-secondary/60">or</span>
-          <div className="h-px flex-1 bg-border" />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/60">
+            Secure access
+          </p>
+          <h2 className="mt-2 text-xl font-semibold tracking-heading-sm text-text-primary">
+            Sign in
+          </h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -99,6 +93,16 @@ export function LoginPageClient({ googleClientId }: LoginPageClientProps) {
             {loading ? "Sending code…" : "Continue with email"}
           </button>
         </form>
+
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-text-secondary/55">
+            Another option
+          </span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <GoogleSignInButton clientId={googleClientId} />
 
         <p className="mt-6 text-center text-xs leading-relaxed text-text-secondary/40">
           By continuing, you agree to our Terms of Service
