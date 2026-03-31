@@ -72,22 +72,6 @@ export function BottomNav() {
           </div>
 
           <div className="hidden items-center gap-3 lg:flex">
-            <div className="min-w-[220px] rounded-[26px] border border-white/8 bg-white/[0.035] px-4 py-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border border-primary/28 bg-primary/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                  <span className="text-base font-semibold text-primary">B</span>
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold tracking-heading-sm text-text-primary">
-                    Budgetify
-                  </p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.22em] text-text-secondary/68">
-                    Calm monthly control
-                  </p>
-                </div>
-              </div>
-            </div>
 
             <div className="min-w-[240px] rounded-[26px] border border-white/8 bg-white/[0.035] px-3 py-2.5">
               <div className="flex items-center gap-3">
