@@ -1,10 +1,13 @@
 import { apiFetch } from "../client";
+import { collectPaginatedItems } from "../pagination";
 import { TODOS_ROUTES } from "./todos.routes";
 import type {
   CreateTodoRequest,
+  ListTodosParams,
   TodoResponse,
   UpdateTodoRequest,
 } from "../../types/todo.types";
+import type { PaginatedResponse } from "../../types/pagination.types";
 
 function buildTodoMultipartBody(
   body: CreateTodoRequest | UpdateTodoRequest,
@@ -39,8 +42,22 @@ function buildTodoMultipartBody(
   return formData;
 }
 
-export async function listTodos(token: string): Promise<TodoResponse[]> {
-  return apiFetch<TodoResponse[]>(TODOS_ROUTES.list, { token });
+export async function listTodosPage(
+  token: string,
+  params?: ListTodosParams,
+): Promise<PaginatedResponse<TodoResponse>> {
+  return apiFetch<PaginatedResponse<TodoResponse>>(TODOS_ROUTES.list(params), {
+    token,
+  });
+}
+
+export async function listTodos(
+  token: string,
+  params?: Omit<ListTodosParams, "page" | "limit">,
+): Promise<TodoResponse[]> {
+  return collectPaginatedItems((pagination) =>
+    listTodosPage(token, { ...params, ...pagination }),
+  );
 }
 
 export async function createTodo(
