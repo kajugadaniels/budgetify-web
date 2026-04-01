@@ -259,6 +259,18 @@ body {
   .animate-dashboard-fade {
     animation: dashboard-fade 720ms var(--ease-out-expo) both;
   }
+
+  .animate-income-sweep {
+    animation: income-sweep 8s linear infinite;
+  }
+
+  .animate-income-drift {
+    animation: income-drift 6s ease-in-out infinite;
+  }
+
+  .animate-income-glow {
+    animation: income-glow 2.6s ease-in-out infinite;
+  }
 }
 
 @keyframes dashboard-rise {
@@ -282,5 +294,39 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes income-sweep {
+  from {
+    transform: translateX(-130%) skewX(-18deg);
+  }
+
+  to {
+    transform: translateX(240%) skewX(-18deg);
+  }
+}
+
+@keyframes income-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-10px, 10px, 0) scale(1.06);
+  }
+}
+
+@keyframes income-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.88);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
