@@ -224,77 +224,104 @@ export function TodoFormDialog({
             </div>
           ) : (
             <div className="space-y-4">
-
-              <TodoImageDropzone
-                files={pendingImages}
-                mode={mode}
-                onAddFiles={onAddPendingImages}
-                onRemoveFile={onRemovePendingImage}
-              />
-
-              {mode === "edit" ? (
-                <section className="rounded-[22px] border border-white/8 bg-surface-elevated/55 p-3.5 sm:p-4">
-                  <div className="mb-3 flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
-                        Saved images
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-text-secondary">
-                        Review the synced images, set a cover, or remove extras.
-                      </p>
-                    </div>
-
-                    <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
-                      {savedImagesCount}
-                    </span>
+              <section className="rounded-[22px] border border-white/8 bg-surface-elevated/55 p-3.5 sm:p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+                      Image workspace
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-text-secondary">
+                      Keep uploads and saved visuals in one compact area.
+                    </p>
                   </div>
 
-                  <TodoImageCarousel
-                    images={images}
-                    currentIndex={resolvedImageIndex}
-                    emptyDescription="This item has no synced images yet."
-                    emptyTitle="No synced images"
-                    heightClass="h-52"
-                    onImageClick={onOpenGallery}
-                    onIndexChange={setActiveImageIndex}
-                  />
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                      Pending {pendingImages.length}
+                    </span>
+                    {mode === "edit" ? (
+                      <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                        Saved {savedImagesCount}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
 
-                  {selectedImage ? (
-                    <div className="mt-3 flex flex-col gap-3 rounded-[18px] border border-white/8 bg-background/40 p-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-text-primary">
-                          {selectedImage.isPrimary
-                            ? "Current cover image"
-                            : "Selected image"}
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-text-secondary">
-                          {selectedImage.format.toUpperCase()} asset ready for image
-                          actions.
-                        </p>
+                <div className={cn("grid gap-3", mode === "edit" && "lg:grid-cols-2")}>
+                  <div className="flex min-h-[260px] flex-col rounded-[18px] border border-white/8 bg-background/34 p-3">
+                    <TodoImageDropzone
+                      embedded
+                      files={pendingImages}
+                      mode={mode}
+                      onAddFiles={onAddPendingImages}
+                      onRemoveFile={onRemovePendingImage}
+                    />
+                  </div>
+
+                  {mode === "edit" ? (
+                    <div className="flex min-h-[260px] flex-col rounded-[18px] border border-white/8 bg-background/34 p-3">
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+                            Saved images
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-text-secondary">
+                            Cover and cleanup controls stay here.
+                          </p>
+                        </div>
+
+                        <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                          {savedImagesCount}
+                        </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onSetCover(selectedImage.id)}
-                          disabled={imageBusyKey !== null || selectedImage.isPrimary}
-                          className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
-                        >
-                          Set cover
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteImage(selectedImage.id)}
-                          disabled={imageBusyKey !== null}
-                          className="rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/18 disabled:cursor-not-allowed disabled:opacity-45"
-                        >
-                          Remove
-                        </button>
-                      </div>
+                      <TodoImageCarousel
+                        images={images}
+                        currentIndex={resolvedImageIndex}
+                        emptyDescription="This item has no synced images yet."
+                        emptyTitle="No synced images"
+                        heightClass="h-[136px]"
+                        onImageClick={onOpenGallery}
+                        onIndexChange={setActiveImageIndex}
+                      />
+
+                      {selectedImage ? (
+                        <div className="mt-3 flex flex-col gap-2 rounded-[16px] border border-white/8 bg-background/40 p-2.5 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-text-primary">
+                              {selectedImage.isPrimary
+                                ? "Current cover image"
+                                : "Selected image"}
+                            </p>
+                            <p className="mt-1 text-[11px] leading-5 text-text-secondary">
+                              {selectedImage.format.toUpperCase()} asset ready for actions.
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => onSetCover(selectedImage.id)}
+                              disabled={imageBusyKey !== null || selectedImage.isPrimary}
+                              className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
+                            >
+                              Set cover
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDeleteImage(selectedImage.id)}
+                              disabled={imageBusyKey !== null}
+                              className="rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/18 disabled:cursor-not-allowed disabled:opacity-45"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
-                </section>
-              ) : null}
+                </div>
+              </section>
             </div>
           )}
 
