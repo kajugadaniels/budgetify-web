@@ -7,7 +7,17 @@ export interface SavingFormValues {
   note: string;
 }
 
+export interface SavingExpenseFormValues {
+  amountRwf: string;
+  date: string;
+  note: string;
+}
+
 export type SavingFormDialogState =
   | { mode: "create" }
   | { mode: "edit"; entry: SavingResponse }
+  | null;
+
+export type SavingExpenseDialogState =
+  | { entry: SavingResponse }
   | null;
