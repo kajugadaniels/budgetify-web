@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/use-auth";
@@ -47,6 +48,7 @@ import {
 export default function ExpensesPage() {
   const { token } = useAuth();
   const toast = useToast();
+  const searchParams = useSearchParams();
 
   const [entries, setEntries] = useState<ExpenseResponse[]>([]);
   const [categories, setCategories] = useState<ExpenseCategoryOptionResponse[]>(
@@ -61,11 +63,20 @@ export default function ExpensesPage() {
   const [form, setForm] = useState<ExpenseFormValues>(() =>
     createEmptyExpenseForm(),
   );
-  const defaultMonth = getCurrentMonthIndex();
+  const defaultMonth = resolveExpenseMonthSearchParam(searchParams.get("month"));
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedCategory, setSelectedCategory] =
-    useState<ExpenseLedgerCategoryFilter>("ALL");
+    useState<ExpenseLedgerCategoryFilter>(() =>
+      resolveExpenseCategorySearchParam(searchParams.get("category")),
+    );
   const selectedYear = getCurrentYear();
+
+  useEffect(() => {
+    setSelectedMonth(resolveExpenseMonthSearchParam(searchParams.get("month")));
+    setSelectedCategory(
+      resolveExpenseCategorySearchParam(searchParams.get("category")),
+    );
+  }, [searchParams]);
 
   useEffect(() => {
     if (!token) return;
@@ -416,4 +427,48 @@ export default function ExpensesPage() {
       ) : null}
     </div>
   );
+}
+
+const VALID_EXPENSE_CATEGORIES = new Set<string>([
+  "FOOD_DINING",
+  "TRANSPORT",
+  "HOUSING",
+  "LOAN",
+  "UTILITIES",
+  "HEALTHCARE",
+  "EDUCATION",
+  "ENTERTAINMENT",
+  "SHOPPING",
+  "PERSONAL_CARE",
+  "TRAVEL",
+  "SAVINGS",
+  "OTHER",
+]);
+
+function resolveExpenseMonthSearchParam(value: string | null): number {
+  const fallback = getCurrentMonthIndex();
+
+  if (!value) {
+    return fallback;
+  }
+
+  const month = Number(value);
+
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return fallback;
+  }
+
+  return month - 1;
+}
+
+function resolveExpenseCategorySearchParam(
+  value: string | null,
+): ExpenseLedgerCategoryFilter {
+  if (!value || value === "ALL") {
+    return "ALL";
+  }
+
+  return VALID_EXPENSE_CATEGORIES.has(value)
+    ? (value as ExpenseLedgerCategoryFilter)
+    : "ALL";
 }
