@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
@@ -11,8 +12,10 @@ import {
   createSaving,
   deleteSaving,
   listSavings,
+  listSavingsPage,
   updateSaving,
 } from "@/lib/api/savings/savings.api";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
 import type {
   CreateSavingRequest,
   SavingResponse,
@@ -49,11 +52,16 @@ export default function SavingPage() {
   const defaultYear = getCurrentYear();
 
   const [entries, setEntries] = useState<SavingResponse[]>([]);
+  const [pageEntries, setPageEntries] = useState<SavingResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [recordingExpense, setRecordingExpense] = useState(false);
   const [stillHaveBusyId, setStillHaveBusyId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [formDialog, setFormDialog] = useState<SavingFormDialogState>(null);
@@ -77,13 +85,30 @@ export default function SavingPage() {
       setError(null);
 
       try {
-        const response = await listSavings(sessionToken, {
-          month: selectedMonth + 1,
-          year: selectedYear,
-        });
+        const [summaryResponse, pageResponse] = await Promise.all([
+          listSavings(sessionToken, {
+            month: selectedMonth + 1,
+            year: selectedYear,
+          }),
+          listSavingsPage(sessionToken, {
+            month: selectedMonth + 1,
+            year: selectedYear,
+            page: currentPage,
+            limit: DEFAULT_PAGE_SIZE,
+          }),
+        ]);
 
         if (!ignore) {
-          setEntries(sortSavingEntries(response));
+          setEntries(sortSavingEntries(summaryResponse));
+
+          if (pageResponse.meta.totalPages < currentPage) {
+            setCurrentPage(pageResponse.meta.totalPages);
+            return;
+          }
+
+          setPageEntries(sortSavingEntries(pageResponse.items));
+          setTotalItems(pageResponse.meta.totalItems);
+          setTotalPages(pageResponse.meta.totalPages);
         }
       } catch (loadError) {
         if (!ignore) {
@@ -105,7 +130,7 @@ export default function SavingPage() {
     return () => {
       ignore = true;
     };
-  }, [selectedMonth, selectedYear, token]);
+  }, [currentPage, refreshKey, selectedMonth, selectedYear, token]);
 
   const selectedMonthLabel = resolveSavingMonthLabel(selectedMonth);
   const hasActiveFilters =
@@ -120,6 +145,10 @@ export default function SavingPage() {
     (left, right) => Number(right.amount) - Number(left.amount),
   )[0];
   const latestEntry = entries[0];
+
+  function triggerRefresh() {
+    setRefreshKey((current) => current + 1);
+  }
 
   function openCreateDialog() {
     setForm(createEmptySavingForm(selectedMonth, selectedYear));
@@ -154,17 +183,6 @@ export default function SavingPage() {
     setExpenseForm((current) => ({ ...current, ...next }));
   }
 
-  async function refreshSavings() {
-    if (!token) return;
-
-    const refreshed = await listSavings(token, {
-      month: selectedMonth + 1,
-      year: selectedYear,
-    });
-
-    setEntries(sortSavingEntries(refreshed));
-  }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -189,12 +207,18 @@ export default function SavingPage() {
       if (formDialog.mode === "edit") {
         await updateSaving(token, formDialog.entry.id, payload);
         toast.success("Saving entry updated.");
+        triggerRefresh();
       } else {
         await createSaving(token, payload);
         toast.success("Saving entry added.");
+
+        if (currentPage !== 1) {
+          setCurrentPage(1);
+        } else {
+          triggerRefresh();
+        }
       }
 
-      await refreshSavings();
       closeFormDialog();
     } catch (saveError) {
       toast.error(
@@ -212,7 +236,13 @@ export default function SavingPage() {
 
     try {
       await deleteSaving(token, deleteTarget.id);
-      await refreshSavings();
+
+      if (pageEntries.length === 1 && currentPage > 1) {
+        setCurrentPage((page) => page - 1);
+      } else {
+        triggerRefresh();
+      }
+
       toast.success("Saving entry deleted.");
 
       if (
@@ -240,7 +270,7 @@ export default function SavingPage() {
 
     try {
       await updateSaving(token, entry.id, { stillHave: nextStillHave });
-      await refreshSavings();
+      triggerRefresh();
       toast.success(
         nextStillHave
           ? "Saving marked as still available."
@@ -282,6 +312,7 @@ export default function SavingPage() {
         ...(expenseForm.note.trim() ? { note: expenseForm.note.trim() } : {}),
       });
 
+      triggerRefresh();
       closeExpenseDialog();
       toast.success("Expense recorded from saving.");
     } catch (recordError) {
@@ -356,7 +387,7 @@ export default function SavingPage() {
               </h2>
             </div>
             <p className="text-sm text-text-secondary">
-              {entries.length} {entries.length === 1 ? "entry" : "entries"}
+              {totalItems} {totalItems === 1 ? "entry" : "entries"}
               {latestEntry
                 ? ` · latest ${new Date(latestEntry.date).toLocaleDateString("en-US", {
                     month: "short",
@@ -374,9 +405,16 @@ export default function SavingPage() {
             onClear={() => {
               setSelectedMonth(defaultMonth);
               setSelectedYear(defaultYear);
+              setCurrentPage(1);
             }}
-            onMonthChange={setSelectedMonth}
-            onYearChange={setSelectedYear}
+            onMonthChange={(value) => {
+              setSelectedMonth(value);
+              setCurrentPage(1);
+            }}
+            onYearChange={(value) => {
+              setSelectedYear(value);
+              setCurrentPage(1);
+            }}
           />
 
           {loading ? (
@@ -406,13 +444,22 @@ export default function SavingPage() {
           ) : (
             <SavingTable
               busyStillHaveId={stillHaveBusyId}
-              entries={entries}
+              entries={pageEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
               onRecordExpense={openExpenseDialog}
               onToggleStillHave={handleToggleStillHave}
             />
           )}
+
+          <PaginationControls
+            currentPage={currentPage}
+            pageSize={DEFAULT_PAGE_SIZE}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            itemLabel="saving"
+            onPageChange={setCurrentPage}
+          />
         </section>
       </div>
 
