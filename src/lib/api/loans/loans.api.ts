@@ -1,18 +1,32 @@
 import { apiFetch } from "../client";
+import { collectPaginatedItems } from "../pagination";
 import type {
   CreateLoanRequest,
+  ListLoansParams,
   LoanSettlementResponse,
   LoanResponse,
   SendLoanToExpenseRequest,
   UpdateLoanRequest,
 } from "../../types/loan.types";
+import type { PaginatedResponse } from "../../types/pagination.types";
 import { LOANS_ROUTES } from "./loans.routes";
+
+export async function listLoansPage(
+  token: string,
+  params?: ListLoansParams,
+): Promise<PaginatedResponse<LoanResponse>> {
+  return apiFetch<PaginatedResponse<LoanResponse>>(LOANS_ROUTES.list(params), {
+    token,
+  });
+}
 
 export async function listLoans(
   token: string,
-  params?: { month?: number; year?: number },
+  params?: Omit<ListLoansParams, "page" | "limit">,
 ): Promise<LoanResponse[]> {
-  return apiFetch<LoanResponse[]>(LOANS_ROUTES.list(params), { token });
+  return collectPaginatedItems((pagination) =>
+    listLoansPage(token, { ...params, ...pagination }),
+  );
 }
 
 export async function createLoan(
