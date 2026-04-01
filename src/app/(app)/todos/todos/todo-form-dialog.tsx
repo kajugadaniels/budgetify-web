@@ -53,7 +53,6 @@ export function TodoFormDialog({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [step, setStep] = useState<0 | 1>(0);
   const images = editingEntry?.images ?? [];
-  const priorityMeta = PRIORITY_META[form.priority];
   const resolvedImageIndex =
     images.length > 0 ? Math.min(activeImageIndex, images.length - 1) : 0;
   const selectedImage = images[resolvedImageIndex];
@@ -62,14 +61,6 @@ export function TodoFormDialog({
     form.price.trim().length > 0 &&
     Number(form.price) > 0;
   const savedImagesCount = images.length;
-  const totalImagesCount = savedImagesCount + pendingImages.length;
-
-  const stepDescription =
-    step === 0
-      ? "Set the name, amount, priority, and progress."
-      : mode === "create"
-        ? "Add images if you want them now, or skip and create the item cleanly."
-        : "Upload more images and manage the ones already synced.";
 
   return (
     <Dialog onClose={onClose} className="sm:max-w-2xl p-4 sm:p-5">
@@ -316,15 +307,6 @@ export function TodoFormDialog({
               >
                 Cancel
               </button>
-              {step === 1 ? (
-                <button
-                  type="button"
-                  onClick={() => setStep(0)}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/10 px-4 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:min-w-[120px]"
-                >
-                  Back
-                </button>
-              ) : null}
             </div>
 
             {step === 0 ? (
@@ -400,32 +382,6 @@ function StepButton({
         {title}
       </p>
     </button>
-  );
-}
-
-function MiniStat({
-  helperText,
-  label,
-  value,
-}: {
-  helperText?: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-[18px] border border-white/8 bg-surface-elevated/70 px-3.5 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
-        {label}
-      </p>
-      <p className="mt-2 line-clamp-2 text-sm font-semibold text-text-primary">
-        {value}
-      </p>
-      {helperText ? (
-        <p className="mt-1 text-[11px] leading-5 text-text-secondary">
-          {helperText}
-        </p>
-      ) : null}
-    </div>
   );
 }
 
