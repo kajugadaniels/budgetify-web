@@ -40,3 +40,10 @@ export interface UpdateTodoRequest {
   done?: boolean;
   primaryImageId?: string;
 }
+
+export interface ListTodosParams {
+  priority?: TodoPriority;
+  done?: boolean;
+  page?: number;
+  limit?: number;
+}
