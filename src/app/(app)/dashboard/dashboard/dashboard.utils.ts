@@ -3,6 +3,7 @@ import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
 import type { LoanResponse } from "@/lib/types/loan.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
+import type { TodoResponse } from "@/lib/types/todo.types";
 
 export const CURRENT_YEAR = new Date().getFullYear();
 
@@ -115,6 +116,19 @@ export function sumSavingAmounts(
     }
 
     return sum + Number(entry.amount);
+  }, 0);
+}
+
+export function sumTodoAmounts(
+  entries: TodoResponse[],
+  options?: { pendingOnly?: boolean },
+): number {
+  return entries.reduce((sum, entry) => {
+    if (options?.pendingOnly && entry.done) {
+      return sum;
+    }
+
+    return sum + Number(entry.price);
   }, 0);
 }
 
