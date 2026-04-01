@@ -1,11 +1,14 @@
 import { apiFetch } from "../client";
+import { collectPaginatedItems } from "../pagination";
 import { EXPENSES_ROUTES } from "./expenses.routes";
 import type {
   CreateExpenseRequest,
   ExpenseCategoryOptionResponse,
+  ListExpensesParams,
   ExpenseResponse,
   UpdateExpenseRequest,
 } from "../../types/expense.types";
+import type { PaginatedResponse } from "../../types/pagination.types";
 
 export async function listExpenseCategories(
   token: string,
@@ -15,11 +18,22 @@ export async function listExpenseCategories(
   });
 }
 
+export async function listExpensesPage(
+  token: string,
+  params?: ListExpensesParams,
+): Promise<PaginatedResponse<ExpenseResponse>> {
+  return apiFetch<PaginatedResponse<ExpenseResponse>>(EXPENSES_ROUTES.list(params), {
+    token,
+  });
+}
+
 export async function listExpenses(
   token: string,
-  params?: { month?: number; year?: number },
+  params?: Omit<ListExpensesParams, "page" | "limit">,
 ): Promise<ExpenseResponse[]> {
-  return apiFetch<ExpenseResponse[]>(EXPENSES_ROUTES.list(params), { token });
+  return collectPaginatedItems((pagination) =>
+    listExpensesPage(token, { ...params, ...pagination }),
+  );
 }
 
 export async function createExpense(
