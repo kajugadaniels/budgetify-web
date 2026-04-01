@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
@@ -10,9 +11,11 @@ import {
   createIncome,
   deleteIncome,
   listIncome,
+  listIncomePage,
   listIncomeCategories,
   updateIncome,
 } from "@/lib/api/income/income.api";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
 import type {
   CreateIncomeRequest,
   IncomeCategoryOptionResponse,
@@ -36,7 +39,6 @@ import {
   createEmptyIncomeForm,
   createIncomeFormFromCategories,
   createIncomeFormFromEntry,
-  filterIncomeEntries,
   formatIncomeDate,
   getCurrentMonthIndex,
   getCurrentYear,
@@ -51,12 +53,17 @@ export default function IncomePage() {
   const defaultMonth = getCurrentMonthIndex();
 
   const [entries, setEntries] = useState<IncomeResponse[]>([]);
+  const [pageEntries, setPageEntries] = useState<IncomeResponse[]>([]);
   const [categories, setCategories] = useState<IncomeCategoryOptionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [receivedBusyId, setReceivedBusyId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [formDialog, setFormDialog] = useState<IncomeFormDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<IncomeResponse | null>(null);
   const [form, setForm] = useState<IncomeFormValues>(() => createEmptyIncomeForm());
@@ -111,13 +118,36 @@ export default function IncomePage() {
       setError(null);
 
       try {
-        const response = await listIncome(sessionToken, {
-          month: selectedMonth + 1,
-          year: selectedYear,
-        });
+        const [summaryResponse, pageResponse] = await Promise.all([
+          listIncome(sessionToken, {
+            month: selectedMonth + 1,
+            year: selectedYear,
+          }),
+          listIncomePage(sessionToken, {
+            month: selectedMonth + 1,
+            year: selectedYear,
+            category:
+              selectedCategory === "ALL" ? undefined : selectedCategory,
+            received:
+              selectedReceived === "ALL"
+                ? undefined
+                : selectedReceived === "RECEIVED",
+            page: currentPage,
+            limit: DEFAULT_PAGE_SIZE,
+          }),
+        ]);
 
         if (!ignore) {
-          setEntries(sortIncomeEntries(response));
+          setEntries(sortIncomeEntries(summaryResponse));
+
+          if (pageResponse.meta.totalPages < currentPage) {
+            setCurrentPage(pageResponse.meta.totalPages);
+            return;
+          }
+
+          setPageEntries(pageResponse.items);
+          setTotalItems(pageResponse.meta.totalItems);
+          setTotalPages(pageResponse.meta.totalPages);
         }
       } catch (loadError) {
         if (!ignore) {
@@ -139,7 +169,15 @@ export default function IncomePage() {
     return () => {
       ignore = true;
     };
-  }, [selectedMonth, selectedYear, token]);
+  }, [
+    currentPage,
+    refreshKey,
+    selectedCategory,
+    selectedMonth,
+    selectedReceived,
+    selectedYear,
+    token,
+  ]);
 
   const totalIncome = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
   const receivedIncome = entries
@@ -150,10 +188,6 @@ export default function IncomePage() {
     categories,
     entries,
   );
-  const filteredEntries = filterIncomeEntries(entries, {
-    category: selectedCategory,
-    received: selectedReceived,
-  });
   const hasActiveLedgerFilters =
     selectedMonth !== defaultMonth ||
     selectedCategory !== "ALL" ||
@@ -163,6 +197,10 @@ export default function IncomePage() {
     (left, right) => Number(right.amount) - Number(left.amount),
   )[0];
   const canManageCategories = categories.length > 0;
+
+  function triggerRefresh() {
+    setRefreshKey((current) => current + 1);
+  }
 
   function openCreateDialog() {
     if (!canManageCategories) {
@@ -223,16 +261,17 @@ export default function IncomePage() {
       if (formDialog.mode === "edit") {
         await updateIncome(token, formDialog.entry.id, payload);
         toast.success("Income entry updated.");
+        triggerRefresh();
       } else {
         await createIncome(token, payload);
         toast.success("Income entry added.");
-      }
 
-      const refreshed = await listIncome(token, {
-        month: selectedMonth + 1,
-        year: selectedYear,
-      });
-      setEntries(sortIncomeEntries(refreshed));
+        if (currentPage !== 1) {
+          setCurrentPage(1);
+        } else {
+          triggerRefresh();
+        }
+      }
 
       closeFormDialog();
     } catch (saveError) {
@@ -251,11 +290,11 @@ export default function IncomePage() {
 
     try {
       await deleteIncome(token, deleteTarget.id);
-      const refreshed = await listIncome(token, {
-        month: selectedMonth + 1,
-        year: selectedYear,
-      });
-      setEntries(sortIncomeEntries(refreshed));
+      if (pageEntries.length === 1 && currentPage > 1) {
+        setCurrentPage((page) => page - 1);
+      } else {
+        triggerRefresh();
+      }
       toast.success("Income entry deleted.");
 
       if (
@@ -285,11 +324,7 @@ export default function IncomePage() {
       await updateIncome(token, entry.id, {
         received: nextReceived,
       });
-      const refreshed = await listIncome(token, {
-        month: selectedMonth + 1,
-        year: selectedYear,
-      });
-      setEntries(sortIncomeEntries(refreshed));
+      triggerRefresh();
       toast.success(
         nextReceived
           ? "Income marked as received."
@@ -369,7 +404,7 @@ export default function IncomePage() {
             </div>
 
             <span className="rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs font-medium text-text-secondary">
-              {filteredEntries.length}
+              {totalItems}
               {hasActiveLedgerFilters ? ` of ${entries.length}` : ""} rows
             </span>
           </div>
@@ -380,14 +415,24 @@ export default function IncomePage() {
             hasActiveFilters={hasActiveLedgerFilters}
             month={selectedMonth}
             received={selectedReceived}
-            onCategoryChange={setSelectedCategory}
+            onCategoryChange={(value) => {
+              setSelectedCategory(value);
+              setCurrentPage(1);
+            }}
             onClear={() => {
               setSelectedMonth(defaultMonth);
               setSelectedCategory("ALL");
               setSelectedReceived("ALL");
+              setCurrentPage(1);
             }}
-            onMonthChange={setSelectedMonth}
-            onReceivedChange={setSelectedReceived}
+            onMonthChange={(value) => {
+              setSelectedMonth(value);
+              setCurrentPage(1);
+            }}
+            onReceivedChange={(value) => {
+              setSelectedReceived(value);
+              setCurrentPage(1);
+            }}
           />
 
           {loading ? (
@@ -414,7 +459,7 @@ export default function IncomePage() {
                 }}
               />
             </div>
-          ) : filteredEntries.length === 0 ? (
+          ) : totalItems === 0 ? (
             <div className="px-5 py-10 md:px-6">
               <EmptyState
                 title="No ledger matches"
@@ -424,6 +469,7 @@ export default function IncomePage() {
                   onClick: () => {
                     setSelectedCategory("ALL");
                     setSelectedReceived("ALL");
+                    setCurrentPage(1);
                   },
                 }}
               />
@@ -433,12 +479,21 @@ export default function IncomePage() {
               busyReceivedId={receivedBusyId}
               canEdit={canManageCategories}
               categories={categories}
-              entries={filteredEntries}
+              entries={pageEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
               onToggleReceived={handleToggleReceived}
             />
           )}
+
+          <PaginationControls
+            currentPage={currentPage}
+            pageSize={DEFAULT_PAGE_SIZE}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            itemLabel="row"
+            onPageChange={setCurrentPage}
+          />
         </section>
       </div>
 
