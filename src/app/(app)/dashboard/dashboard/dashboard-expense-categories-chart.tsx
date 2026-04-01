@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import type { ExpenseCategory } from "@/lib/types/expense.types";
@@ -7,6 +8,7 @@ import type { DashboardExpenseCategoryDayDatum } from "./dashboard.utils";
 
 interface DashboardExpenseCategoriesChartProps {
   data: DashboardExpenseCategoryDayDatum[];
+  month: number;
   monthLabel: string;
   year: number;
 }
@@ -75,6 +77,7 @@ function formatFocusDay(day: number, monthLabel: string, year: number): string {
 
 export function DashboardExpenseCategoriesChart({
   data,
+  month,
   monthLabel,
   year,
 }: DashboardExpenseCategoriesChartProps) {
@@ -206,9 +209,10 @@ export function DashboardExpenseCategoriesChart({
             <div className="flex flex-col gap-4 border-b border-white/8 pb-4">
               <div className="flex flex-wrap gap-2.5">
                 {chartMeta.categories.map((category) => (
-                  <span
+                  <Link
                     key={category.category}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-medium ${category.tone.chip}`}
+                    href={`/expenses?category=${category.category}&month=${month + 1}`}
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all hover:brightness-110 ${category.tone.chip}`}
                   >
                     <span className={`h-2.5 w-2.5 rounded-full ${category.tone.dot}`} />
                     {category.label}
@@ -218,7 +222,7 @@ export function DashboardExpenseCategoriesChart({
                     <span className={`font-semibold ${category.tone.accent}`}>
                       {category.share.toFixed(1)}%
                     </span>
-                  </span>
+                  </Link>
                 ))}
               </div>
 
