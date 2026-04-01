@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { TodoImageResponse } from "@/lib/types/todo.types";
 import { cn } from "@/lib/utils/cn";
 import { formatTodoSlideLabel } from "./todos.utils";
+
+const TODO_FALLBACK_IMAGE_SRC = "/404.png";
 
 interface TodoImageCarouselProps {
   images: TodoImageResponse[];
@@ -34,6 +37,9 @@ export function TodoImageCarousel({
   onIndexChange,
 }: TodoImageCarouselProps) {
   const [internalIndex, setInternalIndex] = useState(0);
+  const [failedImageIds, setFailedImageIds] = useState<Record<string, boolean>>(
+    {},
+  );
   const hasImages = images.length > 0;
   const resolvedIndex = clampIndex(
     currentIndex ?? internalIndex,
@@ -54,12 +60,20 @@ export function TodoImageCarousel({
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-[24px] border border-white/8 bg-surface-elevated text-center",
+          "relative overflow-hidden rounded-[24px] border border-white/8 bg-surface-elevated text-center",
           heightClass,
           className,
         )}
       >
-        <div className="px-6">
+        <Image
+          fill
+          src={TODO_FALLBACK_IMAGE_SRC}
+          alt={emptyTitle}
+          className="object-cover opacity-80"
+          sizes="(max-width: 768px) 100vw, 33vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/45 to-background/12" />
+        <div className="relative z-10 px-6">
           <p className="text-sm font-semibold text-text-primary">{emptyTitle}</p>
           <p className="mt-2 text-sm leading-6 text-text-secondary">
             {emptyDescription}
@@ -86,10 +100,27 @@ export function TodoImageCarousel({
             key={image.id}
             type="button"
             onClick={() => onImageClick?.(index)}
-            className="relative h-full min-w-full bg-cover bg-center text-left"
-            style={{ backgroundImage: `url(${image.imageUrl})` }}
+            className="relative h-full min-w-full overflow-hidden text-left"
             aria-label={`Open image ${index + 1}`}
           >
+            <Image
+              fill
+              src={
+                failedImageIds[image.id]
+                  ? TODO_FALLBACK_IMAGE_SRC
+                  : image.imageUrl
+              }
+              alt={`Todo image ${index + 1}`}
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              onError={() =>
+                setFailedImageIds((current) =>
+                  current[image.id]
+                    ? current
+                    : { ...current, [image.id]: true },
+                )
+              }
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent" />
           </button>
         ))}
