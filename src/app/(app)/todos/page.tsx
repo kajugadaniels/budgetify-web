@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { MAX_TODO_IMAGES } from "@/constant/todos/upload";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -16,8 +17,10 @@ import {
   deleteTodo,
   deleteTodoImage,
   listTodos,
+  listTodosPage,
   updateTodo,
 } from "@/lib/api/todos/todos.api";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
 import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
 import type { CreateTodoRequest, TodoResponse } from "@/lib/types/todo.types";
 import { rwfCompact } from "@/lib/utils/currency";
@@ -43,7 +46,6 @@ import {
   createEmptyTodoExpenseForm,
   createTodoExpenseFormFromEntry,
   createTodoFormFromEntry,
-  filterTodos,
   sortTodos,
   validateTodoUploadFile,
 } from "./todos/todos.utils";
@@ -53,6 +55,7 @@ export default function TodosPage() {
   const toast = useToast();
 
   const [entries, setEntries] = useState<TodoResponse[]>([]);
+  const [pageEntries, setPageEntries] = useState<TodoResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -62,6 +65,10 @@ export default function TodosPage() {
     null,
   );
   const [imageBusyKey, setImageBusyKey] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [formDialog, setFormDialog] = useState<TodoFormDialogState>(null);
   const [expenseDialog, setExpenseDialog] =
     useState<TodoExpenseDialogState>(null);
@@ -93,10 +100,29 @@ export default function TodosPage() {
       setError(null);
 
       try {
-        const response = await listTodos(sessionToken);
+        const [summaryResponse, pageResponse] = await Promise.all([
+          listTodos(sessionToken),
+          listTodosPage(sessionToken, {
+            priority:
+              selectedPriority === "ALL" ? undefined : selectedPriority,
+            done:
+              selectedDone === "ALL" ? undefined : selectedDone === "DONE",
+            page: currentPage,
+            limit: DEFAULT_PAGE_SIZE,
+          }),
+        ]);
 
         if (!ignore) {
-          setEntries(sortTodos(response));
+          setEntries(sortTodos(summaryResponse));
+
+          if (pageResponse.meta.totalPages < currentPage) {
+            setCurrentPage(pageResponse.meta.totalPages);
+            return;
+          }
+
+          setPageEntries(sortTodos(pageResponse.items));
+          setTotalItems(pageResponse.meta.totalItems);
+          setTotalPages(pageResponse.meta.totalPages);
         }
       } catch (loadError) {
         if (!ignore) {
@@ -118,7 +144,7 @@ export default function TodosPage() {
     return () => {
       ignore = true;
     };
-  }, [token]);
+  }, [currentPage, refreshKey, selectedDone, selectedPriority, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -168,12 +194,12 @@ export default function TodosPage() {
     (entry) => entry.priority === "TOP_PRIORITY",
   ).length;
   const withImagesCount = entries.filter((entry) => entry.imageCount > 0).length;
-  const filteredEntries = filterTodos(entries, {
-    priority: selectedPriority,
-    done: selectedDone,
-  });
   const hasActiveBoardFilters =
     selectedPriority !== "ALL" || selectedDone !== "ALL";
+
+  function triggerRefresh() {
+    setRefreshKey((current) => current + 1);
+  }
 
   function openCreateDialog() {
     setForm(createEmptyTodoForm());
@@ -286,22 +312,23 @@ export default function TodosPage() {
 
     try {
       if (formDialog.mode === "edit") {
-        const updated = await updateTodo(
+        await updateTodo(
           token,
           formDialog.entry.id,
           payload,
           pendingImages,
         );
-        setEntries((current) =>
-          sortTodos(
-            current.map((entry) => (entry.id === updated.id ? updated : entry)),
-          ),
-        );
         toast.success("Wishlist item updated.");
+        triggerRefresh();
       } else {
-        const created = await createTodo(token, payload, pendingImages);
-        setEntries((current) => sortTodos([created, ...current]));
+        await createTodo(token, payload, pendingImages);
         toast.success("Wishlist item added.");
+
+        if (currentPage !== 1) {
+          setCurrentPage(1);
+        } else {
+          triggerRefresh();
+        }
       }
 
       closeFormDialog();
@@ -321,9 +348,13 @@ export default function TodosPage() {
 
     try {
       await deleteTodo(token, deleteTarget.id);
-      setEntries((current) =>
-        current.filter((entry) => entry.id !== deleteTarget.id),
-      );
+
+      if (pageEntries.length === 1 && currentPage > 1) {
+        setCurrentPage((page) => page - 1);
+      } else {
+        triggerRefresh();
+      }
+
       toast.success("Wishlist item deleted.");
 
       if (
@@ -354,17 +385,11 @@ export default function TodosPage() {
     setDoneBusyId(entry.id);
 
     try {
-      const updated = await updateTodo(token, entry.id, {
+      await updateTodo(token, entry.id, {
         done: nextDone,
       });
 
-      setEntries((current) =>
-        sortTodos(
-          current.map((currentEntry) =>
-            currentEntry.id === updated.id ? updated : currentEntry,
-          ),
-        ),
-      );
+      triggerRefresh();
       toast.success(
         nextDone
           ? "Wishlist item marked as done."
@@ -414,25 +439,15 @@ export default function TodosPage() {
       });
       expenseCreated = true;
 
-      const updated = await updateTodo(token, expenseDialog.entry.id, {
+      await updateTodo(token, expenseDialog.entry.id, {
         done: true,
       });
-
-      setEntries((current) =>
-        sortTodos(
-          current.map((entry) => (entry.id === updated.id ? updated : entry)),
-        ),
-      );
+      triggerRefresh();
       closeExpenseDialog();
       toast.success("Expense recorded and wishlist item marked as done.");
     } catch (recordError) {
       if (expenseCreated) {
-        try {
-          const refreshed = await listTodos(token);
-          setEntries(sortTodos(refreshed));
-        } catch {
-          // Keep the current list if the recovery refresh fails.
-        }
+        triggerRefresh();
 
         closeExpenseDialog();
         toast.error(
@@ -459,15 +474,10 @@ export default function TodosPage() {
     setImageBusyKey(`cover:${imageId}`);
 
     try {
-      const updated = await updateTodo(token, editingEntry.id, {
+      await updateTodo(token, editingEntry.id, {
         primaryImageId: imageId,
       });
-
-      setEntries((current) =>
-        sortTodos(
-          current.map((entry) => (entry.id === updated.id ? updated : entry)),
-        ),
-      );
+      triggerRefresh();
       toast.success("Cover image updated.");
     } catch (imageError) {
       toast.error(
@@ -487,8 +497,7 @@ export default function TodosPage() {
 
     try {
       await deleteTodoImage(token, editingEntry.id, imageId);
-      const refreshed = await listTodos(token);
-      setEntries(sortTodos(refreshed));
+      triggerRefresh();
       toast.info("Image removed from wishlist item.");
     } catch (imageError) {
       toast.error(
@@ -558,9 +567,9 @@ export default function TodosPage() {
               </h2>
             </div>
             <p className="text-sm text-text-secondary">
-              {filteredEntries.length}
+              {totalItems}
               {hasActiveBoardFilters ? ` of ${entries.length}` : ""}{" "}
-              {filteredEntries.length === 1 ? "item" : "items"}
+              {totalItems === 1 ? "item" : "items"}
             </p>
           </div>
 
@@ -571,9 +580,16 @@ export default function TodosPage() {
             onClear={() => {
               setSelectedPriority("ALL");
               setSelectedDone("ALL");
+              setCurrentPage(1);
             }}
-            onDoneChange={setSelectedDone}
-            onPriorityChange={setSelectedPriority}
+            onDoneChange={(value) => {
+              setSelectedDone(value);
+              setCurrentPage(1);
+            }}
+            onPriorityChange={(value) => {
+              setSelectedPriority(value);
+              setCurrentPage(1);
+            }}
           />
 
           <div className="mt-6">
@@ -597,7 +613,7 @@ export default function TodosPage() {
                   onClick: openCreateDialog,
                 }}
               />
-            ) : filteredEntries.length === 0 ? (
+            ) : totalItems === 0 ? (
               <EmptyState
                 title="No wishlist matches"
                 description="Try another priority or done state to reveal more wishlist items."
@@ -606,6 +622,7 @@ export default function TodosPage() {
                   onClick: () => {
                     setSelectedPriority("ALL");
                     setSelectedDone("ALL");
+                    setCurrentPage(1);
                   },
                 }}
               />
@@ -613,7 +630,7 @@ export default function TodosPage() {
               <TodosBoard
                 busyDoneId={doneBusyId}
                 busyRecordExpenseId={recordExpenseBusyId}
-                entries={filteredEntries}
+                entries={pageEntries}
                 onDelete={setDeleteTarget}
                 onEdit={openEditDialog}
                 onOpenGallery={openGallery}
@@ -622,6 +639,16 @@ export default function TodosPage() {
               />
             )}
           </div>
+
+          <PaginationControls
+            className="mt-6 border-t-0 px-0 pb-0 pt-0 md:px-0"
+            currentPage={currentPage}
+            pageSize={DEFAULT_PAGE_SIZE}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            itemLabel="item"
+            onPageChange={setCurrentPage}
+          />
         </section>
       </div>
 
