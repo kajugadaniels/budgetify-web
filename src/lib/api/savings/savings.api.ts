@@ -1,16 +1,30 @@
 import { apiFetch } from "../client";
+import { collectPaginatedItems } from "../pagination";
 import type {
   CreateSavingRequest,
+  ListSavingsParams,
   SavingResponse,
   UpdateSavingRequest,
 } from "../../types/saving.types";
+import type { PaginatedResponse } from "../../types/pagination.types";
 import { SAVINGS_ROUTES } from "./savings.routes";
+
+export async function listSavingsPage(
+  token: string,
+  params?: ListSavingsParams,
+): Promise<PaginatedResponse<SavingResponse>> {
+  return apiFetch<PaginatedResponse<SavingResponse>>(SAVINGS_ROUTES.list(params), {
+    token,
+  });
+}
 
 export async function listSavings(
   token: string,
-  params?: { month?: number; year?: number },
+  params?: Omit<ListSavingsParams, "page" | "limit">,
 ): Promise<SavingResponse[]> {
-  return apiFetch<SavingResponse[]>(SAVINGS_ROUTES.list(params), { token });
+  return collectPaginatedItems((pagination) =>
+    listSavingsPage(token, { ...params, ...pagination }),
+  );
 }
 
 export async function createSaving(
