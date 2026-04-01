@@ -16,7 +16,6 @@ interface CategoryTone {
   chip: string;
   dot: string;
   fill: string;
-  panel: string;
 }
 
 const CATEGORY_TONES: CategoryTone[] = [
@@ -25,56 +24,48 @@ const CATEGORY_TONES: CategoryTone[] = [
     chip: "border-sky-400/20 bg-sky-500/10 text-sky-300",
     dot: "bg-sky-400",
     fill: "bg-[linear-gradient(180deg,rgba(56,189,248,0.96),rgba(14,165,233,0.58))]",
-    panel: "border-sky-400/18 bg-sky-500/8",
   },
   {
     accent: "text-emerald-300",
     chip: "border-emerald-400/20 bg-emerald-500/10 text-emerald-300",
     dot: "bg-emerald-400",
     fill: "bg-[linear-gradient(180deg,rgba(74,222,128,0.96),rgba(22,163,74,0.58))]",
-    panel: "border-emerald-400/18 bg-emerald-500/8",
   },
   {
     accent: "text-amber-300",
     chip: "border-amber-400/20 bg-amber-500/10 text-amber-300",
     dot: "bg-amber-400",
     fill: "bg-[linear-gradient(180deg,rgba(251,191,36,0.96),rgba(217,119,6,0.6))]",
-    panel: "border-amber-400/18 bg-amber-500/8",
   },
   {
     accent: "text-violet-300",
     chip: "border-violet-400/20 bg-violet-500/10 text-violet-300",
     dot: "bg-violet-400",
     fill: "bg-[linear-gradient(180deg,rgba(167,139,250,0.96),rgba(124,58,237,0.58))]",
-    panel: "border-violet-400/18 bg-violet-500/8",
   },
   {
     accent: "text-rose-300",
     chip: "border-rose-400/20 bg-rose-500/10 text-rose-300",
     dot: "bg-rose-400",
     fill: "bg-[linear-gradient(180deg,rgba(251,113,133,0.96),rgba(225,29,72,0.58))]",
-    panel: "border-rose-400/18 bg-rose-500/8",
   },
   {
     accent: "text-cyan-300",
     chip: "border-cyan-400/20 bg-cyan-500/10 text-cyan-300",
     dot: "bg-cyan-400",
     fill: "bg-[linear-gradient(180deg,rgba(34,211,238,0.96),rgba(8,145,178,0.58))]",
-    panel: "border-cyan-400/18 bg-cyan-500/8",
   },
   {
     accent: "text-orange-300",
     chip: "border-orange-400/20 bg-orange-500/10 text-orange-300",
     dot: "bg-orange-400",
     fill: "bg-[linear-gradient(180deg,rgba(251,146,60,0.96),rgba(234,88,12,0.58))]",
-    panel: "border-orange-400/18 bg-orange-500/8",
   },
   {
     accent: "text-lime-300",
     chip: "border-lime-400/20 bg-lime-500/10 text-lime-300",
     dot: "bg-lime-400",
     fill: "bg-[linear-gradient(180deg,rgba(163,230,53,0.96),rgba(101,163,13,0.58))]",
-    panel: "border-lime-400/18 bg-lime-500/8",
   },
 ];
 
@@ -121,9 +112,15 @@ export function DashboardExpenseCategoriesChart({
         amount: totals.amount,
         category,
         label: totals.label,
+        share: 0,
         tone: CATEGORY_TONES[index % CATEGORY_TONES.length]!,
       }))
       .sort((left, right) => right.amount - left.amount);
+    const totalSpent = categories.reduce((sum, category) => sum + category.amount, 0);
+
+    categories.forEach((category) => {
+      category.share = totalSpent > 0 ? (category.amount / totalSpent) * 100 : 0;
+    });
 
     return {
       activeDays: data.filter((point) => point.hasSpending).length,
@@ -218,6 +215,9 @@ export function DashboardExpenseCategoriesChart({
                     <span className="text-text-secondary/78">
                       {rwfCompact(category.amount)}
                     </span>
+                    <span className={`font-semibold ${category.tone.accent}`}>
+                      {category.share.toFixed(1)}%
+                    </span>
                   </span>
                 ))}
               </div>
@@ -306,65 +306,6 @@ export function DashboardExpenseCategoriesChart({
                   down by category automatically.
                 </p>
               ) : null}
-            </div>
-          </div>
-
-          <div className="rounded-[32px] border border-white/8 bg-background-secondary/44 p-4 md:p-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/62">
-                  Category split
-                </p>
-                <h3 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
-                  {activeDay
-                    ? formatFocusDay(activeDay.day, monthLabel, year)
-                    : `${monthLabel} ${year}`}
-                </h3>
-              </div>
-              <span className="inline-flex rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-text-secondary">
-                {rwfCompact(activeDay?.total ?? 0)}
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {activeDay?.segments.length ? (
-                activeDay.segments.map((segment) => {
-                  const tone =
-                    categoryToneLookup.get(segment.category) ?? CATEGORY_TONES[0];
-                  const share = activeDay.total
-                    ? (segment.amount / activeDay.total) * 100
-                    : 0;
-
-                  return (
-                    <div
-                      key={segment.category}
-                      className={`rounded-[22px] border px-4 py-3 ${tone.panel}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`mt-1 h-2.5 w-2.5 rounded-full ${tone.dot}`} />
-                            <p className={`truncate text-sm font-semibold ${tone.accent}`}>
-                              {segment.label}
-                            </p>
-                          </div>
-                          <p className="mt-1 text-xs text-text-secondary">
-                            {share.toFixed(1)}% of that day&apos;s expense
-                          </p>
-                        </div>
-                        <p className="shrink-0 text-sm font-semibold text-text-primary">
-                          {rwf(segment.amount)}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="rounded-[22px] border border-white/8 bg-white/[0.02] px-4 py-5 text-sm leading-6 text-text-secondary md:col-span-2 xl:col-span-3">
-                  This day has no recorded spending, so there is no category
-                  split to display.
-                </div>
-              )}
             </div>
           </div>
         </div>
