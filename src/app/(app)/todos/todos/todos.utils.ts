@@ -2,10 +2,12 @@ import {
   ALLOWED_TODO_IMAGE_MIME_TYPES,
   MAX_TODO_IMAGE_SIZE_BYTES,
 } from "@/constant/todos/upload";
+import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import type {
   TodoBoardDoneFilter,
   TodoBoardPriorityFilter,
+  TodoExpenseFormValues,
   TodoFormValues,
 } from "./todos-page.types";
 
@@ -24,6 +26,25 @@ export function createTodoFormFromEntry(entry: TodoResponse): TodoFormValues {
     price: String(entry.price),
     priority: entry.priority,
     done: entry.done,
+  };
+}
+
+export function createEmptyTodoExpenseForm(): TodoExpenseFormValues {
+  return {
+    amount: "",
+    category: "",
+    date: getTodayDateValue(),
+  };
+}
+
+export function createTodoExpenseFormFromEntry(
+  entry: TodoResponse,
+  categories: ExpenseCategoryOptionResponse[],
+): TodoExpenseFormValues {
+  return {
+    amount: String(entry.price),
+    category: resolveDefaultTodoExpenseCategory(categories),
+    date: getTodayDateValue(),
   };
 }
 
@@ -64,6 +85,33 @@ export function validateTodoUploadFile(file: File): string | null {
   }
 
   return null;
+}
+
+function getTodayDateValue(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function resolveDefaultTodoExpenseCategory(
+  categories: ExpenseCategoryOptionResponse[],
+): TodoExpenseFormValues["category"] {
+  if (categories.length === 0) {
+    return "";
+  }
+
+  const shoppingCategory = categories.find(
+    (category) => category.value === "SHOPPING",
+  );
+
+  if (shoppingCategory) {
+    return shoppingCategory.value;
+  }
+
+  const otherCategory = categories.find((category) => category.value === "OTHER");
+
+  return otherCategory?.value ?? categories[0]?.value ?? "";
 }
 
 export function filterTodos(
