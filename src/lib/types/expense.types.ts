@@ -44,3 +44,11 @@ export interface UpdateExpenseRequest {
   date?: string;
   note?: string;
 }
+
+export interface ListExpensesParams {
+  month?: number;
+  year?: number;
+  category?: ExpenseCategory;
+  page?: number;
+  limit?: number;
+}
