@@ -352,16 +352,16 @@ export default function IncomePage() {
         />
 
         <section className="animate-dashboard-rise">
-          <div className="group relative overflow-hidden rounded-[30px] border border-success/12 bg-[linear-gradient(145deg,rgba(17,24,32,0.94)_0%,rgba(11,14,20,0.98)_100%)] px-5 py-5 shadow-[0_22px_70px_rgba(6,16,30,0.24)] md:px-6">
+          <div className="group relative overflow-hidden rounded-[28px] border border-success/12 bg-[linear-gradient(145deg,rgba(17,24,32,0.94)_0%,rgba(11,14,20,0.98)_100%)] px-4 py-4 shadow-[0_18px_56px_rgba(6,16,30,0.22)] md:px-5">
             <div className="pointer-events-none absolute inset-0">
-              <div className="motion-safe:animate-income-drift absolute -right-10 top-0 h-36 w-36 rounded-full bg-success/12 blur-3xl" />
-              <div className="motion-safe:animate-income-sweep absolute inset-y-0 left-[-24%] w-24 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)] opacity-60 blur-xl" />
+              <div className="motion-safe:animate-income-drift absolute -right-8 top-0 h-28 w-28 rounded-full bg-success/12 blur-3xl" />
+              <div className="motion-safe:animate-income-sweep absolute inset-y-0 left-[-28%] w-20 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)] opacity-60 blur-lg" />
             </div>
 
-            <div className="relative z-10 grid gap-3 lg:grid-cols-[minmax(0,1.05fr)_minmax(220px,0.62fr)_minmax(220px,0.72fr)] lg:items-stretch">
-              <div className="flex min-h-[170px] flex-col justify-between rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 md:px-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-2">
+            <div className="relative z-10 grid gap-3 lg:grid-cols-[minmax(0,1.16fr)_280px]">
+              <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1.5">
                     <span className="inline-flex items-center gap-2 rounded-full border border-success/15 bg-success/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-success/78">
                       <span className="motion-safe:animate-income-glow h-1.5 w-1.5 rounded-full bg-success" />
                       Income
@@ -381,13 +381,22 @@ export default function IncomePage() {
                   </div>
                 </div>
 
-                <div>
-                  <p className="text-[clamp(2.1rem,4vw,3.3rem)] font-semibold leading-none tracking-[-0.055em] text-white transition-transform duration-500 ease-out group-hover:translate-x-1">
-                    {rwfCompact(totalIncome)}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[clamp(1.85rem,3.5vw,2.9rem)] font-semibold leading-none tracking-[-0.055em] text-white transition-transform duration-500 ease-out group-hover:translate-x-1">
+                      {rwfCompact(totalIncome)}
+                    </p>
+                    <div className="mt-2 h-1.5 w-[min(220px,52vw)] overflow-hidden rounded-full bg-white/6">
+                      <div
+                        className="motion-safe:animate-income-sweep h-full rounded-full bg-[linear-gradient(90deg,rgba(74,222,128,0.48),rgba(34,197,94,1),rgba(74,222,128,0.48))] bg-[length:200%_100%]"
+                        style={{ width: `${receivedShare}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
                     <span className="rounded-full border border-success/14 bg-success/8 px-2.5 py-1 text-[11px] font-medium text-success/82">
-                      {receivedShare}% collected
+                      {rwfCompact(receivedIncome)} received
                     </span>
                     <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
                       {rwfCompact(pendingIncome)} pending
@@ -396,70 +405,41 @@ export default function IncomePage() {
                 </div>
               </div>
 
-              <div className="grid gap-3">
-                <div className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
-                      Received
-                    </p>
-                    <span className="text-xs font-medium text-success/80">
-                      {receivedShare}%
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xl font-semibold tracking-[-0.04em] text-success">
-                    {rwfCompact(receivedIncome)}
-                  </p>
-                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/6">
-                    <div
-                      className="motion-safe:animate-income-sweep h-full rounded-full bg-[linear-gradient(90deg,rgba(74,222,128,0.48),rgba(34,197,94,1),rgba(74,222,128,0.48))] bg-[length:200%_100%]"
-                      style={{ width: `${receivedShare}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
-                    Pending
-                  </p>
-                  <p className="mt-2 text-xl font-semibold tracking-[-0.04em] text-text-primary">
-                    {rwfCompact(pendingIncome)}
-                  </p>
-                  <p className="mt-2 text-xs leading-5 text-text-secondary">
-                    Not marked as received yet.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <div className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
                       Latest
                     </p>
                     <span className="h-1.5 w-1.5 rounded-full bg-success/80" />
                   </div>
-                  <p className="mt-2 text-lg font-semibold tracking-[-0.04em] text-text-primary">
+                  <p className="mt-2 text-base font-semibold tracking-[-0.04em] text-text-primary">
                     {mostRecentEntry
                       ? formatIncomeDate(mostRecentEntry.date)
                       : "No entries yet"}
                   </p>
-                  <p className="mt-2 text-xs leading-5 text-text-secondary">
+                  <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {mostRecentEntry
                       ? mostRecentEntry.label
                       : `No income dated in ${selectedMonthLabel}.`}
                   </p>
                 </div>
 
-                <div className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
-                    Strongest source
-                  </p>
-                  <p className="mt-2 text-lg font-semibold leading-tight tracking-[-0.04em] text-text-primary">
+                <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
+                      Strongest
+                    </p>
+                    <span className="text-[11px] font-medium text-success/78">
+                      {receivedShare}%
+                    </span>
+                  </div>
+                  <p className="mt-2 text-base font-semibold leading-tight tracking-[-0.04em] text-text-primary">
                     {highestEntry
                       ? resolveIncomeCategoryLabel(categories, highestEntry.category)
                       : "No entries yet"}
                   </p>
-                  <p className="mt-2 text-xs leading-5 text-text-secondary">
+                  <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {highestEntry
                       ? `${highestEntry.label} · ${rwf(Number(highestEntry.amount))}`
                       : "Add your first income entry."}
