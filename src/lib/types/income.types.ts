@@ -37,3 +37,12 @@ export interface UpdateIncomeRequest {
   date?: string;
   received?: boolean;
 }
+
+export interface ListIncomeParams {
+  month?: number;
+  year?: number;
+  category?: IncomeCategory;
+  received?: boolean;
+  page?: number;
+  limit?: number;
+}
