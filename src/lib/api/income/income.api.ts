@@ -1,11 +1,14 @@
 import { apiFetch } from "../client";
+import { collectPaginatedItems } from "../pagination";
 import { INCOME_ROUTES } from "./income.routes";
 import type {
   CreateIncomeRequest,
   IncomeCategoryOptionResponse,
+  ListIncomeParams,
   IncomeResponse,
   UpdateIncomeRequest,
 } from "../../types/income.types";
+import type { PaginatedResponse } from "../../types/pagination.types";
 
 export async function listIncomeCategories(
   token: string,
@@ -15,11 +18,22 @@ export async function listIncomeCategories(
   });
 }
 
+export async function listIncomePage(
+  token: string,
+  params?: ListIncomeParams,
+): Promise<PaginatedResponse<IncomeResponse>> {
+  return apiFetch<PaginatedResponse<IncomeResponse>>(INCOME_ROUTES.list(params), {
+    token,
+  });
+}
+
 export async function listIncome(
   token: string,
-  params?: { month?: number; year?: number },
+  params?: Omit<ListIncomeParams, "page" | "limit">,
 ): Promise<IncomeResponse[]> {
-  return apiFetch<IncomeResponse[]>(INCOME_ROUTES.list(params), { token });
+  return collectPaginatedItems((pagination) =>
+    listIncomePage(token, { ...params, ...pagination }),
+  );
 }
 
 export async function createIncome(
