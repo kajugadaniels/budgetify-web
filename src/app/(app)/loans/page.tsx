@@ -49,7 +49,7 @@ export default function LoansPage() {
   const { token } = useAuth();
   const toast = useToast();
   const defaultMonth = getCurrentMonthIndex();
-  const selectedYear = getCurrentYear();
+  const defaultYear = getCurrentYear();
 
   const [entries, setEntries] = useState<LoanResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +58,7 @@ export default function LoansPage() {
   const [settling, setSettling] = useState(false);
   const [paidBusyId, setPaidBusyId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [selectedPaid, setSelectedPaid] =
     useState<LoanLedgerPaidFilter>("ALL");
   const [formDialog, setFormDialog] = useState<LoanFormDialogState>(null);
@@ -111,7 +112,9 @@ export default function LoansPage() {
   const selectedMonthLabel = resolveLoanMonthLabel(selectedMonth);
   const filteredEntries = filterLoanEntries(entries, selectedPaid);
   const hasActiveFilters =
-    selectedMonth !== defaultMonth || selectedPaid !== "ALL";
+    selectedMonth !== defaultMonth ||
+    selectedYear !== defaultYear ||
+    selectedPaid !== "ALL";
   const totalLoans = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
   const paidAmount = entries
     .filter((entry) => entry.paid)
@@ -371,17 +374,20 @@ export default function LoansPage() {
             </p>
           </div>
 
-          <LoansLedgerFilters
-            hasActiveFilters={hasActiveFilters}
-            month={selectedMonth}
-            paid={selectedPaid}
-            onClear={() => {
-              setSelectedMonth(defaultMonth);
-              setSelectedPaid("ALL");
-            }}
-            onMonthChange={setSelectedMonth}
-            onPaidChange={setSelectedPaid}
-          />
+            <LoansLedgerFilters
+              hasActiveFilters={hasActiveFilters}
+              month={selectedMonth}
+              paid={selectedPaid}
+              year={selectedYear}
+              onClear={() => {
+                setSelectedMonth(defaultMonth);
+                setSelectedYear(defaultYear);
+                setSelectedPaid("ALL");
+              }}
+              onMonthChange={setSelectedMonth}
+              onPaidChange={setSelectedPaid}
+              onYearChange={setSelectedYear}
+            />
 
           {loading ? (
             <LoansTableSkeleton />
@@ -411,11 +417,12 @@ export default function LoansPage() {
             <div className="px-5 pb-5 md:px-6 md:pb-6">
               <EmptyState
                 title="No ledger matches"
-                description="Try another month or payment state to reveal more loan rows."
+                description="Try another month, year, or payment state to reveal more loan rows."
                 action={{
                   label: "Clear filters",
                   onClick: () => {
                     setSelectedMonth(defaultMonth);
+                    setSelectedYear(defaultYear);
                     setSelectedPaid("ALL");
                   },
                 }}

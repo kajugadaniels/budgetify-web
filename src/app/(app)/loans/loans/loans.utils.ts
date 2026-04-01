@@ -18,6 +18,22 @@ export function getCurrentYear(): number {
   return new Date().getFullYear();
 }
 
+export function buildLoanYearOptions(): Array<{
+  label: string;
+  value: number;
+}> {
+  const currentYear = getCurrentYear();
+
+  return Array.from({ length: currentYear - 1999 }, (_, index) => {
+    const year = currentYear - index;
+
+    return {
+      label: String(year),
+      value: year,
+    };
+  });
+}
+
 export function createEmptyLoanForm(
   month = getCurrentMonthIndex(),
   year = getCurrentYear(),
