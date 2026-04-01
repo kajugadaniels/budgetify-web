@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
@@ -12,8 +13,10 @@ import {
   deleteExpense,
   listExpenseCategories,
   listExpenses,
+  listExpensesPage,
   updateExpense,
 } from "@/lib/api/expenses/expenses.api";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
 import type {
   CreateExpenseRequest,
   ExpenseCategoryOptionResponse,
@@ -36,7 +39,6 @@ import {
   createEmptyExpenseForm,
   createExpenseFormFromCategories,
   createExpenseFormFromEntry,
-  filterExpenseEntries,
   formatExpenseDate,
   getCurrentMonthIndex,
   getCurrentYear,
@@ -51,6 +53,7 @@ export default function ExpensesPage() {
   const searchParams = useSearchParams();
 
   const [entries, setEntries] = useState<ExpenseResponse[]>([]);
+  const [pageEntries, setPageEntries] = useState<ExpenseResponse[]>([]);
   const [categories, setCategories] = useState<ExpenseCategoryOptionResponse[]>(
     [],
   );
@@ -58,6 +61,10 @@ export default function ExpensesPage() {
   const [error, setError] = useState<string | null>(null);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [formDialog, setFormDialog] = useState<ExpenseFormDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<ExpenseResponse | null>(null);
   const [form, setForm] = useState<ExpenseFormValues>(() =>
@@ -76,6 +83,7 @@ export default function ExpensesPage() {
     setSelectedCategory(
       resolveExpenseCategorySearchParam(searchParams.get("category")),
     );
+    setCurrentPage(1);
   }, [searchParams]);
 
   useEffect(() => {
@@ -122,13 +130,32 @@ export default function ExpensesPage() {
       setError(null);
 
       try {
-        const response = await listExpenses(sessionToken, {
-          month: selectedMonth + 1,
-          year: selectedYear,
-        });
+        const [summaryResponse, pageResponse] = await Promise.all([
+          listExpenses(sessionToken, {
+            month: selectedMonth + 1,
+            year: selectedYear,
+          }),
+          listExpensesPage(sessionToken, {
+            month: selectedMonth + 1,
+            year: selectedYear,
+            category:
+              selectedCategory === "ALL" ? undefined : selectedCategory,
+            page: currentPage,
+            limit: DEFAULT_PAGE_SIZE,
+          }),
+        ]);
 
         if (!ignore) {
-          setEntries(sortExpenseEntries(response));
+          setEntries(sortExpenseEntries(summaryResponse));
+
+          if (pageResponse.meta.totalPages < currentPage) {
+            setCurrentPage(pageResponse.meta.totalPages);
+            return;
+          }
+
+          setPageEntries(sortExpenseEntries(pageResponse.items));
+          setTotalItems(pageResponse.meta.totalItems);
+          setTotalPages(pageResponse.meta.totalPages);
         }
       } catch (loadError) {
         if (!ignore) {
@@ -150,7 +177,14 @@ export default function ExpensesPage() {
     return () => {
       ignore = true;
     };
-  }, [selectedMonth, selectedYear, token]);
+  }, [
+    currentPage,
+    refreshKey,
+    selectedCategory,
+    selectedMonth,
+    selectedYear,
+    token,
+  ]);
 
   const totalSpent = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
   const selectedMonthLabel = resolveExpenseMonthLabel(selectedMonth);
@@ -158,7 +192,6 @@ export default function ExpensesPage() {
     categories,
     entries,
   );
-  const filteredEntries = filterExpenseEntries(entries, selectedCategory);
   const hasActiveLedgerFilters =
     selectedMonth !== defaultMonth || selectedCategory !== "ALL";
   const mostRecentEntry = entries[0];
@@ -166,6 +199,10 @@ export default function ExpensesPage() {
     (left, right) => Number(right.amount) - Number(left.amount),
   )[0];
   const canManageCategories = categories.length > 0;
+
+  function triggerRefresh() {
+    setRefreshKey((current) => current + 1);
+  }
 
   function openCreateDialog() {
     if (!canManageCategories) {
@@ -226,16 +263,17 @@ export default function ExpensesPage() {
       if (formDialog.mode === "edit") {
         await updateExpense(token, formDialog.entry.id, payload);
         toast.success("Expense updated.");
+        triggerRefresh();
       } else {
         await createExpense(token, payload);
         toast.success("Expense added.");
-      }
 
-      const refreshed = await listExpenses(token, {
-        month: selectedMonth + 1,
-        year: selectedYear,
-      });
-      setEntries(sortExpenseEntries(refreshed));
+        if (currentPage !== 1) {
+          setCurrentPage(1);
+        } else {
+          triggerRefresh();
+        }
+      }
 
       closeFormDialog();
     } catch (saveError) {
@@ -254,11 +292,13 @@ export default function ExpensesPage() {
 
     try {
       await deleteExpense(token, deleteTarget.id);
-      const refreshed = await listExpenses(token, {
-        month: selectedMonth + 1,
-        year: selectedYear,
-      });
-      setEntries(sortExpenseEntries(refreshed));
+
+      if (pageEntries.length === 1 && currentPage > 1) {
+        setCurrentPage((page) => page - 1);
+      } else {
+        triggerRefresh();
+      }
+
       toast.success("Expense deleted.");
 
       if (
@@ -337,9 +377,9 @@ export default function ExpensesPage() {
               </h2>
             </div>
             <p className="text-sm text-text-secondary">
-              {filteredEntries.length}
+              {totalItems}
               {hasActiveLedgerFilters ? ` of ${entries.length}` : ""}{" "}
-              {filteredEntries.length === 1 ? "expense" : "expenses"}
+              {totalItems === 1 ? "expense" : "expenses"}
             </p>
           </div>
 
@@ -348,12 +388,19 @@ export default function ExpensesPage() {
             categoryOptions={ledgerCategoryOptions}
             hasActiveFilters={hasActiveLedgerFilters}
             month={selectedMonth}
-            onCategoryChange={setSelectedCategory}
+            onCategoryChange={(value) => {
+              setSelectedCategory(value);
+              setCurrentPage(1);
+            }}
             onClear={() => {
               setSelectedMonth(defaultMonth);
               setSelectedCategory("ALL");
+              setCurrentPage(1);
             }}
-            onMonthChange={setSelectedMonth}
+            onMonthChange={(value) => {
+              setSelectedMonth(value);
+              setCurrentPage(1);
+            }}
           />
 
           {loading ? (
@@ -380,7 +427,7 @@ export default function ExpensesPage() {
                 }}
               />
             </div>
-          ) : filteredEntries.length === 0 ? (
+          ) : totalItems === 0 ? (
             <div className="px-5 pb-5 md:px-6 md:pb-6">
               <EmptyState
                 title="No ledger matches"
@@ -390,6 +437,7 @@ export default function ExpensesPage() {
                   onClick: () => {
                     setSelectedMonth(defaultMonth);
                     setSelectedCategory("ALL");
+                    setCurrentPage(1);
                   },
                 }}
               />
@@ -398,11 +446,20 @@ export default function ExpensesPage() {
             <ExpensesTable
               categories={categories}
               canEdit={canManageCategories}
-              entries={filteredEntries}
+              entries={pageEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
             />
           )}
+
+          <PaginationControls
+            currentPage={currentPage}
+            pageSize={DEFAULT_PAGE_SIZE}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            itemLabel="expense"
+            onPageChange={setCurrentPage}
+          />
         </section>
       </div>
 
