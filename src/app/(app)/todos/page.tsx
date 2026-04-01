@@ -203,11 +203,6 @@ export default function TodosPage() {
       done: form.done,
     };
 
-    if (formDialog.mode === "create" && pendingImages.length === 0) {
-      toast.error("Add at least one image before creating a wishlist item.");
-      return;
-    }
-
     setSaving(true);
 
     try {
