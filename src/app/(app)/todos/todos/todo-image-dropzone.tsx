@@ -43,11 +43,14 @@ export function TodoImageDropzone({
   }
 
   return (
-    <section className="rounded-[24px] border border-white/8 bg-background-secondary/70 p-4">
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <section className="rounded-[22px] border border-white/8 bg-background-secondary/60 p-3.5">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/60">
-            {mode === "create" ? "Upload images (optional)" : "Add more images"}
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+            {mode === "create" ? "Images" : "Add images"}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-text-secondary">
+            Optional. JPEG, PNG, or WebP.
           </p>
         </div>
 
@@ -70,21 +73,20 @@ export function TodoImageDropzone({
           handleFiles(event.dataTransfer.files);
         }}
         className={cn(
-          "flex min-h-[164px] cursor-pointer flex-col items-center justify-center rounded-[22px] border border-dashed px-6 py-7 text-center transition-all",
+          "flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed px-4 py-5 text-center transition-all",
           isDragging
             ? "border-primary bg-primary/8"
             : "border-white/12 bg-surface-elevated/80 hover:border-primary/35 hover:bg-surface-elevated",
         )}
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-2xl text-primary">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-xl text-primary">
           +
         </div>
-        <p className="mt-4 text-sm font-semibold text-text-primary">
-          Drop JPEG, PNG, or WebP images here
+        <p className="mt-3 text-sm font-semibold text-text-primary">
+          Drop images here
         </p>
-        <p className="mt-2 max-w-sm text-sm leading-6 text-text-secondary">
-          Click to browse, or drag files straight into the dropzone. Up to 6
-          images, 10MB each.
+        <p className="mt-1 max-w-sm text-xs leading-5 text-text-secondary">
+          Click to browse or drag files in.
         </p>
       </label>
 
@@ -101,22 +103,22 @@ export function TodoImageDropzone({
       />
 
       {previews.length > 0 ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
           {previews.map((preview, index) => (
             <article
               key={`${preview.file.name}-${preview.file.lastModified}-${index}`}
-              className="overflow-hidden rounded-[22px] border border-white/8 bg-surface-elevated/85"
+              className="overflow-hidden rounded-[18px] border border-white/8 bg-surface-elevated/85"
             >
               <div
-                className="h-32 bg-cover bg-center"
+                className="h-24 bg-cover bg-center"
                 style={{ backgroundImage: `url(${preview.previewUrl})` }}
               />
-              <div className="flex items-start justify-between gap-3 p-3">
+              <div className="flex items-start justify-between gap-3 p-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-text-primary">
                     {preview.file.name}
                   </p>
-                  <p className="mt-1 text-xs text-text-secondary">
+                  <p className="mt-0.5 text-[11px] text-text-secondary">
                     {formatTodoFileSize(preview.file.size)}
                   </p>
                 </div>
@@ -124,7 +126,7 @@ export function TodoImageDropzone({
                 <button
                   type="button"
                   onClick={() => onRemoveFile(index)}
-                  className="rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/18"
+                  className="rounded-full border border-danger/30 bg-danger/10 px-2.5 py-1 text-[11px] font-medium text-danger transition-colors hover:bg-danger/18"
                 >
                   Remove
                 </button>
