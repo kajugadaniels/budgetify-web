@@ -31,7 +31,6 @@ import type {
   IncomeLedgerCategoryFilter,
   IncomeLedgerReceivedFilter,
 } from "./income/income-page.types";
-import { IncomeSummaryCard } from "./income/income-summary-card";
 import { IncomeTable } from "./income/income-table";
 import { IncomeTableSkeleton } from "./income/income-table-skeleton";
 import {
@@ -197,6 +196,9 @@ export default function IncomePage() {
     (left, right) => Number(right.amount) - Number(left.amount),
   )[0];
   const canManageCategories = categories.length > 0;
+  const pendingIncome = Math.max(totalIncome - receivedIncome, 0);
+  const receivedShare =
+    totalIncome > 0 ? Math.round((receivedIncome / totalIncome) * 100) : 0;
 
   function triggerRefresh() {
     setRefreshKey((current) => current + 1);
@@ -349,46 +351,114 @@ export default function IncomePage() {
           onCreate={openCreateDialog}
         />
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.75fr)]">
-          <div className="glass-panel rounded-[32px] p-6 md:p-7">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
-              {selectedMonthLabel} {selectedYear}
-            </p>
-            <p className="mt-4 text-[2.6rem] font-semibold tracking-heading-lg text-text-primary">
-              {rwfCompact(totalIncome)}
-            </p>
-            <div className="mt-6 flex items-center gap-3 text-sm text-text-secondary">
-              <span className="h-2.5 w-2.5 rounded-full bg-success" />
-              <span>
-                {entries.length} {entries.length === 1 ? "entry" : "entries"} dated
-                inside {selectedMonthLabel}
-              </span>
+        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.24fr)_minmax(320px,0.86fr)]">
+          <div className="relative overflow-hidden rounded-[34px] border border-success/14 bg-[linear-gradient(155deg,rgba(15,23,42,0.82)_0%,rgba(9,16,28,0.96)_100%)] px-6 py-6 shadow-[0_24px_80px_rgba(6,16,30,0.26)] md:px-7 md:py-7">
+            <div className="absolute inset-y-0 right-0 w-[42%] bg-[radial-gradient(circle_at_top_right,rgba(74,222,128,0.16),transparent_68%)]" />
+            <div className="absolute inset-x-6 top-[92px] h-px bg-white/8 md:inset-x-7" />
+
+            <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-3">
+                <span className="inline-flex items-center gap-2 rounded-full border border-success/18 bg-success/8 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-success/80">
+                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                  Income overview
+                </span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-secondary/62">
+                    {selectedMonthLabel} {selectedYear}
+                  </p>
+                  <p className="mt-4 text-[clamp(2.5rem,5vw,4rem)] font-semibold leading-none tracking-[-0.05em] text-white">
+                    {rwfCompact(totalIncome)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
+                  Ledger items
+                </p>
+                <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-text-primary">
+                  {entries.length}
+                </p>
+                <p className="mt-1 text-xs text-text-secondary">
+                  {entries.length === 1 ? "entry" : "entries"} dated in this
+                  month
+                </p>
+              </div>
+            </div>
+
+            <div className="relative z-10 mt-10 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+              <div className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
+                      Received so far
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-success">
+                      {rwfCompact(receivedIncome)}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-success/16 bg-success/10 px-2.5 py-1 text-xs font-medium text-success/85">
+                    {receivedShare}% collected
+                  </span>
+                </div>
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/6">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,rgba(74,222,128,0.78),rgba(34,197,94,1))]"
+                    style={{ width: `${receivedShare}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
+                  Still pending
+                </p>
+                <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-text-primary">
+                  {rwfCompact(pendingIncome)}
+                </p>
+                <p className="mt-3 text-xs leading-5 text-text-secondary">
+                  Income already planned for this month but not marked as
+                  received yet.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <IncomeSummaryCard
-              eyebrow="Received"
-              value={rwfCompact(receivedIncome)}
-              detail={
-                mostRecentEntry
-                  ? `Most recent on ${formatIncomeDate(mostRecentEntry.date)}`
-                  : `No income dated in ${selectedMonthLabel} ${selectedYear}`
-              }
-            />
-            <IncomeSummaryCard
-              eyebrow="Strongest source"
-              value={
-                highestEntry
+          <div className="grid gap-3">
+            <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%)] px-5 py-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
+                  Most recent signal
+                </p>
+                <span className="h-2 w-2 rounded-full bg-success" />
+              </div>
+              <p className="mt-4 text-[1.7rem] font-semibold tracking-[-0.04em] text-text-primary">
+                {mostRecentEntry
+                  ? formatIncomeDate(mostRecentEntry.date)
+                  : "No entries yet"}
+              </p>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">
+                {mostRecentEntry
+                  ? `${mostRecentEntry.label} was the latest income recorded in ${selectedMonthLabel}.`
+                  : `No income dated in ${selectedMonthLabel} ${selectedYear}.`}
+              </p>
+            </div>
+
+            <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%)] px-5 py-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
+                Strongest source
+              </p>
+              <p className="mt-4 text-[1.55rem] font-semibold leading-tight tracking-[-0.04em] text-text-primary">
+                {highestEntry
                   ? resolveIncomeCategoryLabel(categories, highestEntry.category)
-                  : "No entries yet"
-              }
-              detail={
-                highestEntry
+                  : "No entries yet"}
+              </p>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">
+                {highestEntry
                   ? `${highestEntry.label} · ${rwf(Number(highestEntry.amount))}`
-                  : "Add your first income entry"
-              }
-            />
+                  : "Add your first income entry to reveal the strongest source."}
+              </p>
+            </div>
           </div>
         </section>
 
