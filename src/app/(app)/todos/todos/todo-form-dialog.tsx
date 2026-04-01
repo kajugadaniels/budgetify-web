@@ -247,8 +247,8 @@ export function TodoFormDialog({
                   </div>
                 </div>
 
-                <div className={cn("grid gap-3", mode === "edit" && "lg:grid-cols-2")}>
-                  <div className="flex min-h-[260px] flex-col rounded-[18px] border border-white/8 bg-background/34 p-3">
+                <div className="flex h-[260px] flex-col gap-3 overflow-y-auto pr-1">
+                  <div className="flex h-[260px] flex-none flex-col rounded-[18px] border border-white/8 bg-background/34 p-3">
                     <TodoImageDropzone
                       embedded
                       files={pendingImages}
@@ -259,7 +259,7 @@ export function TodoFormDialog({
                   </div>
 
                   {mode === "edit" ? (
-                    <div className="flex min-h-[260px] flex-col rounded-[18px] border border-white/8 bg-background/34 p-3">
+                    <div className="flex h-[260px] flex-none flex-col rounded-[18px] border border-white/8 bg-background/34 p-3">
                       <div className="mb-3 flex items-start justify-between gap-3">
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
