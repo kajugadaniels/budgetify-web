@@ -2,6 +2,7 @@ import { MONTH_OPTIONS } from "@/constant/months";
 import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
 import type { LoanResponse } from "@/lib/types/loan.types";
+import type { SavingResponse } from "@/lib/types/saving.types";
 
 export const CURRENT_YEAR = new Date().getFullYear();
 
@@ -102,6 +103,19 @@ export function buildMonthlyBarChartData(
 
 export function sumExpenseAmounts(entries: ExpenseResponse[]): number {
   return entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+}
+
+export function sumSavingAmounts(
+  entries: SavingResponse[],
+  options?: { stillHaveOnly?: boolean },
+): number {
+  return entries.reduce((sum, entry) => {
+    if (options?.stillHaveOnly && !entry.stillHave) {
+      return sum;
+    }
+
+    return sum + Number(entry.amount);
+  }, 0);
 }
 
 export function resolveDashboardLoanDateRange(
