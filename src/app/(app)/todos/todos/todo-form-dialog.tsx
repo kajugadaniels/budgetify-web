@@ -10,7 +10,7 @@ import { TodoImageDropzone } from "./todo-image-dropzone";
 import type { TodoFormValues } from "./todos-page.types";
 
 const INPUT_CLASS =
-  "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 focus:border-primary/60 focus:outline-none transition-colors";
+  "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 transition-colors focus:border-primary/60 focus:outline-none";
 
 const DONE_STATE_OPTIONS = [
   { value: false, label: "Not done" },
@@ -53,6 +53,7 @@ export function TodoFormDialog({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [step, setStep] = useState<0 | 1>(0);
   const images = editingEntry?.images ?? [];
+  const priorityMeta = PRIORITY_META[form.priority];
   const resolvedImageIndex =
     images.length > 0 ? Math.min(activeImageIndex, images.length - 1) : 0;
   const selectedImage = images[resolvedImageIndex];
@@ -60,68 +61,79 @@ export function TodoFormDialog({
     form.name.trim().length > 0 &&
     form.price.trim().length > 0 &&
     Number(form.price) > 0;
+  const savedImagesCount = images.length;
+  const totalImagesCount = savedImagesCount + pendingImages.length;
 
   const stepDescription =
     step === 0
-      ? "Start with the name, planned price, and priority."
+      ? "Set the name, amount, priority, and progress."
       : mode === "create"
-        ? "Add product images if you want them now, or skip this step and create the item without any."
+        ? "Add images if you want them now, or skip and create the item cleanly."
         : "Upload more images and manage the ones already synced.";
 
   return (
-    <Dialog onClose={onClose} className="sm:w-[70vw] sm:max-w-[70vw]">
-      <form className="space-y-6" onSubmit={onSubmit}>
-        <div className="flex flex-col gap-4 border-b border-white/8 pb-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
-              {mode === "edit" ? "Edit item" : "New item"}
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-heading-md text-text-primary">
+    <Dialog onClose={onClose} className="sm:max-w-2xl p-4 sm:p-5">
+      <div className="relative overflow-hidden rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4 sm:p-5">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(199,191,167,0.14),transparent_72%)]" />
+
+        <div className="relative z-10 mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              {mode === "edit" ? "Edit todo" : "New todo"}
+            </div>
+            <h2 className="mt-3 text-xl font-semibold tracking-heading-md text-text-primary sm:text-[1.35rem]">
               {mode === "edit" ? "Update wishlist item" : "Add wishlist item"}
             </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-              {stepDescription}
-            </p>
           </div>
 
-          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-text-secondary">
-            {step + 1} / 2
-          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close dialog"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-sm text-text-secondary transition-colors hover:text-text-primary"
+          >
+            ✕
+          </button>
         </div>
 
-        <div className="flex gap-2 rounded-[22px] border border-white/8 bg-background-secondary/60 p-1.5">
-          <StepButton
-            active={step === 0}
-            title="Details"
-            eyebrow="Step 1"
-            onClick={() => setStep(0)}
-          />
-          <StepButton
-            active={step === 1}
-            disabled={!canContinue}
-            title="Images"
-            eyebrow="Step 2"
-            onClick={() => {
+        <form
+          className="relative z-10 space-y-4"
+          onSubmit={(event) => {
+            if (step === 0) {
+              event.preventDefault();
               if (canContinue) {
                 setStep(1);
               }
-            }}
-          />
-        </div>
+              return;
+            }
 
-        <section className="rounded-[28px] border border-white/8 bg-background-secondary/70 p-5 md:p-6">
-          <div className="mb-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
-              {step === 0 ? "Step 1" : "Step 2"}
-            </p>
-            <h3 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
-              {step === 0 ? "Item details" : "Images"}
-            </h3>
+            onSubmit(event);
+          }}
+        >
+          <div className="flex gap-2 rounded-[20px] border border-white/8 bg-background/32 p-1">
+            <StepButton
+              active={step === 0}
+              title="Details"
+              eyebrow="Step 1"
+              onClick={() => setStep(0)}
+            />
+            <StepButton
+              active={step === 1}
+              disabled={!canContinue}
+              title="Images"
+              eyebrow="Step 2"
+              onClick={() => {
+                if (canContinue) {
+                  setStep(1);
+                }
+              }}
+            />
           </div>
 
           {step === 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Item name" className="md:col-span-2">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Item name" className="sm:col-span-2">
                 <input
                   type="text"
                   value={form.name}
@@ -133,7 +145,7 @@ export function TodoFormDialog({
                 />
               </Field>
 
-              <Field label="Planned price">
+              <Field label="Planned price" className="sm:col-span-2">
                 <input
                   type="number"
                   value={form.price}
@@ -145,21 +157,8 @@ export function TodoFormDialog({
                 />
               </Field>
 
-              <Field label="Selected priority">
-                <div className="flex h-full items-center rounded-2xl border border-white/8 bg-surface-elevated px-4 py-3">
-                  <span
-                    className={cn(
-                      "inline-flex rounded-full px-2.5 py-1 text-sm font-medium",
-                      PRIORITY_META[form.priority].chipClass,
-                    )}
-                  >
-                    {PRIORITY_META[form.priority].label}
-                  </span>
-                </div>
-              </Field>
-
-              <Field label="Priority" className="md:col-span-2">
-                <div className="flex flex-wrap gap-2">
+              <Field label="Priority" className="sm:col-span-2">
+                <div className="">
                   {Object.entries(PRIORITY_META).map(([value, meta]) => {
                     const selected = form.priority === value;
 
@@ -172,10 +171,10 @@ export function TodoFormDialog({
                           onChange({ priority: value as TodoFormValues["priority"] })
                         }
                         className={cn(
-                          "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
+                          "inline-flex items-center justify-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
                           selected
                             ? meta.selectedClass
-                            : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+                            : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
                         )}
                       >
                         <span
@@ -195,8 +194,8 @@ export function TodoFormDialog({
                 </div>
               </Field>
 
-              <Field label="Progress" className="md:col-span-2">
-                <div className="flex flex-wrap gap-2">
+              <Field label="Progress" className="sm:col-span-2">
+                <div className="grid grid-cols-2 gap-2">
                   {DONE_STATE_OPTIONS.map((option) => {
                     const selected = form.done === option.value;
 
@@ -207,12 +206,12 @@ export function TodoFormDialog({
                         aria-pressed={selected}
                         onClick={() => onChange({ done: option.value })}
                         className={cn(
-                          "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
+                          "inline-flex items-center justify-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
                           selected
                             ? option.value
                               ? "border-success bg-success text-background"
                               : "border-danger bg-danger text-background"
-                            : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+                            : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
                         )}
                       >
                         <span
@@ -234,6 +233,7 @@ export function TodoFormDialog({
             </div>
           ) : (
             <div className="space-y-4">
+
               <TodoImageDropzone
                 files={pendingImages}
                 mode={mode}
@@ -242,15 +242,20 @@ export function TodoFormDialog({
               />
 
               {mode === "edit" ? (
-                <section className="rounded-[24px] border border-white/8 bg-surface-elevated/55 p-4">
-                  <div className="mb-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/60">
-                      Synced images
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-text-secondary">
-                      Review the images already attached, open them large, set the
-                      cover, or remove extras.
-                    </p>
+                <section className="rounded-[22px] border border-white/8 bg-surface-elevated/55 p-3.5 sm:p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+                        Saved images
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-text-secondary">
+                        Review the synced images, set a cover, or remove extras.
+                      </p>
+                    </div>
+
+                    <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                      {savedImagesCount}
+                    </span>
                   </div>
 
                   <TodoImageCarousel
@@ -258,26 +263,26 @@ export function TodoFormDialog({
                     currentIndex={resolvedImageIndex}
                     emptyDescription="This item has no synced images yet."
                     emptyTitle="No synced images"
-                    heightClass="h-56"
+                    heightClass="h-52"
                     onImageClick={onOpenGallery}
                     onIndexChange={setActiveImageIndex}
                   />
 
                   {selectedImage ? (
-                    <div className="mt-4 flex flex-col gap-3 rounded-[20px] border border-white/8 bg-background/40 p-4 md:flex-row md:items-center md:justify-between">
+                    <div className="mt-3 flex flex-col gap-3 rounded-[18px] border border-white/8 bg-background/40 p-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-sm font-semibold text-text-primary">
                           {selectedImage.isPrimary
                             ? "Current cover image"
                             : "Selected image"}
                         </p>
-                        <p className="mt-1 text-sm text-text-secondary">
-                          {selectedImage.format.toUpperCase()} file ready for cover
-                          actions
+                        <p className="mt-1 text-xs leading-5 text-text-secondary">
+                          {selectedImage.format.toUpperCase()} asset ready for image
+                          actions.
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => onSetCover(selectedImage.id)}
@@ -302,12 +307,12 @@ export function TodoFormDialog({
             </div>
           )}
 
-          <div className="mt-6 flex flex-col gap-3 border-t border-white/8 pt-5 sm:flex-row sm:justify-between">
-            <div className="flex gap-3">
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-2xl border border-border px-4 py-3 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-border px-4 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:min-w-[120px]"
               >
                 Cancel
               </button>
@@ -315,7 +320,7 @@ export function TodoFormDialog({
                 <button
                   type="button"
                   onClick={() => setStep(0)}
-                  className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/10 px-4 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:min-w-[120px]"
                 >
                   Back
                 </button>
@@ -327,7 +332,7 @@ export function TodoFormDialog({
                 type="button"
                 onClick={() => setStep(1)}
                 disabled={!canContinue}
-                className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:min-w-[150px]"
               >
                 Continue
               </button>
@@ -335,7 +340,7 @@ export function TodoFormDialog({
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:min-w-[160px]"
               >
                 {saving
                   ? "Saving..."
@@ -345,8 +350,8 @@ export function TodoFormDialog({
               </button>
             )}
           </div>
-        </section>
-      </form>
+        </form>
+      </div>
     </Dialog>
   );
 }
@@ -372,8 +377,10 @@ function StepButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex-1 rounded-[18px] px-4 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-45",
-        active ? "bg-primary text-background" : "text-text-secondary hover:text-text-primary",
+        "flex-1 rounded-[16px] px-3.5 py-2.5 text-left transition-all disabled:cursor-not-allowed disabled:opacity-45",
+        active
+          ? "bg-primary text-background shadow-[0_10px_30px_rgba(199,191,167,0.2)]"
+          : "text-text-secondary hover:text-text-primary",
       )}
     >
       <p
@@ -393,6 +400,32 @@ function StepButton({
         {title}
       </p>
     </button>
+  );
+}
+
+function MiniStat({
+  helperText,
+  label,
+  value,
+}: {
+  helperText?: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[18px] border border-white/8 bg-surface-elevated/70 px-3.5 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+        {label}
+      </p>
+      <p className="mt-2 line-clamp-2 text-sm font-semibold text-text-primary">
+        {value}
+      </p>
+      {helperText ? (
+        <p className="mt-1 text-[11px] leading-5 text-text-secondary">
+          {helperText}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
