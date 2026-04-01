@@ -38,11 +38,6 @@ export function TodoExpenseDialog({
   onSubmit,
 }: TodoExpenseDialogProps) {
   const priorityMeta = PRIORITY_META[entry.priority];
-  const parsedAmount = Number(form.amount);
-  const amountPreview =
-    !Number.isNaN(parsedAmount) && parsedAmount > 0
-      ? rwf(parsedAmount)
-      : "Enter the expense amount in RWF";
 
   return (
     <Dialog onClose={onClose} className="sm:max-w-xl p-4 sm:p-5">
