@@ -24,3 +24,10 @@ export interface UpdateSavingRequest {
   note?: string;
   stillHave?: boolean;
 }
+
+export interface ListSavingsParams {
+  month?: number;
+  year?: number;
+  page?: number;
+  limit?: number;
+}
