@@ -31,7 +31,6 @@ import type {
   SavingFormDialogState,
   SavingFormValues,
 } from "./saving/saving-page.types";
-import { SavingSummaryCard } from "./saving/saving-summary-card";
 import { SavingTable } from "./saving/saving-table";
 import { SavingTableSkeleton } from "./saving/saving-table-skeleton";
 import {
@@ -39,6 +38,7 @@ import {
   createEmptySavingForm,
   createSavingExpenseFormFromEntry,
   createSavingFormFromEntry,
+  formatSavingDate,
   getCurrentMonthIndex,
   getCurrentYear,
   resolveSavingMonthLabel,
@@ -145,6 +145,9 @@ export default function SavingPage() {
     (left, right) => Number(right.amount) - Number(left.amount),
   )[0];
   const latestEntry = entries[0];
+  const inactiveSaved = Math.max(totalSaved - stillHaveSaved, 0);
+  const activeShare =
+    totalSaved > 0 ? Math.round((stillHaveSaved / totalSaved) * 100) : 0;
 
   function triggerRefresh() {
     setRefreshKey((current) => current + 1);
@@ -331,48 +334,98 @@ export default function SavingPage() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <SavingHeader onCreate={openCreateDialog} />
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.75fr)]">
-          <div className="glass-panel rounded-[32px] p-6 md:p-7">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
-              {selectedMonthLabel} {selectedYear}
-            </p>
-            <p className="mt-4 text-[2.6rem] font-semibold tracking-heading-lg text-text-primary">
-              {usdCompact(totalSaved)}
-            </p>
-            <div className="mt-6 flex items-center gap-3 text-sm text-text-secondary">
-              <span className="h-2.5 w-2.5 rounded-full bg-success" />
-              <span>
-                {entries.length} {entries.length === 1 ? "entry" : "entries"}{" "}
-                recorded in USD for {selectedMonthLabel}
-              </span>
+        <section className="animate-dashboard-rise">
+          <div className="group relative overflow-hidden rounded-[28px] border border-[rgba(125,211,252,0.16)] bg-[linear-gradient(145deg,rgba(11,22,31,0.96)_0%,rgba(8,14,22,0.99)_100%)] px-4 py-4 shadow-[0_18px_56px_rgba(5,18,34,0.28)] md:px-5">
+            <div className="pointer-events-none absolute inset-0">
+              <div className="motion-safe:animate-income-drift absolute -right-8 top-0 h-28 w-28 rounded-full bg-[rgba(125,211,252,0.14)] blur-3xl" />
+              <div className="motion-safe:animate-income-sweep absolute inset-y-0 left-[-28%] w-20 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)] opacity-60 blur-lg" />
             </div>
-          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <SavingSummaryCard
-              eyebrow="Still have"
-              value={usdCompact(stillHaveSaved)}
-              valueClassName={stillHaveSaved > 0 ? "text-success" : "text-text-secondary"}
-              detail={
-                activeEntries.length > 0
-                  ? `${activeEntries.length} ${
-                      activeEntries.length === 1 ? "saving record is" : "saving records are"
-                    } still available this month`
-                  : entries.length > 0
-                    ? "No saving record in this month is still marked as available"
-                    : `No savings recorded in ${selectedMonthLabel} ${selectedYear}`
-              }
-            />
-            <SavingSummaryCard
-              eyebrow="Largest"
-              value={largestSaving ? usdCompact(Number(largestSaving.amount)) : "$0.00"}
-              valueClassName="text-success"
-              detail={
-                largestSaving
-                  ? `${largestSaving.label} · ${usd(Number(largestSaving.amount))}`
-                  : "Add a saving entry to start tracking your USD reserve"
-              }
-            />
+            <div className="relative z-10 grid gap-3 lg:grid-cols-[minmax(0,1.16fr)_280px]">
+              <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1.5">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(125,211,252,0.18)] bg-[rgba(125,211,252,0.08)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7DD3FC]">
+                      <span className="motion-safe:animate-income-glow h-1.5 w-1.5 rounded-full bg-[#7DD3FC]" />
+                      Savings
+                    </span>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
+                      {selectedMonthLabel} {selectedYear}
+                    </p>
+                  </div>
+
+                  <div className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5 text-right">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/54">
+                      Ledger
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-text-primary">
+                      {entries.length} {entries.length === 1 ? "entry" : "entries"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[clamp(1.85rem,3.5vw,2.9rem)] font-semibold leading-none tracking-[-0.055em] text-white transition-transform duration-500 ease-out group-hover:translate-x-1">
+                      {usdCompact(totalSaved)}
+                    </p>
+                    <div className="mt-2 h-1.5 w-[min(220px,52vw)] overflow-hidden rounded-full bg-white/6">
+                      <div
+                        className="motion-safe:animate-income-sweep h-full rounded-full bg-[linear-gradient(90deg,rgba(125,211,252,0.52),rgba(56,189,248,1),rgba(125,211,252,0.52))] bg-[length:200%_100%]"
+                        style={{ width: `${activeShare}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full border border-[rgba(125,211,252,0.18)] bg-[rgba(125,211,252,0.08)] px-2.5 py-1 text-[11px] font-medium text-[#7DD3FC]">
+                      {usdCompact(stillHaveSaved)} still have
+                    </span>
+                    <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                      {usdCompact(inactiveSaved)} spent
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
+                      Latest
+                    </p>
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#7DD3FC]" />
+                  </div>
+                  <p className="mt-2 text-base font-semibold tracking-[-0.04em] text-text-primary">
+                    {latestEntry ? formatSavingDate(latestEntry.date) : "No entries yet"}
+                  </p>
+                  <p className="mt-1.5 text-xs leading-5 text-text-secondary">
+                    {latestEntry
+                      ? latestEntry.label
+                      : `No savings recorded in ${selectedMonthLabel}.`}
+                  </p>
+                </div>
+
+                <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
+                      Largest
+                    </p>
+                    <span className="text-[11px] font-medium text-[#7DD3FC]">
+                      {activeShare}%
+                    </span>
+                  </div>
+                  <p className="mt-2 text-base font-semibold leading-tight tracking-[-0.04em] text-text-primary">
+                    {largestSaving ? usdCompact(Number(largestSaving.amount)) : "$0.00"}
+                  </p>
+                  <p className="mt-1.5 text-xs leading-5 text-text-secondary">
+                    {largestSaving
+                      ? `${largestSaving.label} · ${usd(Number(largestSaving.amount))}`
+                      : "Add a saving entry to start tracking your reserve."}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
