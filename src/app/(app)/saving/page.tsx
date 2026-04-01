@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
+import { createExpense } from "@/lib/api/expenses/expenses.api";
 import {
   createSaving,
   deleteSaving,
@@ -17,10 +18,13 @@ import type {
   SavingResponse,
 } from "@/lib/types/saving.types";
 import { usd, usdCompact } from "@/lib/utils/currency";
+import { SavingExpenseDialog } from "./saving/saving-expense-dialog";
 import { SavingFormDialog } from "./saving/saving-form-dialog";
 import { SavingHeader } from "./saving/saving-header";
 import { SavingLedgerFilters } from "./saving/saving-ledger-filters";
 import type {
+  SavingExpenseDialogState,
+  SavingExpenseFormValues,
   SavingFormDialogState,
   SavingFormValues,
 } from "./saving/saving-page.types";
@@ -28,7 +32,9 @@ import { SavingSummaryCard } from "./saving/saving-summary-card";
 import { SavingTable } from "./saving/saving-table";
 import { SavingTableSkeleton } from "./saving/saving-table-skeleton";
 import {
+  createEmptySavingExpenseForm,
   createEmptySavingForm,
+  createSavingExpenseFormFromEntry,
   createSavingFormFromEntry,
   getCurrentMonthIndex,
   getCurrentYear,
@@ -46,13 +52,19 @@ export default function SavingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [recordingExpense, setRecordingExpense] = useState(false);
   const [stillHaveBusyId, setStillHaveBusyId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [formDialog, setFormDialog] = useState<SavingFormDialogState>(null);
+  const [expenseDialog, setExpenseDialog] =
+    useState<SavingExpenseDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<SavingResponse | null>(null);
   const [form, setForm] = useState<SavingFormValues>(() =>
     createEmptySavingForm(),
+  );
+  const [expenseForm, setExpenseForm] = useState<SavingExpenseFormValues>(() =>
+    createEmptySavingExpenseForm(),
   );
 
   useEffect(() => {
@@ -124,8 +136,22 @@ export default function SavingPage() {
     setForm(createEmptySavingForm(selectedMonth, selectedYear));
   }
 
+  function openExpenseDialog(entry: SavingResponse) {
+    setExpenseForm(createSavingExpenseFormFromEntry(entry));
+    setExpenseDialog({ entry });
+  }
+
+  function closeExpenseDialog() {
+    setExpenseDialog(null);
+    setExpenseForm(createEmptySavingExpenseForm());
+  }
+
   function updateForm(next: Partial<SavingFormValues>) {
     setForm((current) => ({ ...current, ...next }));
+  }
+
+  function updateExpenseForm(next: Partial<SavingExpenseFormValues>) {
+    setExpenseForm((current) => ({ ...current, ...next }));
   }
 
   async function refreshSavings() {
@@ -228,6 +254,44 @@ export default function SavingPage() {
       );
     } finally {
       setStillHaveBusyId(null);
+    }
+  }
+
+  async function handleRecordExpense(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!token || !expenseDialog) return;
+
+    const amount = Number(expenseForm.amountRwf);
+
+    if (Number.isNaN(amount) || amount <= 0) {
+      toast.error("Enter the converted expense amount in RWF.");
+      return;
+    }
+
+    setRecordingExpense(true);
+
+    try {
+      await createExpense(token, {
+        label: expenseDialog.entry.label,
+        amount,
+        category: "SAVINGS",
+        date: expenseForm.date,
+        ...(expenseForm.note.trim() ? { note: expenseForm.note.trim() } : {}),
+      });
+
+      closeExpenseDialog();
+      toast.success("Expense recorded from saving.");
+    } catch (recordError) {
+      toast.error(
+        recordError instanceof ApiError
+          ? recordError.message
+          : "Expense could not be recorded right now.",
+      );
+    } finally {
+      setRecordingExpense(false);
     }
   }
 
@@ -345,6 +409,7 @@ export default function SavingPage() {
               entries={entries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
+              onRecordExpense={openExpenseDialog}
               onToggleStillHave={handleToggleStillHave}
             />
           )}
@@ -359,6 +424,17 @@ export default function SavingPage() {
           onChange={updateForm}
           onClose={closeFormDialog}
           onSubmit={handleSubmit}
+        />
+      ) : null}
+
+      {expenseDialog ? (
+        <SavingExpenseDialog
+          entry={expenseDialog.entry}
+          form={expenseForm}
+          saving={recordingExpense}
+          onChange={updateExpenseForm}
+          onClose={closeExpenseDialog}
+          onSubmit={handleRecordExpense}
         />
       ) : null}
 
