@@ -65,7 +65,7 @@ export function TodoFormDialog({
     step === 0
       ? "Start with the name, planned price, and priority."
       : mode === "create"
-        ? "Add the product images required before creating this item."
+        ? "Add product images if you want them now, or skip this step and create the item without any."
         : "Upload more images and manage the ones already synced.";
 
   return (
@@ -329,12 +329,12 @@ export function TodoFormDialog({
                 disabled={!canContinue}
                 className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                Continue to images
+                Continue
               </button>
             ) : (
               <button
                 type="submit"
-                disabled={saving || (mode === "create" && pendingImages.length === 0)}
+                disabled={saving}
                 className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {saving
