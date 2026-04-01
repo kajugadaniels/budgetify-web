@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils/cn";
 import { formatTodoFileSize } from "./todos.utils";
 
 interface TodoImageDropzoneProps {
+  embedded?: boolean;
   files: File[];
   mode: "create" | "edit";
   onAddFiles: (files: File[]) => void;
@@ -13,6 +14,7 @@ interface TodoImageDropzoneProps {
 }
 
 export function TodoImageDropzone({
+  embedded = false,
   files,
   mode,
   onAddFiles,
@@ -43,7 +45,7 @@ export function TodoImageDropzone({
   }
 
   return (
-    <section className="rounded-[22px] border border-white/8 bg-background-secondary/60 p-3.5">
+    <div className={cn("flex h-full flex-col", !embedded && "rounded-[22px] border border-white/8 bg-background-secondary/60 p-3.5")}>
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
@@ -73,7 +75,7 @@ export function TodoImageDropzone({
           handleFiles(event.dataTransfer.files);
         }}
         className={cn(
-          "flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed px-4 py-5 text-center transition-all",
+          "flex min-h-[136px] flex-1 cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed px-4 py-5 text-center transition-all",
           isDragging
             ? "border-primary bg-primary/8"
             : "border-white/12 bg-surface-elevated/80 hover:border-primary/35 hover:bg-surface-elevated",
@@ -134,6 +136,6 @@ export function TodoImageDropzone({
           ))}
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }
