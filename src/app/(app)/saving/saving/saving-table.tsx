@@ -7,6 +7,7 @@ interface SavingTableProps {
   entries: SavingResponse[];
   onDelete: (entry: SavingResponse) => void;
   onEdit: (entry: SavingResponse) => void;
+  onRecordExpense: (entry: SavingResponse) => void;
   onToggleStillHave: (entry: SavingResponse) => void;
 }
 
@@ -15,11 +16,12 @@ export function SavingTable({
   entries,
   onDelete,
   onEdit,
+  onRecordExpense,
   onToggleStillHave,
 }: SavingTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[980px] border-separate border-spacing-0">
+      <table className="w-full min-w-[1080px] border-separate border-spacing-0">
         <thead>
           <tr className="text-left">
             {["Label", "Date", "Still have", "Amount", "Note", "Actions"].map((label) => (
@@ -95,6 +97,13 @@ export function SavingTable({
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onRecordExpense(entry)}
+                    className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/16"
+                  >
+                    Record expense
+                  </button>
                   <button
                     type="button"
                     onClick={() => onEdit(entry)}
