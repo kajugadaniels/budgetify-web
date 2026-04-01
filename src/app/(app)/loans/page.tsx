@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
@@ -10,9 +11,11 @@ import {
   createLoan,
   deleteLoan,
   listLoans,
+  listLoansPage,
   sendLoanToExpense,
   updateLoan,
 } from "@/lib/api/loans/loans.api";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
 import type {
   CreateLoanRequest,
   LoanResponse,
@@ -38,7 +41,6 @@ import {
   createEmptyLoanSettlementForm,
   createLoanFormFromEntry,
   createLoanSettlementFormFromEntry,
-  filterLoanEntries,
   getCurrentMonthIndex,
   getCurrentYear,
   resolveLoanMonthLabel,
@@ -52,11 +54,16 @@ export default function LoansPage() {
   const defaultYear = getCurrentYear();
 
   const [entries, setEntries] = useState<LoanResponse[]>([]);
+  const [pageEntries, setPageEntries] = useState<LoanResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [settling, setSettling] = useState(false);
   const [paidBusyId, setPaidBusyId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [selectedPaid, setSelectedPaid] =
@@ -79,13 +86,34 @@ export default function LoansPage() {
       setError(null);
 
       try {
-        const response = await listLoans(sessionToken, {
-          month: selectedMonth + 1,
-          year: selectedYear,
-        });
+        const [summaryResponse, pageResponse] = await Promise.all([
+          listLoans(sessionToken, {
+            month: selectedMonth + 1,
+            year: selectedYear,
+          }),
+          listLoansPage(sessionToken, {
+            month: selectedMonth + 1,
+            year: selectedYear,
+            paid:
+              selectedPaid === "ALL"
+                ? undefined
+                : selectedPaid === "PAID",
+            page: currentPage,
+            limit: DEFAULT_PAGE_SIZE,
+          }),
+        ]);
 
         if (!ignore) {
-          setEntries(sortLoanEntries(response));
+          setEntries(sortLoanEntries(summaryResponse));
+
+          if (pageResponse.meta.totalPages < currentPage) {
+            setCurrentPage(pageResponse.meta.totalPages);
+            return;
+          }
+
+          setPageEntries(sortLoanEntries(pageResponse.items));
+          setTotalItems(pageResponse.meta.totalItems);
+          setTotalPages(pageResponse.meta.totalPages);
         }
       } catch (loadError) {
         if (!ignore) {
@@ -107,10 +135,9 @@ export default function LoansPage() {
     return () => {
       ignore = true;
     };
-  }, [selectedMonth, selectedYear, token]);
+  }, [currentPage, refreshKey, selectedMonth, selectedPaid, selectedYear, token]);
 
   const selectedMonthLabel = resolveLoanMonthLabel(selectedMonth);
-  const filteredEntries = filterLoanEntries(entries, selectedPaid);
   const hasActiveFilters =
     selectedMonth !== defaultMonth ||
     selectedYear !== defaultYear ||
@@ -123,6 +150,10 @@ export default function LoansPage() {
   const largestLoan = [...entries].sort(
     (left, right) => Number(right.amount) - Number(left.amount),
   )[0];
+
+  function triggerRefresh() {
+    setRefreshKey((current) => current + 1);
+  }
 
   function openCreateDialog() {
     setForm(createEmptyLoanForm(selectedMonth, selectedYear));
@@ -162,17 +193,6 @@ export default function LoansPage() {
     setSettlementForm((current) => ({ ...current, ...next }));
   }
 
-  async function refreshLoans() {
-    if (!token) return;
-
-    const refreshed = await listLoans(token, {
-      month: selectedMonth + 1,
-      year: selectedYear,
-    });
-
-    setEntries(sortLoanEntries(refreshed));
-  }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -198,12 +218,17 @@ export default function LoansPage() {
       if (formDialog.mode === "edit") {
         await updateLoan(token, formDialog.entry.id, payload);
         toast.success("Loan updated.");
+        triggerRefresh();
       } else {
         await createLoan(token, payload);
         toast.success("Loan added.");
-      }
 
-      await refreshLoans();
+        if (currentPage !== 1) {
+          setCurrentPage(1);
+        } else {
+          triggerRefresh();
+        }
+      }
       closeFormDialog();
     } catch (saveError) {
       toast.error(
@@ -221,7 +246,13 @@ export default function LoansPage() {
 
     try {
       await deleteLoan(token, deleteTarget.id);
-      await refreshLoans();
+
+      if (pageEntries.length === 1 && currentPage > 1) {
+        setCurrentPage((page) => page - 1);
+      } else {
+        triggerRefresh();
+      }
+
       toast.success("Loan deleted.");
 
       if (
@@ -264,7 +295,8 @@ export default function LoansPage() {
 
     try {
       await sendLoanToExpense(token, settlementDialog.entry.id, payload);
-      await refreshLoans();
+
+      triggerRefresh();
 
       if (
         formDialog?.mode === "edit" &&
@@ -294,7 +326,7 @@ export default function LoansPage() {
 
     try {
       await updateLoan(token, entry.id, { paid: nextPaid });
-      await refreshLoans();
+      triggerRefresh();
       toast.success(nextPaid ? "Loan marked as paid." : "Loan marked as unpaid.");
     } catch (toggleError) {
       toast.error(
@@ -368,26 +400,36 @@ export default function LoansPage() {
               </h2>
             </div>
             <p className="text-sm text-text-secondary">
-              {filteredEntries.length}
+              {totalItems}
               {hasActiveFilters ? ` of ${entries.length}` : ""}{" "}
-              {filteredEntries.length === 1 ? "loan" : "loans"}
+              {totalItems === 1 ? "loan" : "loans"}
             </p>
           </div>
 
-            <LoansLedgerFilters
-              hasActiveFilters={hasActiveFilters}
-              month={selectedMonth}
-              paid={selectedPaid}
-              year={selectedYear}
-              onClear={() => {
-                setSelectedMonth(defaultMonth);
-                setSelectedYear(defaultYear);
-                setSelectedPaid("ALL");
-              }}
-              onMonthChange={setSelectedMonth}
-              onPaidChange={setSelectedPaid}
-              onYearChange={setSelectedYear}
-            />
+          <LoansLedgerFilters
+            hasActiveFilters={hasActiveFilters}
+            month={selectedMonth}
+            paid={selectedPaid}
+            year={selectedYear}
+            onClear={() => {
+              setSelectedMonth(defaultMonth);
+              setSelectedYear(defaultYear);
+              setSelectedPaid("ALL");
+              setCurrentPage(1);
+            }}
+            onMonthChange={(value) => {
+              setSelectedMonth(value);
+              setCurrentPage(1);
+            }}
+            onPaidChange={(value) => {
+              setSelectedPaid(value);
+              setCurrentPage(1);
+            }}
+            onYearChange={(value) => {
+              setSelectedYear(value);
+              setCurrentPage(1);
+            }}
+          />
 
           {loading ? (
             <LoansTableSkeleton />
@@ -413,7 +455,7 @@ export default function LoansPage() {
                 }}
               />
             </div>
-          ) : filteredEntries.length === 0 ? (
+          ) : totalItems === 0 ? (
             <div className="px-5 pb-5 md:px-6 md:pb-6">
               <EmptyState
                 title="No ledger matches"
@@ -424,6 +466,7 @@ export default function LoansPage() {
                     setSelectedMonth(defaultMonth);
                     setSelectedYear(defaultYear);
                     setSelectedPaid("ALL");
+                    setCurrentPage(1);
                   },
                 }}
               />
@@ -431,13 +474,22 @@ export default function LoansPage() {
           ) : (
             <LoansTable
               busyPaidId={paidBusyId}
-              entries={filteredEntries}
+              entries={pageEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
               onSendToExpense={openSettlementDialog}
               onTogglePaid={handleTogglePaid}
             />
           )}
+
+          <PaginationControls
+            currentPage={currentPage}
+            pageSize={DEFAULT_PAGE_SIZE}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            itemLabel="loan"
+            onPageChange={setCurrentPage}
+          />
         </section>
       </div>
 
