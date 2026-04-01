@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-type DashboardSummaryTone = "income" | "expense" | "saving";
+type DashboardSummaryTone = "income" | "expense" | "saving" | "todo";
 
 interface DashboardSummaryCardProps {
   label: string;
@@ -25,9 +25,14 @@ const TONE_STYLES: Record<
     value: "text-danger",
   },
   saving: {
-    chip: "bg-primary/12 text-primary",
-    dot: "bg-primary",
-    value: "text-primary",
+    chip: "bg-sky-500/12 text-sky-300",
+    dot: "bg-sky-400",
+    value: "text-sky-300",
+  },
+  todo: {
+    chip: "bg-amber-500/12 text-amber-300",
+    dot: "bg-amber-400",
+    value: "text-amber-300",
   },
 };
 
