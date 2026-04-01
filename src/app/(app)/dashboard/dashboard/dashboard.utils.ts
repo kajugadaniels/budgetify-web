@@ -1,5 +1,9 @@
 import { MONTH_OPTIONS } from "@/constant/months";
-import type { ExpenseResponse } from "@/lib/types/expense.types";
+import type {
+  ExpenseCategory,
+  ExpenseCategoryOptionResponse,
+  ExpenseResponse,
+} from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
 import type { LoanResponse } from "@/lib/types/loan.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
@@ -12,6 +16,19 @@ export interface DashboardDailyBarDatum {
   expense: number;
   hasActivity: boolean;
   income: number;
+  total: number;
+}
+
+export interface DashboardExpenseCategorySegmentDatum {
+  amount: number;
+  category: ExpenseCategory;
+  label: string;
+}
+
+export interface DashboardExpenseCategoryDayDatum {
+  day: number;
+  hasSpending: boolean;
+  segments: DashboardExpenseCategorySegmentDatum[];
   total: number;
 }
 
@@ -132,6 +149,63 @@ export function sumTodoAmounts(
   }, 0);
 }
 
+export function buildDailyExpenseCategoryData(
+  entries: ExpenseResponse[],
+  categories: ExpenseCategoryOptionResponse[],
+  month: number,
+  year: number,
+): DashboardExpenseCategoryDayDatum[] {
+  const days = getDaysInMonth(month, year);
+  const labelLookup = new Map(
+    categories.map((category) => [category.value, category.label]),
+  );
+  const points = Array.from({ length: days }, (_, index) => ({
+    day: index + 1,
+    totals: new Map<ExpenseCategory, number>(),
+  }));
+
+  entries.forEach((entry) => {
+    const entryDate = new Date(entry.date);
+
+    if (
+      entryDate.getMonth() !== month ||
+      entryDate.getFullYear() !== year
+    ) {
+      return;
+    }
+
+    const point = points[entryDate.getDate() - 1];
+
+    if (!point) {
+      return;
+    }
+
+    point.totals.set(
+      entry.category,
+      (point.totals.get(entry.category) ?? 0) + Number(entry.amount),
+    );
+  });
+
+  return points.map((point) => {
+    const segments = Array.from(point.totals.entries())
+      .map(([category, amount]) => ({
+        amount,
+        category,
+        label: labelLookup.get(category) ?? humanizeDashboardCategory(category),
+      }))
+      .sort((left, right) => right.amount - left.amount);
+
+    const total = segments.reduce((sum, segment) => sum + segment.amount, 0);
+
+    return {
+      day: point.day,
+      hasSpending: total > 0,
+      segments,
+      total,
+    };
+  });
+}
+
 export function resolveDashboardLoanDateRange(
   entries: LoanResponse[],
 ): DashboardLoanDateRange | null {
@@ -206,4 +280,12 @@ export function formatDashboardDateLabel(value: string): string {
 
 function toDateInputValue(date: Date): string {
   return date.toISOString().split("T")[0] ?? "";
+}
+
+function humanizeDashboardCategory(value: string): string {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
