@@ -1,6 +1,9 @@
 import { MONTH_OPTIONS } from "@/constant/months";
 import type { SavingResponse } from "@/lib/types/saving.types";
-import type { SavingFormValues } from "./saving-page.types";
+import type {
+  SavingExpenseFormValues,
+  SavingFormValues,
+} from "./saving-page.types";
 
 export function getTodayString(): string {
   return new Date().toISOString().split("T")[0] ?? "";
@@ -48,6 +51,24 @@ export function createSavingFormFromEntry(
   return {
     label: entry.label,
     amount: String(entry.amount),
+    date: entry.date.split("T")[0] ?? getTodayString(),
+    note: entry.note ?? "",
+  };
+}
+
+export function createEmptySavingExpenseForm(): SavingExpenseFormValues {
+  return {
+    amountRwf: "",
+    date: getTodayString(),
+    note: "",
+  };
+}
+
+export function createSavingExpenseFormFromEntry(
+  entry: SavingResponse,
+): SavingExpenseFormValues {
+  return {
+    amountRwf: "",
     date: entry.date.split("T")[0] ?? getTodayString(),
     note: entry.note ?? "",
   };
