@@ -5,19 +5,23 @@ import { TodoImageCarousel } from "./todo-image-carousel";
 
 interface TodoCardProps {
   busyDone: boolean;
+  busyRecordExpense: boolean;
   entry: TodoResponse;
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
   onOpenGallery: (todoId: string, index: number) => void;
+  onRecordExpense: (entry: TodoResponse) => void;
   onToggleDone: (entry: TodoResponse) => void;
 }
 
 export function TodoCard({
   busyDone,
+  busyRecordExpense,
   entry,
   onDelete,
   onEdit,
   onOpenGallery,
+  onRecordExpense,
   onToggleDone,
 }: TodoCardProps) {
   const meta = PRIORITY_META[entry.priority];
@@ -73,7 +77,23 @@ export function TodoCard({
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-end gap-2 border-t border-white/8 pt-4">
+        <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-white/8 pt-4">
+          <button
+            type="button"
+            onClick={() => onRecordExpense(entry)}
+            disabled={busyRecordExpense || entry.done}
+            className={
+              busyRecordExpense || entry.done
+                ? "rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-text-secondary opacity-70"
+                : "rounded-full border border-primary/25 bg-primary/10 px-3.5 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/16"
+            }
+          >
+            {busyRecordExpense
+              ? "Recording..."
+              : entry.done
+                ? "Recorded"
+                : "Record expense"}
+          </button>
           <button
             type="button"
             onClick={() => onEdit(entry)}
