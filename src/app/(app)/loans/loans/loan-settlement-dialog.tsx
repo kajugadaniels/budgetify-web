@@ -38,28 +38,12 @@ export function LoanSettlementDialog({
             <h2 className="text-2xl font-semibold tracking-heading-md text-text-primary">
               Settle this loan into expenses
             </h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-text-secondary">
-              This will create a new expense entry in the Loan category and mark
-              this loan as paid in the same action.
-            </p>
           </div>
-          <span className="inline-flex h-10 items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            Category: Loan
-          </span>
         </div>
       </div>
 
       <form className="space-y-5" onSubmit={onSubmit}>
-        <section className="grid gap-3 rounded-[28px] border border-white/8 bg-background/40 p-4 md:grid-cols-3 md:p-5">
-          <SummaryBlock label="Loan label" value={entry.label} />
-          <SummaryBlock label="Loan amount" value={rwf(Number(entry.amount))} />
-          <SummaryBlock
-            label="Recorded on"
-            value={formatLoanDate(entry.date)}
-          />
-        </section>
-
-        <div className="grid gap-4 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
+        <div className="">
           <Field label="Expense date">
             <input
               type="date"
@@ -69,17 +53,6 @@ export function LoanSettlementDialog({
               required
             />
           </Field>
-
-          <div className="rounded-[24px] border border-white/8 bg-background/34 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-secondary/55">
-              What happens next
-            </p>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">
-              <li>The expense label and amount will match this loan.</li>
-              <li>The expense category will be fixed to Loan.</li>
-              <li>The loan will immediately switch to Paid.</li>
-            </ul>
-          </div>
         </div>
 
         <Field label="Expense note">
