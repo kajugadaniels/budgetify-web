@@ -47,11 +47,11 @@ export function TodoImageDropzone({
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/60">
-            {mode === "create" ? "Upload images" : "Add more images"}
+            {mode === "create" ? "Upload images (optional)" : "Add more images"}
           </p>
           <p className="mt-2 text-sm leading-6 text-text-secondary">
             {mode === "create"
-              ? "Drop product images here before you create the item. A new wishlist item needs at least one image."
+              ? "Drop product images here if you want this wishlist item to have visuals from day one. You can also create it without any images."
               : "Append more images to this wishlist item, then save once to upload them."}
           </p>
         </div>
