@@ -8,9 +8,11 @@ import { ApiError } from "@/lib/api/client";
 import { listExpenses } from "@/lib/api/expenses/expenses.api";
 import { listIncome } from "@/lib/api/income/income.api";
 import { listSavings } from "@/lib/api/savings/savings.api";
+import { listTodos } from "@/lib/api/todos/todos.api";
 import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
+import type { TodoResponse } from "@/lib/types/todo.types";
 import { rwf, rwfCompact, usd, usdCompact } from "@/lib/utils/currency";
 import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
@@ -23,6 +25,7 @@ import {
   sumExpenseAmounts,
   sumIncomeAmounts,
   sumSavingAmounts,
+  sumTodoAmounts,
 } from "./dashboard/dashboard.utils";
 
 const CURRENT_MONTH = new Date().getMonth();
@@ -35,6 +38,7 @@ export default function DashboardPage() {
   const [allIncome, setAllIncome] = useState<IncomeResponse[]>([]);
   const [allExpenses, setAllExpenses] = useState<ExpenseResponse[]>([]);
   const [allSavings, setAllSavings] = useState<SavingResponse[]>([]);
+  const [allTodos, setAllTodos] = useState<TodoResponse[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,12 +58,14 @@ export default function DashboardPage() {
           allIncomeResponse,
           allExpenseResponse,
           allSavingResponse,
+          allTodoResponse,
           incomeResponse,
           expenseResponse,
         ] = await Promise.all([
           listIncome(sessionToken),
           listExpenses(sessionToken),
           listSavings(sessionToken),
+          listTodos(sessionToken),
           listIncome(sessionToken, {
             month: selectedMonth + 1,
             year: CURRENT_YEAR,
@@ -74,6 +80,7 @@ export default function DashboardPage() {
           setAllIncome(allIncomeResponse);
           setAllExpenses(allExpenseResponse);
           setAllSavings(allSavingResponse);
+          setAllTodos(allTodoResponse);
           setIncome(incomeResponse);
           setExpenses(expenseResponse);
         }
@@ -110,6 +117,9 @@ export default function DashboardPage() {
     stillHaveOnly: true,
   });
   const moneyStillHave = sumIncomeAmounts(allIncome) - sumExpenseAmounts(allExpenses);
+  const totalPendingTodoAmount = sumTodoAmounts(allTodos, {
+    pendingOnly: true,
+  });
 
   if (loading) {
     return (
@@ -118,8 +128,8 @@ export default function DashboardPage() {
           <div className="glass-panel h-[120px] animate-pulse rounded-[32px]" />
           <div className="glass-panel h-[88px] animate-pulse rounded-[28px]" />
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
-          <div className="grid gap-4 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
+          <div className="grid gap-4 xl:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, index) => (
               <div
                 key={index}
                 className="glass-panel h-[200px] animate-pulse rounded-[30px]"
@@ -165,7 +175,8 @@ export default function DashboardPage() {
               <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
                 Switch between months to see the total income and expenses for
                 that period, alongside all-time savings you still hold and the
-                money left after income minus expense.
+                money left after income minus expense, plus the cost of todos
+                you still have not completed.
               </p>
             </div>
 
@@ -181,7 +192,7 @@ export default function DashboardPage() {
           onSelect={setSelectedMonth}
         />
 
-        <section className="grid gap-4 xl:grid-cols-4">
+        <section className="grid gap-4 xl:grid-cols-5">
           <DashboardSummaryCard
             label="Total income"
             tone="income"
@@ -205,10 +216,17 @@ export default function DashboardPage() {
           />
           <DashboardSummaryCard
             label="Money you still have"
-            tone={moneyStillHave >= 0 ? "saving" : "expense"}
+            tone={moneyStillHave >= 0 ? "income" : "expense"}
             compactValue={rwfCompact(moneyStillHave)}
             fullValue={rwf(moneyStillHave)}
             description="All received income minus all recorded expenses"
+          />
+          <DashboardSummaryCard
+            label="Todo amount"
+            tone="todo"
+            compactValue={rwfCompact(totalPendingTodoAmount)}
+            fullValue={rwf(totalPendingTodoAmount)}
+            description="All todo prices that are still marked as not done"
           />
         </section>
 
