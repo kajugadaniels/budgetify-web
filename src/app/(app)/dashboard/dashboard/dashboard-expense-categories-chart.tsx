@@ -146,16 +146,14 @@ export function DashboardExpenseCategoriesChart({
 
   return (
     <section className="animate-dashboard-fade motion-reduce:animate-none">
-      <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(250,204,21,0.1),transparent_26%),linear-gradient(180deg,rgba(16,19,24,0.96),rgba(9,12,16,0.94))] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.28)] md:p-6">
-        <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
-        <div className="relative flex flex-col gap-6">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+      <div className="glass-panel rounded-[36px] p-5 md:p-6">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-300/78">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary/62">
                 Expense categories
               </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-heading-lg text-text-primary md:text-[2rem]">
+              <h2 className="mt-2 text-2xl font-semibold tracking-heading-lg text-text-primary">
                 Daily spending by category
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-text-secondary">
@@ -165,30 +163,25 @@ export function DashboardExpenseCategoriesChart({
               </p>
             </div>
 
-            <div className="rounded-[28px] border border-white/10 bg-background/55 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_36px_rgba(0,0,0,0.18)] backdrop-blur-xl md:min-w-[320px] md:px-5">
-              <div className="flex items-center justify-between gap-4">
+            <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[460px]">
+              <div className="rounded-[24px] border border-white/8 bg-background-secondary/54 px-4 py-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-300/72">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/60">
                     Focus day
                   </p>
-                  <p className="mt-2 text-lg font-semibold tracking-heading-sm text-text-primary">
+                  <p className="mt-2 text-base font-semibold tracking-heading-sm text-text-primary">
                     {activeDay
                       ? formatFocusDay(activeDay.day, monthLabel, year)
                       : `${monthLabel} ${year}`}
                   </p>
                 </div>
-                <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-text-secondary">
-                  {chartMeta.hasData
-                    ? `${chartMeta.activeDays} spending days`
-                    : "No spending"}
-                </span>
               </div>
 
-              <div className="mt-4 rounded-[22px] border border-sky-400/14 bg-sky-500/8 px-4 py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-300">
+              <div className="rounded-[24px] border border-white/8 bg-background-secondary/54 px-4 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/60">
                   Total spent
                 </p>
-                <p className="mt-3 text-2xl font-semibold tracking-heading-sm text-text-primary">
+                <p className="mt-2 text-xl font-semibold tracking-heading-sm text-text-primary">
                   {rwfCompact(activeDay?.total ?? 0)}
                 </p>
                 <p className="mt-2 text-xs leading-5 text-text-secondary">
@@ -197,10 +190,22 @@ export function DashboardExpenseCategoriesChart({
                     : "No expense entries were recorded on this day."}
                 </p>
               </div>
+
+              <div className="rounded-[24px] border border-white/8 bg-background-secondary/54 px-4 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/60">
+                  Spending days
+                </p>
+                <p className="mt-2 text-xl font-semibold tracking-heading-sm text-text-primary">
+                  {chartMeta.activeDays}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-text-secondary">
+                  Days with at least one expense in {monthLabel} {year}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-[32px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:p-5">
+          <div className="rounded-[32px] border border-white/8 bg-background-secondary/44 p-4 md:p-5">
             <div className="flex flex-col gap-4 border-b border-white/8 pb-4">
               <div className="flex flex-wrap gap-2.5">
                 {chartMeta.categories.map((category) => (
@@ -222,148 +227,144 @@ export function DashboardExpenseCategoriesChart({
               </p>
             </div>
 
-            <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-x-0 bottom-7 top-0">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="absolute inset-x-0 border-t border-dashed border-white/7"
-                      style={{ top: `${index * 25}%` }}
-                    />
-                  ))}
-                </div>
-
-                <div className="overflow-x-auto pb-2 [scrollbar-width:none]">
-                  <div className="min-w-max">
-                    <div className="flex items-end gap-2.5 sm:gap-3">
-                      {data.map((point, index) => {
-                        const totalHeight = point.total
-                          ? `${Math.max((point.total / chartMeta.peak) * 100, 10)}%`
-                          : "4%";
-                        const isActive = activeIndex === index;
-
-                        return (
-                          <button
-                            key={point.day}
-                            type="button"
-                            aria-label={`${formatFocusDay(point.day, monthLabel, year)} total expense ${rwf(point.total)}`}
-                            aria-pressed={isActive}
-                            className="group/chart flex w-10 shrink-0 flex-col items-center gap-3 outline-none sm:w-11"
-                            onMouseEnter={() => setHoveredIndex(index)}
-                            onMouseLeave={() => setHoveredIndex(null)}
-                            onFocus={() => setHoveredIndex(index)}
-                            onBlur={() => setHoveredIndex(null)}
-                          >
-                            <div
-                              className={`relative flex h-72 w-full items-end justify-center rounded-[24px] px-2 pb-3 pt-6 transition-all duration-300 ${isActive ? "bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_22px_36px_rgba(0,0,0,0.18)]" : "bg-white/[0.02] hover:bg-white/[0.045]"}`}
-                            >
-                              <div
-                                className={`absolute inset-x-2 bottom-0 top-5 rounded-[20px] border transition-colors duration-300 ${isActive ? "border-sky-400/24 bg-sky-500/5" : "border-white/6 bg-background/22"}`}
-                              />
-
-                              <div
-                                className="animate-dashboard-rise relative z-10 flex w-full origin-bottom flex-col justify-end overflow-hidden rounded-[18px] border border-white/6 shadow-[0_10px_28px_rgba(0,0,0,0.18)] motion-reduce:animate-none"
-                                style={{
-                                  animationDelay: `${120 + index * 22}ms`,
-                                  height: totalHeight,
-                                }}
-                              >
-                                {point.segments.map((segment) => {
-                                  const tone =
-                                    categoryToneLookup.get(segment.category) ??
-                                    CATEGORY_TONES[0];
-
-                                  return (
-                                    <span
-                                      key={segment.category}
-                                      className={`block w-full border-t border-black/10 first:border-t-0 ${tone.fill}`}
-                                      style={{ flex: `${segment.amount} 1 0%` }}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            <span
-                              className={`text-[11px] font-medium transition-colors duration-300 ${isActive ? "text-text-primary" : "text-text-secondary/72"}`}
-                            >
-                              {point.day}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {!chartMeta.hasData ? (
-                  <p className="mt-4 text-sm leading-6 text-text-secondary">
-                    No expenses were recorded for {monthLabel} {year} yet. As
-                    soon as spending is logged, this chart will break each day
-                    down by category automatically.
-                  </p>
-                ) : null}
+            <div className="relative mt-5">
+              <div className="pointer-events-none absolute inset-x-0 bottom-7 top-0">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="absolute inset-x-0 border-t border-dashed border-white/7"
+                    style={{ top: `${index * 25}%` }}
+                  />
+                ))}
               </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-background/38 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-300/72">
-                      Category split
-                    </p>
-                    <h3 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
-                      {activeDay
-                        ? formatFocusDay(activeDay.day, monthLabel, year)
-                        : `${monthLabel} ${year}`}
-                    </h3>
-                  </div>
-                  <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-text-secondary">
-                    {rwfCompact(activeDay?.total ?? 0)}
-                  </span>
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  {activeDay?.segments.length ? (
-                    activeDay.segments.map((segment) => {
-                      const tone =
-                        categoryToneLookup.get(segment.category) ?? CATEGORY_TONES[0];
-                      const share = activeDay.total
-                        ? (segment.amount / activeDay.total) * 100
-                        : 0;
+              <div className="overflow-x-auto pb-2 [scrollbar-width:none]">
+                <div className="min-w-max">
+                  <div className="flex items-end gap-2.5 sm:gap-3">
+                    {data.map((point, index) => {
+                      const totalHeight = point.total
+                        ? `${Math.max((point.total / chartMeta.peak) * 100, 10)}%`
+                        : "4%";
+                      const isActive = activeIndex === index;
 
                       return (
-                        <div
-                          key={segment.category}
-                          className={`rounded-[22px] border px-4 py-3 ${tone.panel}`}
+                        <button
+                          key={point.day}
+                          type="button"
+                          aria-label={`${formatFocusDay(point.day, monthLabel, year)} total expense ${rwf(point.total)}`}
+                          aria-pressed={isActive}
+                          className="group/chart flex w-10 shrink-0 flex-col items-center gap-3 outline-none sm:w-11"
+                          onMouseEnter={() => setHoveredIndex(index)}
+                          onMouseLeave={() => setHoveredIndex(null)}
+                          onFocus={() => setHoveredIndex(index)}
+                          onBlur={() => setHoveredIndex(null)}
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
-                                <p className={`truncate text-sm font-semibold ${tone.accent}`}>
-                                  {segment.label}
-                                </p>
-                              </div>
-                              <p className="mt-1 text-xs text-text-secondary">
-                                {share.toFixed(1)}% of that day&apos;s expense
-                              </p>
+                          <div
+                            className={`relative flex h-72 w-full items-end justify-center rounded-[24px] border px-2 pb-3 pt-6 transition-colors ${isActive ? "border-white/14 bg-white/[0.05]" : "border-white/6 bg-background/28 hover:bg-white/[0.03]"}`}
+                          >
+                            <div className="absolute inset-x-2 bottom-3 top-5 rounded-[18px] bg-black/12" />
+
+                            <div
+                              className="animate-dashboard-rise relative z-10 flex w-full origin-bottom flex-col justify-end overflow-hidden rounded-[16px] motion-reduce:animate-none"
+                              style={{
+                                animationDelay: `${120 + index * 22}ms`,
+                                height: totalHeight,
+                              }}
+                            >
+                              {point.segments.map((segment) => {
+                                const tone =
+                                  categoryToneLookup.get(segment.category) ??
+                                  CATEGORY_TONES[0];
+
+                                return (
+                                  <span
+                                    key={segment.category}
+                                    className={`block w-full border-t border-black/10 first:border-t-0 ${tone.fill}`}
+                                    style={{ flex: `${segment.amount} 1 0%` }}
+                                  />
+                                );
+                              })}
                             </div>
-                            <p className="shrink-0 text-sm font-semibold text-text-primary">
-                              {rwf(segment.amount)}
-                            </p>
                           </div>
-                        </div>
+
+                          <span
+                            className={`text-[11px] font-medium transition-colors duration-300 ${isActive ? "text-text-primary" : "text-text-secondary/72"}`}
+                          >
+                            {point.day}
+                          </span>
+                        </button>
                       );
-                    })
-                  ) : (
-                    <div className="rounded-[22px] border border-white/8 bg-white/[0.02] px-4 py-5 text-sm leading-6 text-text-secondary">
-                      This day has no recorded spending, so there is no category
-                      split to display.
-                    </div>
-                  )}
+                    })}
+                  </div>
                 </div>
               </div>
+
+              {!chartMeta.hasData ? (
+                <p className="mt-4 text-sm leading-6 text-text-secondary">
+                  No expenses were recorded for {monthLabel} {year} yet. As
+                  soon as spending is logged, this chart will break each day
+                  down by category automatically.
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="rounded-[32px] border border-white/8 bg-background-secondary/44 p-4 md:p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/62">
+                  Category split
+                </p>
+                <h3 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
+                  {activeDay
+                    ? formatFocusDay(activeDay.day, monthLabel, year)
+                    : `${monthLabel} ${year}`}
+                </h3>
+              </div>
+              <span className="inline-flex rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-text-secondary">
+                {rwfCompact(activeDay?.total ?? 0)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {activeDay?.segments.length ? (
+                activeDay.segments.map((segment) => {
+                  const tone =
+                    categoryToneLookup.get(segment.category) ?? CATEGORY_TONES[0];
+                  const share = activeDay.total
+                    ? (segment.amount / activeDay.total) * 100
+                    : 0;
+
+                  return (
+                    <div
+                      key={segment.category}
+                      className={`rounded-[22px] border px-4 py-3 ${tone.panel}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`mt-1 h-2.5 w-2.5 rounded-full ${tone.dot}`} />
+                            <p className={`truncate text-sm font-semibold ${tone.accent}`}>
+                              {segment.label}
+                            </p>
+                          </div>
+                          <p className="mt-1 text-xs text-text-secondary">
+                            {share.toFixed(1)}% of that day&apos;s expense
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-sm font-semibold text-text-primary">
+                          {rwf(segment.amount)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-[22px] border border-white/8 bg-white/[0.02] px-4 py-5 text-sm leading-6 text-text-secondary md:col-span-2 xl:col-span-3">
+                  This day has no recorded spending, so there is no category
+                  split to display.
+                </div>
+              )}
             </div>
           </div>
         </div>
