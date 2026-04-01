@@ -46,6 +46,7 @@ export default function SavingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [stillHaveBusyId, setStillHaveBusyId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [formDialog, setFormDialog] = useState<SavingFormDialogState>(null);
@@ -98,7 +99,11 @@ export default function SavingPage() {
   const hasActiveFilters =
     selectedMonth !== defaultMonth || selectedYear !== defaultYear;
   const totalSaved = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
-  const averageSaving = entries.length > 0 ? totalSaved / entries.length : 0;
+  const activeEntries = entries.filter((entry) => entry.stillHave);
+  const stillHaveSaved = activeEntries.reduce(
+    (sum, entry) => sum + Number(entry.amount),
+    0,
+  );
   const largestSaving = [...entries].sort(
     (left, right) => Number(right.amount) - Number(left.amount),
   )[0];
@@ -201,6 +206,31 @@ export default function SavingPage() {
     }
   }
 
+  async function handleToggleStillHave(entry: SavingResponse) {
+    if (!token) return;
+
+    const nextStillHave = !entry.stillHave;
+    setStillHaveBusyId(entry.id);
+
+    try {
+      await updateSaving(token, entry.id, { stillHave: nextStillHave });
+      await refreshSavings();
+      toast.success(
+        nextStillHave
+          ? "Saving marked as still available."
+          : "Saving marked as no longer available.",
+      );
+    } catch (toggleError) {
+      toast.error(
+        toggleError instanceof ApiError
+          ? toggleError.message
+          : "Saving availability could not be updated right now.",
+      );
+    } finally {
+      setStillHaveBusyId(null);
+    }
+  }
+
   return (
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -225,15 +255,17 @@ export default function SavingPage() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
             <SavingSummaryCard
-              eyebrow="Average"
-              value={usdCompact(averageSaving)}
-              valueClassName="text-primary"
+              eyebrow="Still have"
+              value={usdCompact(stillHaveSaved)}
+              valueClassName={stillHaveSaved > 0 ? "text-success" : "text-text-secondary"}
               detail={
-                entries.length > 0
-                  ? `${entries.length} ${
-                      entries.length === 1 ? "saving record" : "saving records"
-                    } shaped this month`
-                  : `No savings recorded in ${selectedMonthLabel} ${selectedYear}`
+                activeEntries.length > 0
+                  ? `${activeEntries.length} ${
+                      activeEntries.length === 1 ? "saving record is" : "saving records are"
+                    } still available this month`
+                  : entries.length > 0
+                    ? "No saving record in this month is still marked as available"
+                    : `No savings recorded in ${selectedMonthLabel} ${selectedYear}`
               }
             />
             <SavingSummaryCard
@@ -309,9 +341,11 @@ export default function SavingPage() {
             </div>
           ) : (
             <SavingTable
+              busyStillHaveId={stillHaveBusyId}
               entries={entries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
+              onToggleStillHave={handleToggleStillHave}
             />
           )}
         </section>
