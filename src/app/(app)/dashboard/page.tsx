@@ -265,6 +265,7 @@ export default function DashboardPage() {
 
         <DashboardExpenseCategoriesChart
           data={dailyExpenseCategoryData}
+          month={selectedMonth}
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
           year={CURRENT_YEAR}
         />

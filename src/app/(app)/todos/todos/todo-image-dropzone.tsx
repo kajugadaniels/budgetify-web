@@ -49,11 +49,6 @@ export function TodoImageDropzone({
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/60">
             {mode === "create" ? "Upload images (optional)" : "Add more images"}
           </p>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">
-            {mode === "create"
-              ? "Drop product images here if you want this wishlist item to have visuals from day one. You can also create it without any images."
-              : "Append more images to this wishlist item, then save once to upload them."}
-          </p>
         </div>
 
         <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-text-secondary">
