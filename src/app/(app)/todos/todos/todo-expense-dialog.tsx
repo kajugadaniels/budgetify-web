@@ -100,7 +100,7 @@ export function TodoExpenseDialog({
             </div>
           </section>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="">
             <Field label="Expense category">
               <Select
                 value={form.category}
@@ -110,7 +110,7 @@ export function TodoExpenseDialog({
                   })
                 }
               >
-                <SelectTrigger className="h-[50px] rounded-2xl border-border bg-surface-elevated text-sm text-text-primary focus-visible:border-primary/60 focus-visible:ring-primary/20">
+                <SelectTrigger className="h-[50px] w-full rounded-2xl border-border bg-surface-elevated text-sm text-text-primary focus-visible:border-primary/60 focus-visible:ring-primary/20">
                   <SelectValue placeholder="Select expense category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,7 +122,9 @@ export function TodoExpenseDialog({
                 </SelectContent>
               </Select>
             </Field>
+          </div>
 
+          <div className="">
             <Field label="Expense date">
               <input
                 type="date"
@@ -134,7 +136,7 @@ export function TodoExpenseDialog({
             </Field>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(180px,0.72fr)]">
+          <div className="">
             <Field label="Amount in RWF">
               <input
                 type="number"
@@ -148,18 +150,6 @@ export function TodoExpenseDialog({
                 required
               />
             </Field>
-
-            <div className="rounded-[20px] border border-primary/12 bg-primary/6 px-3.5 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
-                Preview
-              </p>
-              <p className="mt-2 text-base font-semibold tracking-[-0.03em] text-text-primary">
-                {amountPreview}
-              </p>
-              <p className="mt-2 text-xs leading-5 text-text-secondary">
-                The created expense keeps this todo name as its label.
-              </p>
-            </div>
           </div>
 
           <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
