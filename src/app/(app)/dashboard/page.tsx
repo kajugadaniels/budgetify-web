@@ -11,7 +11,7 @@ import { listSavings } from "@/lib/api/savings/savings.api";
 import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
-import { rwfCompact, usdCompact } from "@/lib/utils/currency";
+import { rwf, rwfCompact, usd, usdCompact } from "@/lib/utils/currency";
 import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
 import { DashboardMonthSwitcher } from "./dashboard/dashboard-month-switcher";
@@ -185,25 +185,29 @@ export default function DashboardPage() {
           <DashboardSummaryCard
             label="Total income"
             tone="income"
-            value={rwfCompact(totalIncome)}
+            compactValue={rwfCompact(totalIncome)}
+            fullValue={rwf(totalIncome)}
             description={`Received in ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
           />
           <DashboardSummaryCard
             label="Total expense"
             tone="expense"
-            value={rwfCompact(totalExpenses)}
+            compactValue={rwfCompact(totalExpenses)}
+            fullValue={rwf(totalExpenses)}
             description={`Recorded for ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
           />
           <DashboardSummaryCard
             label="Savings you still have"
             tone="saving"
-            value={usdCompact(totalActiveSavings)}
+            compactValue={usdCompact(totalActiveSavings)}
+            fullValue={usd(totalActiveSavings)}
             description="All-time USD savings still marked as available"
           />
           <DashboardSummaryCard
             label="Money you still have"
             tone={moneyStillHave >= 0 ? "saving" : "expense"}
-            value={rwfCompact(moneyStillHave)}
+            compactValue={rwfCompact(moneyStillHave)}
+            fullValue={rwf(moneyStillHave)}
             description="All received income minus all recorded expenses"
           />
         </section>
