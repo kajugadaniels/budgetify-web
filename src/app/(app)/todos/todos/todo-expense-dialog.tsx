@@ -45,86 +45,97 @@ export function TodoExpenseDialog({
       : "Enter the expense amount in RWF";
 
   return (
-    <Dialog onClose={onClose} className="sm:max-w-2xl">
-      <div className="mb-6 space-y-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
-          Record expense
-        </p>
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-heading-md text-text-primary">
-              Send this todo into expenses
-            </h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-text-secondary">
-              The expense label will use the todo name. Choose the expense
-              category, confirm the RWF amount, and this todo will be marked as
-              done after the expense is created.
-            </p>
-          </div>
-          <span className="inline-flex h-10 items-center justify-center rounded-full border border-success/20 bg-success/10 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-success">
-            Marks todo as done
-          </span>
-        </div>
-      </div>
+    <Dialog onClose={onClose} className="sm:max-w-xl p-4 sm:p-5">
+      <div className="relative overflow-hidden rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4 sm:p-5">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(199,191,167,0.14),transparent_72%)]" />
 
-      <form className="space-y-5" onSubmit={onSubmit}>
-        <section className="grid gap-3 rounded-[28px] border border-white/8 bg-background/40 p-4 md:grid-cols-3 md:p-5">
-          <SummaryBlock label="Todo label" value={entry.name} />
-          <SummaryBlock label="Wishlist price" value={rwf(Number(entry.price))} />
-          <div className="rounded-[22px] border border-white/8 bg-surface-elevated/70 p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/55">
-              Priority
-            </p>
-            <div className="mt-3 flex items-center gap-2">
-              <span
-                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${priorityMeta.chipClass}`}
-              >
-                {priorityMeta.label}
-              </span>
-              <span className="text-xs text-text-secondary">
-                Added {formatTodoDate(entry.createdAt)}
-              </span>
+        <div className="relative z-10 mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Record expense
             </div>
+            <h2 className="mt-3 text-xl font-semibold tracking-heading-md text-text-primary sm:text-[1.35rem]">
+              Move todo into expenses
+            </h2>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-text-secondary">
+              Uses the todo name as the expense label and marks the item done on success.
+            </p>
           </div>
-        </section>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Expense category">
-            <Select
-              value={form.category}
-              onValueChange={(value) =>
-                onChange({
-                  category: value as TodoExpenseFormValues["category"],
-                })
-              }
-            >
-              <SelectTrigger className="h-[52px] rounded-2xl border-border bg-surface-elevated text-sm text-text-primary focus-visible:border-primary/60 focus-visible:ring-primary/20">
-                <SelectValue placeholder="Select expense category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field label="Expense date">
-            <input
-              type="date"
-              value={form.date}
-              onChange={(event) => onChange({ date: event.target.value })}
-              className={INPUT_CLASS}
-              required
-            />
-          </Field>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close dialog"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-sm text-text-secondary transition-colors hover:text-text-primary"
+          >
+            ✕
+          </button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">
-          <Field label="Amount in RWF">
-            <div className="space-y-2">
+        <form className="relative z-10 space-y-4" onSubmit={onSubmit}>
+          <section className="grid gap-2.5 rounded-[22px] border border-white/8 bg-background/36 p-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(140px,0.7fr)] sm:p-4">
+            <div className="min-w-0 rounded-[18px] border border-white/8 bg-surface-elevated/70 px-3.5 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+                Todo
+              </p>
+              <p className="mt-2 truncate text-sm font-semibold text-text-primary">
+                {entry.name}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${priorityMeta.chipClass}`}
+                >
+                  {priorityMeta.label}
+                </span>
+                <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                  Added {formatTodoDate(entry.createdAt)}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <MiniStat label="Wishlist price" value={rwf(Number(entry.price))} />
+              <MiniStat label="Status on save" value="Done" valueClassName="text-success" />
+            </div>
+          </section>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Expense category">
+              <Select
+                value={form.category}
+                onValueChange={(value) =>
+                  onChange({
+                    category: value as TodoExpenseFormValues["category"],
+                  })
+                }
+              >
+                <SelectTrigger className="h-[50px] rounded-2xl border-border bg-surface-elevated text-sm text-text-primary focus-visible:border-primary/60 focus-visible:ring-primary/20">
+                  <SelectValue placeholder="Select expense category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label="Expense date">
+              <input
+                type="date"
+                value={form.date}
+                onChange={(event) => onChange({ date: event.target.value })}
+                className={INPUT_CLASS}
+                required
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(180px,0.72fr)]">
+            <Field label="Amount in RWF">
               <input
                 type="number"
                 inputMode="decimal"
@@ -136,39 +147,39 @@ export function TodoExpenseDialog({
                 className={INPUT_CLASS}
                 required
               />
-              <p className="text-sm text-text-secondary">{amountPreview}</p>
+            </Field>
+
+            <div className="rounded-[20px] border border-primary/12 bg-primary/6 px-3.5 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+                Preview
+              </p>
+              <p className="mt-2 text-base font-semibold tracking-[-0.03em] text-text-primary">
+                {amountPreview}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-text-secondary">
+                The created expense keeps this todo name as its label.
+              </p>
             </div>
-          </Field>
-
-          <div className="rounded-[24px] border border-white/8 bg-background/34 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-secondary/55">
-              What happens next
-            </p>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">
-              <li>The expense label stays aligned with this todo name.</li>
-              <li>You can choose any expense category before recording.</li>
-              <li>The todo flips to Done immediately after a successful send.</li>
-            </ul>
           </div>
-        </div>
 
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex-1 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {saving ? "Recording..." : "Record expense"}
-          </button>
-        </div>
-      </form>
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-border px-4 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:min-w-[120px]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:min-w-[160px]"
+            >
+              {saving ? "Recording..." : "Record expense"}
+            </button>
+          </div>
+        </form>
+      </div>
     </Dialog>
   );
 }
@@ -190,19 +201,23 @@ function Field({
   );
 }
 
-function SummaryBlock({
+function MiniStat({
   label,
   value,
+  valueClassName,
 }: {
   label: string;
   value: string;
+  valueClassName?: string;
 }) {
   return (
-    <div className="rounded-[22px] border border-white/8 bg-surface-elevated/70 p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/55">
+    <div className="rounded-[18px] border border-white/8 bg-surface-elevated/70 px-3.5 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
         {label}
       </p>
-      <p className="mt-3 line-clamp-2 text-sm font-semibold text-text-primary">
+      <p
+        className={`mt-2 line-clamp-2 text-sm font-semibold text-text-primary ${valueClassName ?? ""}`}
+      >
         {value}
       </p>
     </div>
