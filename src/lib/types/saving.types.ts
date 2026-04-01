@@ -4,6 +4,7 @@ export interface SavingResponse {
   amount: number;
   date: string;
   note: string | null;
+  stillHave: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -13,6 +14,7 @@ export interface CreateSavingRequest {
   amount: number;
   date: string;
   note?: string;
+  stillHave?: boolean;
 }
 
 export interface UpdateSavingRequest {
@@ -20,4 +22,5 @@ export interface UpdateSavingRequest {
   amount?: number;
   date?: string;
   note?: string;
+  stillHave?: boolean;
 }
