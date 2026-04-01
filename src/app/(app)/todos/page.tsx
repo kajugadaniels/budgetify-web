@@ -8,14 +8,20 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
 import {
+  createExpense,
+  listExpenseCategories,
+} from "@/lib/api/expenses/expenses.api";
+import {
   createTodo,
   deleteTodo,
   deleteTodoImage,
   listTodos,
   updateTodo,
 } from "@/lib/api/todos/todos.api";
+import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
 import type { CreateTodoRequest, TodoResponse } from "@/lib/types/todo.types";
 import { rwfCompact } from "@/lib/utils/currency";
+import { TodoExpenseDialog } from "./todos/todo-expense-dialog";
 import { TodoFormDialog } from "./todos/todo-form-dialog";
 import { TodoGalleryDialog } from "./todos/todo-gallery-dialog";
 import { TodosBoard } from "./todos/todos-board";
@@ -25,6 +31,8 @@ import { TodosHeader } from "./todos/todos-header";
 import type {
   TodoBoardDoneFilter,
   TodoBoardPriorityFilter,
+  TodoExpenseDialogState,
+  TodoExpenseFormValues,
   TodoFormDialogState,
   TodoFormValues,
   TodoGalleryState,
@@ -32,6 +40,8 @@ import type {
 import { TodosSummaryCard } from "./todos/todos-summary-card";
 import {
   createEmptyTodoForm,
+  createEmptyTodoExpenseForm,
+  createTodoExpenseFormFromEntry,
   createTodoFormFromEntry,
   filterTodos,
   sortTodos,
@@ -46,13 +56,27 @@ export default function TodosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [recordingExpense, setRecordingExpense] = useState(false);
   const [doneBusyId, setDoneBusyId] = useState<string | null>(null);
+  const [recordExpenseBusyId, setRecordExpenseBusyId] = useState<string | null>(
+    null,
+  );
   const [imageBusyKey, setImageBusyKey] = useState<string | null>(null);
   const [formDialog, setFormDialog] = useState<TodoFormDialogState>(null);
+  const [expenseDialog, setExpenseDialog] =
+    useState<TodoExpenseDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<TodoResponse | null>(null);
   const [galleryTarget, setGalleryTarget] = useState<TodoGalleryState>(null);
   const [form, setForm] = useState<TodoFormValues>(() => createEmptyTodoForm());
+  const [expenseForm, setExpenseForm] = useState<TodoExpenseFormValues>(() =>
+    createEmptyTodoExpenseForm(),
+  );
   const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<
+    ExpenseCategoryOptionResponse[]
+  >([]);
+  const [expenseCategoriesError, setExpenseCategoriesError] =
+    useState<string | null>(null);
   const [selectedPriority, setSelectedPriority] =
     useState<TodoBoardPriorityFilter>("ALL");
   const [selectedDone, setSelectedDone] =
@@ -96,6 +120,39 @@ export default function TodosPage() {
     };
   }, [token]);
 
+  useEffect(() => {
+    if (!token) return;
+    const sessionToken = token;
+
+    let ignore = false;
+
+    async function loadExpenseCategoriesForTodos() {
+      try {
+        const response = await listExpenseCategories(sessionToken);
+
+        if (!ignore) {
+          setExpenseCategories(response);
+          setExpenseCategoriesError(null);
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          setExpenseCategories([]);
+          setExpenseCategoriesError(
+            loadError instanceof ApiError
+              ? loadError.message
+              : "Expense categories could not be loaded right now.",
+          );
+        }
+      }
+    }
+
+    void loadExpenseCategoriesForTodos();
+
+    return () => {
+      ignore = true;
+    };
+  }, [token]);
+
   const editingEntry =
     formDialog?.mode === "edit"
       ? entries.find((entry) => entry.id === formDialog.entry.id) ?? null
@@ -130,14 +187,36 @@ export default function TodosPage() {
     setFormDialog({ mode: "edit", entry });
   }
 
+  function openExpenseDialog(entry: TodoResponse) {
+    if (expenseCategories.length === 0) {
+      toast.error(
+        expenseCategoriesError ??
+          "Expense categories are not available yet. Refresh and try again.",
+      );
+      return;
+    }
+
+    setExpenseForm(createTodoExpenseFormFromEntry(entry, expenseCategories));
+    setExpenseDialog({ entry });
+  }
+
   function closeFormDialog() {
     setFormDialog(null);
     setForm(createEmptyTodoForm());
     setPendingImages([]);
   }
 
+  function closeExpenseDialog() {
+    setExpenseDialog(null);
+    setExpenseForm(createEmptyTodoExpenseForm());
+  }
+
   function updateForm(next: Partial<TodoFormValues>) {
     setForm((current) => ({ ...current, ...next }));
+  }
+
+  function updateExpenseForm(next: Partial<TodoExpenseFormValues>) {
+    setExpenseForm((current) => ({ ...current, ...next }));
   }
 
   function openGallery(todoId: string, index: number) {
@@ -302,6 +381,78 @@ export default function TodosPage() {
     }
   }
 
+  async function handleRecordExpense(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!token || !expenseDialog) return;
+
+    const amount = Number(expenseForm.amount);
+
+    if (
+      expenseForm.category === "" ||
+      Number.isNaN(amount) ||
+      amount <= 0 ||
+      !expenseForm.date
+    ) {
+      toast.error("Choose a category, amount, and date before recording.");
+      return;
+    }
+
+    setRecordingExpense(true);
+    setRecordExpenseBusyId(expenseDialog.entry.id);
+
+    let expenseCreated = false;
+
+    try {
+      await createExpense(token, {
+        label: expenseDialog.entry.name.trim(),
+        amount,
+        category: expenseForm.category,
+        date: expenseForm.date,
+      });
+      expenseCreated = true;
+
+      const updated = await updateTodo(token, expenseDialog.entry.id, {
+        done: true,
+      });
+
+      setEntries((current) =>
+        sortTodos(
+          current.map((entry) => (entry.id === updated.id ? updated : entry)),
+        ),
+      );
+      closeExpenseDialog();
+      toast.success("Expense recorded and wishlist item marked as done.");
+    } catch (recordError) {
+      if (expenseCreated) {
+        try {
+          const refreshed = await listTodos(token);
+          setEntries(sortTodos(refreshed));
+        } catch {
+          // Keep the current list if the recovery refresh fails.
+        }
+
+        closeExpenseDialog();
+        toast.error(
+          recordError instanceof ApiError
+            ? `${recordError.message} The expense was created, but the wishlist item still needs to be marked done manually.`
+            : "Expense recorded, but the wishlist item could not be marked as done. Update it manually.",
+        );
+      } else {
+        toast.error(
+          recordError instanceof ApiError
+            ? recordError.message
+            : "Expense could not be recorded right now.",
+        );
+      }
+    } finally {
+      setRecordingExpense(false);
+      setRecordExpenseBusyId(null);
+    }
+  }
+
   async function handleSetCover(imageId: string) {
     if (!token || !editingEntry) return;
 
@@ -461,10 +612,12 @@ export default function TodosPage() {
             ) : (
               <TodosBoard
                 busyDoneId={doneBusyId}
+                busyRecordExpenseId={recordExpenseBusyId}
                 entries={filteredEntries}
                 onDelete={setDeleteTarget}
                 onEdit={openEditDialog}
                 onOpenGallery={openGallery}
+                onRecordExpense={openExpenseDialog}
                 onToggleDone={handleToggleDone}
               />
             )}
@@ -493,6 +646,18 @@ export default function TodosPage() {
           onRemovePendingImage={handleRemovePendingImage}
           onSetCover={handleSetCover}
           onSubmit={handleSubmit}
+        />
+      ) : null}
+
+      {expenseDialog ? (
+        <TodoExpenseDialog
+          categories={expenseCategories}
+          entry={expenseDialog.entry}
+          form={expenseForm}
+          saving={recordingExpense}
+          onChange={updateExpenseForm}
+          onClose={closeExpenseDialog}
+          onSubmit={handleRecordExpense}
         />
       ) : null}
 
