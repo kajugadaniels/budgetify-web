@@ -36,3 +36,11 @@ export interface LoanSettlementResponse {
   loan: LoanResponse;
   expense: ExpenseResponse;
 }
+
+export interface ListLoansParams {
+  month?: number;
+  year?: number;
+  paid?: boolean;
+  page?: number;
+  limit?: number;
+}
