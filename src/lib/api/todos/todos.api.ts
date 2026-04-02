@@ -95,6 +95,15 @@ export async function listTodos(
   );
 }
 
+export async function getTodo(
+  token: string,
+  id: string,
+): Promise<TodoResponse> {
+  return apiFetch<TodoResponse>(TODOS_ROUTES.byId(id), {
+    token,
+  });
+}
+
 export async function createTodo(
   token: string,
   body: CreateTodoRequest,
