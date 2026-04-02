@@ -6,6 +6,9 @@ export const EXPENSES_ROUTES = {
     month?: number;
     year?: number;
     category?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
     page?: number;
     limit?: number;
   }) => {
@@ -21,6 +24,18 @@ export const EXPENSES_ROUTES = {
 
     if (params?.category !== undefined) {
       searchParams.set("category", String(params.category));
+    }
+
+    if (params?.search !== undefined) {
+      searchParams.set("search", params.search);
+    }
+
+    if (params?.dateFrom !== undefined) {
+      searchParams.set("dateFrom", params.dateFrom);
+    }
+
+    if (params?.dateTo !== undefined) {
+      searchParams.set("dateTo", params.dateTo);
     }
 
     if (params?.page !== undefined) {
