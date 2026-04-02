@@ -31,8 +31,43 @@ function buildTodoMultipartBody(
     formData.append("done", String(body.done));
   }
 
+  if ("frequency" in body && body.frequency !== undefined) {
+    formData.append("frequency", body.frequency);
+  }
+
+  if ("startDate" in body && body.startDate !== undefined) {
+    formData.append("startDate", body.startDate);
+  }
+
+  if ("endDate" in body && body.endDate !== undefined) {
+    formData.append("endDate", body.endDate);
+  }
+
+  if ("frequencyDays" in body && body.frequencyDays !== undefined) {
+    for (const day of body.frequencyDays) {
+      formData.append("frequencyDays", String(day));
+    }
+  }
+
+  if ("occurrenceDates" in body && body.occurrenceDates !== undefined) {
+    for (const occurrenceDate of body.occurrenceDates) {
+      formData.append("occurrenceDates", occurrenceDate);
+    }
+  }
+
   if ("primaryImageId" in body && body.primaryImageId !== undefined) {
     formData.append("primaryImageId", body.primaryImageId);
+  }
+
+  if ("deductAmount" in body && body.deductAmount !== undefined) {
+    formData.append("deductAmount", String(body.deductAmount));
+  }
+
+  if (
+    "recordedOccurrenceDate" in body &&
+    body.recordedOccurrenceDate !== undefined
+  ) {
+    formData.append("recordedOccurrenceDate", body.recordedOccurrenceDate);
   }
 
   for (const image of images) {
