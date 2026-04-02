@@ -182,6 +182,17 @@ export default function SavingPage() {
     setRefreshKey((current) => current + 1);
   }
 
+  function handleMonthChange(nextMonth: number) {
+    if (selectedMonth === 0 && nextMonth === 11) {
+      setSelectedYear((current) => current - 1);
+    } else if (selectedMonth === 11 && nextMonth === 0) {
+      setSelectedYear((current) => current + 1);
+    }
+
+    setSelectedMonth(nextMonth);
+    setCurrentPage(1);
+  }
+
   function openCreateDialog() {
     setForm(createEmptySavingForm(selectedMonth, selectedYear));
     setFormDialog({ mode: "create" });
@@ -497,10 +508,7 @@ export default function SavingPage() {
             }}
             onDateFromChange={setSelectedDateFrom}
             onDateToChange={setSelectedDateTo}
-            onMonthChange={(value) => {
-              setSelectedMonth(value);
-              setCurrentPage(1);
-            }}
+            onMonthChange={handleMonthChange}
             onSearchChange={setSearchInput}
             onYearChange={(value) => {
               setSelectedYear(value);
