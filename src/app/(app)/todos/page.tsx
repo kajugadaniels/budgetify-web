@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -77,6 +77,18 @@ export default function TodosPage() {
     useState<TodoBoardPriorityFilter>("ALL");
   const [selectedDone, setSelectedDone] =
     useState<TodoBoardDoneFilter>("ALL");
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedDateFrom, setSelectedDateFrom] = useState("");
+  const [selectedDateTo, setSelectedDateTo] = useState("");
+  const deferredSearch = useDeferredValue(searchInput);
+  const appliedSearch =
+    deferredSearch.trim().length >= 3 ? deferredSearch.trim() : undefined;
+  const hasExplicitDateFilter =
+    selectedDateFrom.length > 0 || selectedDateTo.length > 0;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [appliedSearch, selectedDateFrom, selectedDateTo]);
 
   useEffect(() => {
     if (!token) return;
@@ -89,13 +101,20 @@ export default function TodosPage() {
       setError(null);
 
       try {
+        const filters = {
+          priority:
+            selectedPriority === "ALL" ? undefined : selectedPriority,
+          done:
+            selectedDone === "ALL" ? undefined : selectedDone === "DONE",
+          search: appliedSearch,
+          dateFrom: selectedDateFrom || undefined,
+          dateTo: selectedDateTo || undefined,
+        };
+
         const [summaryResponse, pageResponse] = await Promise.all([
-          listTodos(sessionToken),
+          listTodos(sessionToken, filters),
           listTodosPage(sessionToken, {
-            priority:
-              selectedPriority === "ALL" ? undefined : selectedPriority,
-            done:
-              selectedDone === "ALL" ? undefined : selectedDone === "DONE",
+            ...filters,
             page: currentPage,
             limit: DEFAULT_PAGE_SIZE,
           }),
@@ -133,7 +152,16 @@ export default function TodosPage() {
     return () => {
       ignore = true;
     };
-  }, [currentPage, refreshKey, selectedDone, selectedPriority, token]);
+  }, [
+    currentPage,
+    appliedSearch,
+    refreshKey,
+    selectedDateFrom,
+    selectedDateTo,
+    selectedDone,
+    selectedPriority,
+    token,
+  ]);
 
   useEffect(() => {
     if (!token) return;
@@ -186,7 +214,10 @@ export default function TodosPage() {
     entries.length > 0 ? Math.round((withImagesCount / entries.length) * 100) : 0;
   const latestTodo = entries[0];
   const hasActiveBoardFilters =
-    selectedPriority !== "ALL" || selectedDone !== "ALL";
+    selectedPriority !== "ALL" ||
+    selectedDone !== "ALL" ||
+    appliedSearch !== undefined ||
+    hasExplicitDateFilter;
 
   function triggerRefresh() {
     setRefreshKey((current) => current + 1);
@@ -489,14 +520,22 @@ export default function TodosPage() {
           </div>
 
           <TodosBoardFilters
+            dateFrom={selectedDateFrom}
+            dateTo={selectedDateTo}
             done={selectedDone}
             hasActiveFilters={hasActiveBoardFilters}
             priority={selectedPriority}
+            search={searchInput}
             onClear={() => {
               setSelectedPriority("ALL");
               setSelectedDone("ALL");
+              setSearchInput("");
+              setSelectedDateFrom("");
+              setSelectedDateTo("");
               setCurrentPage(1);
             }}
+            onDateFromChange={setSelectedDateFrom}
+            onDateToChange={setSelectedDateTo}
             onDoneChange={(value) => {
               setSelectedDone(value);
               setCurrentPage(1);
@@ -505,6 +544,7 @@ export default function TodosPage() {
               setSelectedPriority(value);
               setCurrentPage(1);
             }}
+            onSearchChange={setSearchInput}
           />
 
           <div className="mt-6">
@@ -531,12 +571,15 @@ export default function TodosPage() {
             ) : totalItems === 0 ? (
               <EmptyState
                 title="No wishlist matches"
-                description="Try another priority or done state to reveal more wishlist items."
+                description="Try another search, date range, priority, or done state to reveal more wishlist items."
                 action={{
                   label: "Clear filters",
                   onClick: () => {
                     setSelectedPriority("ALL");
                     setSelectedDone("ALL");
+                    setSearchInput("");
+                    setSelectedDateFrom("");
+                    setSelectedDateTo("");
                     setCurrentPage(1);
                   },
                 }}
