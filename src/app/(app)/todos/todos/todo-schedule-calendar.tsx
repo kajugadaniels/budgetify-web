@@ -50,23 +50,17 @@ export function TodoScheduleCalendar({
       visibleMonth.getUTCMonth() < lastMonth.getUTCMonth());
 
   return (
-    <section className="rounded-[20px] border border-white/8 bg-background/34 p-3.5">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
-            Occurrence calendar
-          </p>
-          <p className="mt-1 text-xs leading-5 text-text-secondary">
-            Tap the dates that should generate expense-ready occurrences.
-          </p>
-        </div>
-
-        <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+    <section className="max-w-md rounded-[18px] border border-white/8 bg-background/28 p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+          Occurrence calendar
+        </p>
+        <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-text-secondary">
           {selectedDates.length} selected
         </span>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() =>
@@ -81,7 +75,7 @@ export function TodoScheduleCalendar({
             )
           }
           disabled={!canGoBack}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-sm text-text-secondary transition-colors hover:text-text-primary disabled:opacity-35"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-sm text-text-secondary transition-colors hover:text-text-primary disabled:opacity-35"
         >
           ‹
         </button>
@@ -108,24 +102,24 @@ export function TodoScheduleCalendar({
             )
           }
           disabled={!canGoForward}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-sm text-text-secondary transition-colors hover:text-text-primary disabled:opacity-35"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-sm text-text-secondary transition-colors hover:text-text-primary disabled:opacity-35"
         >
           ›
         </button>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 gap-1 text-center">
+      <div className="mt-2 grid grid-cols-7 gap-1 text-center">
         {WEEKDAY_HEADERS.map((label) => (
           <span
             key={label}
-            className="text-[10px] font-semibold uppercase tracking-[0.12em] text-text-secondary/48"
+            className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-secondary/42"
           >
             {label}
           </span>
         ))}
       </div>
 
-      <div className="mt-2 grid grid-cols-7 gap-1.5">
+      <div className="mt-2 grid grid-cols-7 gap-1">
         {cells.map((cell, index) =>
           cell === null ? (
             <div key={`empty-${index}`} className="aspect-square" />
@@ -142,7 +136,7 @@ export function TodoScheduleCalendar({
                 )
               }
               className={cn(
-                "aspect-square rounded-2xl border text-xs font-medium transition-all",
+                "aspect-square rounded-xl border text-[11px] font-medium transition-all",
                 cell.disabled
                   ? "border-white/6 bg-white/[0.02] text-text-secondary/24"
                   : cell.selected
