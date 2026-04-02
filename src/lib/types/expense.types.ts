@@ -49,6 +49,9 @@ export interface ListExpensesParams {
   month?: number;
   year?: number;
   category?: ExpenseCategory;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 }
