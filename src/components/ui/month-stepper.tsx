@@ -35,7 +35,7 @@ export function MonthStepper({
         <span aria-hidden="true">‹</span>
       </button>
 
-      <div className="min-w-[134px] rounded-full bg-background-secondary/72 px-4 py-1.5 text-center">
+      <div className="min-w-[134px] rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.03)_100%)] px-4 py-1.5 text-center">
         <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-text-secondary/48">
           Month
         </p>
