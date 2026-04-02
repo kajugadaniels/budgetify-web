@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -75,7 +75,15 @@ export default function ExpensesPage() {
     useState<ExpenseLedgerCategoryFilter>(() =>
       resolveExpenseCategorySearchParam(searchParams.get("category")),
     );
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedDateFrom, setSelectedDateFrom] = useState("");
+  const [selectedDateTo, setSelectedDateTo] = useState("");
   const selectedYear = getCurrentYear();
+  const deferredSearch = useDeferredValue(searchInput);
+  const appliedSearch =
+    deferredSearch.trim().length >= 3 ? deferredSearch.trim() : undefined;
+  const hasExplicitDateFilter =
+    selectedDateFrom.length > 0 || selectedDateTo.length > 0;
 
   useEffect(() => {
     setSelectedMonth(resolveExpenseMonthSearchParam(searchParams.get("month")));
@@ -84,6 +92,10 @@ export default function ExpensesPage() {
     );
     setCurrentPage(1);
   }, [searchParams]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [appliedSearch, selectedDateFrom, selectedDateTo]);
 
   useEffect(() => {
     if (!token) return;
@@ -129,16 +141,20 @@ export default function ExpensesPage() {
       setError(null);
 
       try {
+        const filters = {
+          month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
+          year: hasExplicitDateFilter ? undefined : selectedYear,
+          category:
+            selectedCategory === "ALL" ? undefined : selectedCategory,
+          search: appliedSearch,
+          dateFrom: selectedDateFrom || undefined,
+          dateTo: selectedDateTo || undefined,
+        };
+
         const [summaryResponse, pageResponse] = await Promise.all([
-          listExpenses(sessionToken, {
-            month: selectedMonth + 1,
-            year: selectedYear,
-          }),
+          listExpenses(sessionToken, filters),
           listExpensesPage(sessionToken, {
-            month: selectedMonth + 1,
-            year: selectedYear,
-            category:
-              selectedCategory === "ALL" ? undefined : selectedCategory,
+            ...filters,
             page: currentPage,
             limit: DEFAULT_PAGE_SIZE,
           }),
@@ -178,7 +194,11 @@ export default function ExpensesPage() {
     };
   }, [
     currentPage,
+    appliedSearch,
+    hasExplicitDateFilter,
     refreshKey,
+    selectedDateFrom,
+    selectedDateTo,
     selectedCategory,
     selectedMonth,
     selectedYear,
@@ -192,7 +212,10 @@ export default function ExpensesPage() {
     entries,
   );
   const hasActiveLedgerFilters =
-    selectedMonth !== defaultMonth || selectedCategory !== "ALL";
+    selectedMonth !== defaultMonth ||
+    selectedCategory !== "ALL" ||
+    appliedSearch !== undefined ||
+    hasExplicitDateFilter;
   const mostRecentEntry = entries[0];
   const largestExpense = [...entries].sort(
     (left, right) => Number(right.amount) - Number(left.amount),
@@ -446,8 +469,11 @@ export default function ExpensesPage() {
           <ExpensesLedgerFilters
             category={selectedCategory}
             categoryOptions={ledgerCategoryOptions}
+            dateFrom={selectedDateFrom}
+            dateTo={selectedDateTo}
             hasActiveFilters={hasActiveLedgerFilters}
             month={selectedMonth}
+            search={searchInput}
             onCategoryChange={(value) => {
               setSelectedCategory(value);
               setCurrentPage(1);
@@ -455,12 +481,18 @@ export default function ExpensesPage() {
             onClear={() => {
               setSelectedMonth(defaultMonth);
               setSelectedCategory("ALL");
+              setSearchInput("");
+              setSelectedDateFrom("");
+              setSelectedDateTo("");
               setCurrentPage(1);
             }}
+            onDateFromChange={setSelectedDateFrom}
+            onDateToChange={setSelectedDateTo}
             onMonthChange={(value) => {
               setSelectedMonth(value);
               setCurrentPage(1);
             }}
+            onSearchChange={setSearchInput}
           />
 
           {loading ? (
@@ -491,12 +523,15 @@ export default function ExpensesPage() {
             <div className="px-5 pb-5 md:px-6 md:pb-6">
               <EmptyState
                 title="No ledger matches"
-                description="Try another month or category to reveal more expense rows."
+                description="Try another search, date range, month, or category to reveal more expense rows."
                 action={{
                   label: "Clear filters",
                   onClick: () => {
                     setSelectedMonth(defaultMonth);
                     setSelectedCategory("ALL");
+                    setSearchInput("");
+                    setSelectedDateFrom("");
+                    setSelectedDateTo("");
                     setCurrentPage(1);
                   },
                 }}
