@@ -13,7 +13,14 @@ import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { rwf } from "@/lib/utils/currency";
 import type { TodoExpenseFormValues } from "./todos-page.types";
-import { formatTodoDate } from "./todos.utils";
+import {
+  canRecordTodoExpense,
+  formatTodoDate,
+  formatTodoFrequencyLabel,
+  getRemainingOccurrenceDates,
+  getSuggestedTodoExpenseAmount,
+  isRecurringTodo,
+} from "./todos.utils";
 
 const INPUT_CLASS =
   "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 transition-colors focus:border-primary/60 focus:outline-none";
@@ -38,6 +45,10 @@ export function TodoExpenseDialog({
   onSubmit,
 }: TodoExpenseDialogProps) {
   const priorityMeta = PRIORITY_META[entry.priority];
+  const recurring = isRecurringTodo(entry);
+  const remainingOccurrenceDates = getRemainingOccurrenceDates(entry);
+  const suggestedAmount = getSuggestedTodoExpenseAmount(entry);
+  const recordable = canRecordTodoExpense(entry);
 
   return (
     <Dialog onClose={onClose} className="sm:max-w-xl p-4 sm:p-5">
@@ -54,7 +65,9 @@ export function TodoExpenseDialog({
               Move todo into expenses
             </h2>
             <p className="mt-2 max-w-lg text-sm leading-6 text-text-secondary">
-              Uses the todo name as the expense label and marks the item done on success.
+              {recurring
+                ? "Uses the todo name as the expense label and deducts this spend from the recurring budget."
+                : "Uses the todo name as the expense label and marks the item done on success."}
             </p>
           </div>
 
@@ -86,14 +99,46 @@ export function TodoExpenseDialog({
                 <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
                   Added {formatTodoDate(entry.createdAt)}
                 </span>
+                <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                  {formatTodoFrequencyLabel(entry.frequency)}
+                </span>
               </div>
             </div>
 
             <div className="grid gap-2">
               <MiniStat label="Wishlist price" value={rwf(Number(entry.price))} />
-              <MiniStat label="Status on save" value="Done" valueClassName="text-success" />
+              <MiniStat
+                label={recurring ? "Remaining budget" : "Status on save"}
+                value={
+                  recurring
+                    ? rwf(Number(entry.remainingAmount ?? 0))
+                    : "Done"
+                }
+                valueClassName={recurring ? "text-primary" : "text-success"}
+              />
             </div>
           </section>
+
+          {recurring ? (
+            <section className="grid gap-2.5 rounded-[22px] border border-white/8 bg-background/36 p-3 sm:grid-cols-3 sm:p-4">
+              <MiniStat
+                label="Occurrences left"
+                value={`${remainingOccurrenceDates.length}`}
+              />
+              <MiniStat
+                label="Suggested amount"
+                value={rwf(suggestedAmount)}
+              />
+              <MiniStat
+                label="Window"
+                value={
+                  entry.endDate
+                    ? `${formatTodoDate(entry.startDate ?? entry.createdAt)} - ${formatTodoDate(entry.endDate)}`
+                    : formatTodoDate(entry.startDate ?? entry.createdAt)
+                }
+              />
+            </section>
+          ) : null}
 
           <div className="">
             <Field label="Expense category">
@@ -119,17 +164,39 @@ export function TodoExpenseDialog({
             </Field>
           </div>
 
-          <div className="">
-            <Field label="Expense date">
-              <input
-                type="date"
-                value={form.date}
-                onChange={(event) => onChange({ date: event.target.value })}
-                className={INPUT_CLASS}
-                required
-              />
-            </Field>
-          </div>
+          {recurring ? (
+            <div className="">
+              <Field label="Occurrence date">
+                <Select
+                  value={form.date}
+                  onValueChange={(value) => onChange({ date: value })}
+                >
+                  <SelectTrigger className="h-[50px] w-full rounded-2xl border-border bg-surface-elevated text-sm text-text-primary focus-visible:border-primary/60 focus-visible:ring-primary/20">
+                    <SelectValue placeholder="Select occurrence date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {remainingOccurrenceDates.map((date) => (
+                      <SelectItem key={date} value={date}>
+                        {formatTodoDate(date)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          ) : (
+            <div className="">
+              <Field label="Expense date">
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(event) => onChange({ date: event.target.value })}
+                  className={INPUT_CLASS}
+                  required
+                />
+              </Field>
+            </div>
+          )}
 
           <div className="">
             <Field label="Amount in RWF">
@@ -144,6 +211,12 @@ export function TodoExpenseDialog({
                 className={INPUT_CLASS}
                 required
               />
+              {recurring ? (
+                <p className="mt-2 text-xs leading-5 text-text-secondary">
+                  Default is split from the remaining budget across the remaining
+                  occurrence dates. You can override it before saving.
+                </p>
+              ) : null}
             </Field>
           </div>
 
@@ -157,10 +230,14 @@ export function TodoExpenseDialog({
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || !recordable}
               className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:min-w-[160px]"
             >
-              {saving ? "Recording..." : "Record expense"}
+              {saving
+                ? "Recording..."
+                : !recordable
+                  ? "No remaining budget"
+                  : "Record expense"}
             </button>
           </div>
         </form>
