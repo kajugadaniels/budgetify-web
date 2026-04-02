@@ -1,5 +1,9 @@
 import type { ExpenseCategory } from "@/lib/types/expense.types";
-import type { TodoPriority, TodoResponse } from "@/lib/types/todo.types";
+import type {
+  TodoFrequency,
+  TodoPriority,
+  TodoResponse,
+} from "@/lib/types/todo.types";
 
 export type TodoBoardPriorityFilter = TodoPriority | "ALL";
 export type TodoBoardDoneFilter = "ALL" | "DONE" | "NOT_DONE";
@@ -9,6 +13,11 @@ export interface TodoFormValues {
   price: string;
   priority: TodoPriority;
   done: boolean;
+  frequency: TodoFrequency;
+  startDate: string;
+  endDate: string;
+  frequencyDays: number[];
+  occurrenceDates: string[];
 }
 
 export interface TodoExpenseFormValues {
