@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PaginationControls } from "@/components/ui/pagination-controls";
@@ -44,10 +44,22 @@ import {
   sortTodos,
 } from "./todos/todos.utils";
 
+function resolveFrequencyFilterFromSearchParam(
+  value: string | null,
+): TodoBoardFrequencyFilter {
+  return value === "ONCE" ||
+    value === "WEEKLY" ||
+    value === "MONTHLY" ||
+    value === "YEARLY"
+    ? value
+    : "ALL";
+}
+
 export default function TodosPage() {
   const { token } = useAuth();
   const toast = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [entries, setEntries] = useState<TodoResponse[]>([]);
   const [pageEntries, setPageEntries] = useState<TodoResponse[]>([]);
@@ -77,7 +89,9 @@ export default function TodosPage() {
   const [selectedPriority, setSelectedPriority] =
     useState<TodoBoardPriorityFilter>("ALL");
   const [selectedFrequency, setSelectedFrequency] =
-    useState<TodoBoardFrequencyFilter>("ALL");
+    useState<TodoBoardFrequencyFilter>(() =>
+      resolveFrequencyFilterFromSearchParam(searchParams.get("frequency")),
+    );
   const [selectedDone, setSelectedDone] =
     useState<TodoBoardDoneFilter>("ALL");
   const [searchInput, setSearchInput] = useState("");
