@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PaginationControls } from "@/components/ui/pagination-controls";
@@ -71,7 +71,19 @@ export default function IncomePage() {
     useState<IncomeLedgerCategoryFilter>("ALL");
   const [selectedReceived, setSelectedReceived] =
     useState<IncomeLedgerReceivedFilter>("ALL");
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedDateFrom, setSelectedDateFrom] = useState("");
+  const [selectedDateTo, setSelectedDateTo] = useState("");
   const selectedYear = getCurrentYear();
+  const deferredSearch = useDeferredValue(searchInput);
+  const appliedSearch =
+    deferredSearch.trim().length >= 3 ? deferredSearch.trim() : undefined;
+  const hasExplicitDateFilter =
+    selectedDateFrom.length > 0 || selectedDateTo.length > 0;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [appliedSearch, selectedDateFrom, selectedDateTo]);
 
   useEffect(() => {
     if (!token) return;
@@ -117,20 +129,24 @@ export default function IncomePage() {
       setError(null);
 
       try {
+        const filters = {
+          month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
+          year: hasExplicitDateFilter ? undefined : selectedYear,
+          category:
+            selectedCategory === "ALL" ? undefined : selectedCategory,
+          received:
+            selectedReceived === "ALL"
+              ? undefined
+              : selectedReceived === "RECEIVED",
+          search: appliedSearch,
+          dateFrom: selectedDateFrom || undefined,
+          dateTo: selectedDateTo || undefined,
+        };
+
         const [summaryResponse, pageResponse] = await Promise.all([
-          listIncome(sessionToken, {
-            month: selectedMonth + 1,
-            year: selectedYear,
-          }),
+          listIncome(sessionToken, filters),
           listIncomePage(sessionToken, {
-            month: selectedMonth + 1,
-            year: selectedYear,
-            category:
-              selectedCategory === "ALL" ? undefined : selectedCategory,
-            received:
-              selectedReceived === "ALL"
-                ? undefined
-                : selectedReceived === "RECEIVED",
+            ...filters,
             page: currentPage,
             limit: DEFAULT_PAGE_SIZE,
           }),
@@ -170,7 +186,11 @@ export default function IncomePage() {
     };
   }, [
     currentPage,
+    appliedSearch,
+    hasExplicitDateFilter,
     refreshKey,
+    selectedDateFrom,
+    selectedDateTo,
     selectedCategory,
     selectedMonth,
     selectedReceived,
@@ -190,7 +210,9 @@ export default function IncomePage() {
   const hasActiveLedgerFilters =
     selectedMonth !== defaultMonth ||
     selectedCategory !== "ALL" ||
-    selectedReceived !== "ALL";
+    selectedReceived !== "ALL" ||
+    appliedSearch !== undefined ||
+    hasExplicitDateFilter;
   const mostRecentEntry = entries[0];
   const highestEntry = [...entries].sort(
     (left, right) => Number(right.amount) - Number(left.amount),
@@ -470,9 +492,12 @@ export default function IncomePage() {
           <IncomeLedgerFilters
             category={selectedCategory}
             categoryOptions={ledgerCategoryOptions}
+            dateFrom={selectedDateFrom}
+            dateTo={selectedDateTo}
             hasActiveFilters={hasActiveLedgerFilters}
             month={selectedMonth}
             received={selectedReceived}
+            search={searchInput}
             onCategoryChange={(value) => {
               setSelectedCategory(value);
               setCurrentPage(1);
@@ -481,8 +506,13 @@ export default function IncomePage() {
               setSelectedMonth(defaultMonth);
               setSelectedCategory("ALL");
               setSelectedReceived("ALL");
+              setSearchInput("");
+              setSelectedDateFrom("");
+              setSelectedDateTo("");
               setCurrentPage(1);
             }}
+            onDateFromChange={setSelectedDateFrom}
+            onDateToChange={setSelectedDateTo}
             onMonthChange={(value) => {
               setSelectedMonth(value);
               setCurrentPage(1);
@@ -491,6 +521,7 @@ export default function IncomePage() {
               setSelectedReceived(value);
               setCurrentPage(1);
             }}
+            onSearchChange={setSearchInput}
           />
 
           {loading ? (
@@ -521,12 +552,16 @@ export default function IncomePage() {
             <div className="px-5 py-10 md:px-6">
               <EmptyState
                 title="No ledger matches"
-                description="Try a different category or received state to reveal more income rows for this month."
+                description="Try another search, date range, category, or received state to reveal more income rows."
                 action={{
                   label: "Clear filters",
                   onClick: () => {
+                    setSelectedMonth(defaultMonth);
                     setSelectedCategory("ALL");
                     setSelectedReceived("ALL");
+                    setSearchInput("");
+                    setSelectedDateFrom("");
+                    setSelectedDateTo("");
                     setCurrentPage(1);
                   },
                 }}
