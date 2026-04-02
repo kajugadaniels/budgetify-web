@@ -43,7 +43,11 @@ export function createEmptyTodoForm(): TodoFormValues {
 }
 
 export function createTodoFormFromEntry(entry: TodoResponse): TodoFormValues {
-  const startDate = entry.startDate ?? getTodayDateValue();
+  const fallbackOccurrenceDate = sortDateValues(entry.occurrenceDates)[0];
+  const startDate =
+    entry.startDate ?? fallbackOccurrenceDate ?? getTodayDateValue();
+  const endDate =
+    entry.endDate ?? computeTodoEndDate(startDate, entry.frequency);
 
   return {
     name: entry.name,
@@ -52,9 +56,10 @@ export function createTodoFormFromEntry(entry: TodoResponse): TodoFormValues {
     done: entry.done,
     frequency: entry.frequency,
     startDate,
-    endDate: entry.endDate ?? computeTodoEndDate(startDate, entry.frequency),
+    endDate,
     frequencyDays: entry.frequencyDays,
-    occurrenceDates: entry.occurrenceDates,
+    occurrenceDates:
+      entry.occurrenceDates.length > 0 ? sortDateValues(entry.occurrenceDates) : [startDate],
   };
 }
 
