@@ -7,10 +7,19 @@ import type { TodoResponse } from "@/lib/types/todo.types";
 import { cn } from "@/lib/utils/cn";
 import { TodoImageCarousel } from "./todo-image-carousel";
 import { TodoImageDropzone } from "./todo-image-dropzone";
+import { TodoScheduleCalendar } from "./todo-schedule-calendar";
+import { TodoWeekdayPicker } from "./todo-weekday-picker";
 import type { TodoFormValues } from "./todos-page.types";
 
 const INPUT_CLASS =
   "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 transition-colors focus:border-primary/60 focus:outline-none";
+
+const FREQUENCY_OPTIONS = [
+  { value: "ONCE", label: "Once" },
+  { value: "WEEKLY", label: "Weekly" },
+  { value: "MONTHLY", label: "Monthly" },
+  { value: "YEARLY", label: "Yearly" },
+] as const;
 
 const DONE_STATE_OPTIONS = [
   { value: false, label: "Not done" },
@@ -56,10 +65,17 @@ export function TodoFormDialog({
   const resolvedImageIndex =
     images.length > 0 ? Math.min(activeImageIndex, images.length - 1) : 0;
   const selectedImage = images[resolvedImageIndex];
+  const scheduleReady =
+    form.frequency === "ONCE"
+      ? true
+      : form.frequency === "WEEKLY"
+        ? form.frequencyDays.length > 0 && form.occurrenceDates.length > 0
+        : form.occurrenceDates.length > 0;
   const canContinue =
     form.name.trim().length > 0 &&
     form.price.trim().length > 0 &&
-    Number(form.price) > 0;
+    Number(form.price) > 0 &&
+    scheduleReady;
   const savedImagesCount = images.length;
 
   return (
@@ -148,8 +164,109 @@ export function TodoFormDialog({
                 />
               </Field>
 
+              <Field label="Schedule" className="sm:col-span-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {FREQUENCY_OPTIONS.map((option) => {
+                    const selected = form.frequency === option.value;
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() =>
+                          onChange({
+                            frequency: option.value,
+                            frequencyDays: option.value === "WEEKLY" ? form.frequencyDays : [],
+                            occurrenceDates:
+                              option.value === "ONCE"
+                                ? [form.startDate]
+                                : option.value === "WEEKLY"
+                                  ? form.occurrenceDates
+                                  : [],
+                          })
+                        }
+                        className={cn(
+                          "inline-flex items-center justify-center rounded-2xl border px-3 py-2.5 text-sm font-medium transition-all",
+                          selected
+                            ? "border-primary bg-primary text-background shadow-[0_12px_28px_rgba(199,191,167,0.18)]"
+                            : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+
+              <Field label="Starts on">
+                <input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(event) => onChange({ startDate: event.target.value })}
+                  className={INPUT_CLASS}
+                  required
+                />
+              </Field>
+
+              <Field label="Ends on">
+                <input
+                  type="date"
+                  value={form.endDate}
+                  readOnly
+                  className={`${INPUT_CLASS} cursor-not-allowed opacity-70`}
+                />
+              </Field>
+
+              {form.frequency === "WEEKLY" ? (
+                <Field label="Weekdays" className="sm:col-span-2">
+                  <TodoWeekdayPicker
+                    selectedDays={form.frequencyDays}
+                    onChange={(nextDays) =>
+                      onChange({ frequencyDays: nextDays })
+                    }
+                  />
+                </Field>
+              ) : null}
+
+              {form.frequency === "MONTHLY" || form.frequency === "YEARLY" ? (
+                <Field label="Occurrence dates" className="sm:col-span-2">
+                  <TodoScheduleCalendar
+                    endDate={form.endDate}
+                    selectedDates={form.occurrenceDates}
+                    startDate={form.startDate}
+                    onChange={(nextDates) =>
+                      onChange({ occurrenceDates: nextDates })
+                    }
+                  />
+                </Field>
+              ) : null}
+
+              <Field label="Planned occurrences" className="sm:col-span-2">
+                <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-surface-elevated/70 px-4 py-3">
+                  <div>
+                    <p className="text-xs font-medium text-text-primary">
+                      {form.frequency === "ONCE"
+                        ? "One expense-ready occurrence"
+                        : `${form.occurrenceDates.length} occurrence${form.occurrenceDates.length === 1 ? "" : "s"} planned`}
+                    </p>
+                    <p className="mt-1 text-[11px] leading-5 text-text-secondary">
+                      {form.frequency === "WEEKLY"
+                        ? "Generated automatically from the weekdays you picked."
+                        : form.frequency === "ONCE"
+                          ? "A one-time todo records one expense event."
+                          : "Tap dates in the calendar to decide when this todo should happen."}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                    {form.occurrenceDates.length}
+                  </span>
+                </div>
+              </Field>
+
               <Field label="Priority" className="sm:col-span-2">
-                <div className="">
+                <div className="flex flex-wrap gap-2">
                   {Object.entries(PRIORITY_META).map(([value, meta]) => {
                     const selected = form.priority === value;
 
