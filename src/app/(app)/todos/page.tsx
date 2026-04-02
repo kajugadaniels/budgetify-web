@@ -41,6 +41,8 @@ import type {
   TodoGalleryState,
 } from "./todos/todos-page.types";
 import {
+  applyTodoFormPatch,
+  canRecordTodoExpense,
   createEmptyTodoForm,
   createEmptyTodoExpenseForm,
   createTodoExpenseFormFromEntry,
@@ -229,6 +231,15 @@ export default function TodosPage() {
       return;
     }
 
+    if (!canRecordTodoExpense(entry)) {
+      toast.info(
+        entry.frequency === "ONCE"
+          ? "This todo is already complete."
+          : "This recurring todo has no remaining budget or available occurrence left.",
+      );
+      return;
+    }
+
     setExpenseForm(createTodoExpenseFormFromEntry(entry, expenseCategories));
     setExpenseDialog({ entry });
   }
@@ -245,7 +256,7 @@ export default function TodosPage() {
   }
 
   function updateForm(next: Partial<TodoFormValues>) {
-    setForm((current) => ({ ...current, ...next }));
+    setForm((current) => applyTodoFormPatch(current, next));
   }
 
   function updateExpenseForm(next: Partial<TodoExpenseFormValues>) {
@@ -308,11 +319,26 @@ export default function TodosPage() {
       return;
     }
 
+    if (form.frequency === "WEEKLY" && form.frequencyDays.length === 0) {
+      toast.error("Select at least one weekday for this recurring todo.");
+      return;
+    }
+
+    if (form.frequency !== "ONCE" && form.occurrenceDates.length === 0) {
+      toast.error("Select at least one occurrence for this recurring todo.");
+      return;
+    }
+
     const payload: CreateTodoRequest = {
       name: form.name.trim(),
       price,
       priority: form.priority,
       done: form.done,
+      frequency: form.frequency,
+      startDate: form.startDate,
+      endDate: form.endDate,
+      frequencyDays: form.frequencyDays,
+      occurrenceDates: form.occurrenceDates,
     };
 
     setSaving(true);
@@ -432,6 +458,15 @@ export default function TodosPage() {
       return;
     }
 
+    if (
+      expenseDialog.entry.frequency !== "ONCE" &&
+      expenseDialog.entry.remainingAmount !== null &&
+      amount > expenseDialog.entry.remainingAmount
+    ) {
+      toast.error("Amount cannot exceed the remaining recurring budget.");
+      return;
+    }
+
     setRecordingExpense(true);
     setRecordExpenseBusyId(expenseDialog.entry.id);
 
@@ -446,12 +481,23 @@ export default function TodosPage() {
       });
       expenseCreated = true;
 
-      await updateTodo(token, expenseDialog.entry.id, {
-        done: true,
-      });
+      if (expenseDialog.entry.frequency === "ONCE") {
+        await updateTodo(token, expenseDialog.entry.id, {
+          done: true,
+        });
+      } else {
+        await updateTodo(token, expenseDialog.entry.id, {
+          deductAmount: amount,
+          recordedOccurrenceDate: expenseForm.date,
+        });
+      }
       triggerRefresh();
       closeExpenseDialog();
-      toast.success("Expense recorded and wishlist item marked as done.");
+      toast.success(
+        expenseDialog.entry.frequency === "ONCE"
+          ? "Expense recorded and wishlist item marked as done."
+          : "Expense recorded and recurring budget updated.",
+      );
     } catch (recordError) {
       if (expenseCreated) {
         triggerRefresh();
