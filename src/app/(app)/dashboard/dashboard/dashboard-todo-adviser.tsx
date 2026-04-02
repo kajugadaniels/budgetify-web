@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import type { DashboardTodoAdviserSummary } from "./dashboard.utils";
 
@@ -8,11 +12,16 @@ interface DashboardTodoAdviserProps {
 export function DashboardTodoAdviser({
   summary,
 }: DashboardTodoAdviserProps) {
+  const router = useRouter();
+  const [showFullTargetAmount, setShowFullTargetAmount] = useState(false);
   const reserveShare =
     summary.targetAmount > 0
       ? Math.min(Math.round((summary.remainingAmount / summary.targetAmount) * 100), 100)
       : 0;
   const previewItems = summary.items.slice(0, 4);
+  const visibleTargetAmount = showFullTargetAmount
+    ? rwf(summary.targetAmount)
+    : rwfCompact(summary.targetAmount);
 
   if (summary.items.length === 0) {
     return (
@@ -72,12 +81,22 @@ export function DashboardTodoAdviser({
           <div className="mt-5 rounded-[24px] border border-white/8 bg-white/[0.04] p-4">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
                   Reserve target
                 </p>
-                <p className="mt-2 text-[clamp(2rem,4vw,3rem)] font-semibold leading-none tracking-[-0.05em] text-white">
-                  {rwfCompact(summary.targetAmount)}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowFullTargetAmount((current) => !current)}
+                  aria-pressed={showFullTargetAmount}
+                  className="mt-2 block text-left"
+                >
+                  <span className="text-[clamp(2rem,4vw,3rem)] font-semibold leading-none tracking-[-0.05em] text-white">
+                    {visibleTargetAmount}
+                  </span>
+                  <span className="mt-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+                    Click to {showFullTargetAmount ? "collapse" : "expand"}
+                  </span>
+                </button>
               </div>
               <div className="rounded-full border border-white/8 bg-white/[0.05] px-3 py-1.5 text-right">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/58">
@@ -132,7 +151,7 @@ export function DashboardTodoAdviser({
                 What needs reserve
               </p>
               <p className="mt-1 text-sm text-text-secondary">
-                Weekly and monthly todos that are still open.
+                The recurring todos that will hit most often first.
               </p>
             </div>
             <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary">
@@ -152,11 +171,21 @@ export function DashboardTodoAdviser({
                       {item.name}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-primary/12 bg-primary/8 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          router.push(`/todos?frequency=${item.frequency}`)
+                        }
+                        className="rounded-full border border-primary/12 bg-primary/8 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary transition-colors hover:bg-primary/14"
+                      >
                         {item.frequency === "WEEKLY" ? "Weekly" : "Monthly"}
-                      </span>
+                      </button>
                       <span className="text-[11px] text-text-secondary">
                         Keep {rwfCompact(item.remainingAmount)} ready
+                      </span>
+                      <span className="text-[11px] text-text-secondary/72">
+                        {item.remainingOccurrenceCount} upcoming{" "}
+                        {item.remainingOccurrenceCount === 1 ? "time" : "times"}
                       </span>
                     </div>
                   </div>
