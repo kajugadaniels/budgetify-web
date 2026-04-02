@@ -41,6 +41,9 @@ export interface ListLoansParams {
   month?: number;
   year?: number;
   paid?: boolean;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 }
