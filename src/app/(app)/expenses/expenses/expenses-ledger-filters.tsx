@@ -5,7 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MONTH_OPTIONS } from "@/constant/months";
+import { MonthStepper } from "@/components/ui/month-stepper";
 import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
 import type { ExpenseLedgerCategoryFilter } from "./expenses-page.types";
 
@@ -72,51 +72,37 @@ export function ExpensesLedgerFilters({
               className="h-11 min-w-[148px] rounded-full border border-white/10 bg-background-secondary px-4 text-sm text-text-primary outline-none transition-colors [color-scheme:dark] focus:border-primary/35"
             />
 
-          <Select
-            value={String(month)}
-            onValueChange={(value) => onMonthChange(Number(value))}
-          >
-            <SelectTrigger className="h-11 min-w-[158px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
-              <SelectValue placeholder="Month" />
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
-              {MONTH_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={String(option.value)}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <MonthStepper month={month} onChange={onMonthChange} />
 
-          <Select
-            value={category}
-            onValueChange={(value) =>
-              onCategoryChange(value as ExpenseLedgerCategoryFilter)
-            }
-          >
-            <SelectTrigger className="h-11 min-w-[188px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
-              <SelectItem value="ALL">All categories</SelectItem>
-              {categoryOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {hasActiveFilters ? (
-            <button
-              type="button"
-              onClick={onClear}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/4 px-4 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary transition-colors hover:text-text-primary"
+            <Select
+              value={category}
+              onValueChange={(value) =>
+                onCategoryChange(value as ExpenseLedgerCategoryFilter)
+              }
             >
-              Clear
-            </button>
-          ) : null}
-        </div>
+              <SelectTrigger className="h-11 min-w-[188px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
+                <SelectItem value="ALL">All categories</SelectItem>
+                {categoryOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={onClear}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/4 px-4 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary transition-colors hover:text-text-primary"
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
