@@ -30,6 +30,7 @@ import { TodosBoardSkeleton } from "./todos/todos-board-skeleton";
 import { TodosHeader } from "./todos/todos-header";
 import type {
   TodoBoardDoneFilter,
+  TodoBoardFrequencyFilter,
   TodoBoardPriorityFilter,
   TodoExpenseDialogState,
   TodoExpenseFormValues,
@@ -75,6 +76,8 @@ export default function TodosPage() {
     useState<string | null>(null);
   const [selectedPriority, setSelectedPriority] =
     useState<TodoBoardPriorityFilter>("ALL");
+  const [selectedFrequency, setSelectedFrequency] =
+    useState<TodoBoardFrequencyFilter>("ALL");
   const [selectedDone, setSelectedDone] =
     useState<TodoBoardDoneFilter>("ALL");
   const [searchInput, setSearchInput] = useState("");
@@ -88,7 +91,7 @@ export default function TodosPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedSearch, selectedDateFrom, selectedDateTo]);
+  }, [appliedSearch, selectedDateFrom, selectedDateTo, selectedFrequency]);
 
   useEffect(() => {
     if (!token) return;
@@ -102,6 +105,8 @@ export default function TodosPage() {
 
       try {
         const filters = {
+          frequency:
+            selectedFrequency === "ALL" ? undefined : selectedFrequency,
           priority:
             selectedPriority === "ALL" ? undefined : selectedPriority,
           done:
@@ -159,6 +164,7 @@ export default function TodosPage() {
     selectedDateFrom,
     selectedDateTo,
     selectedDone,
+    selectedFrequency,
     selectedPriority,
     token,
   ]);
@@ -214,6 +220,7 @@ export default function TodosPage() {
     entries.length > 0 ? Math.round((withImagesCount / entries.length) * 100) : 0;
   const latestTodo = entries[0];
   const hasActiveBoardFilters =
+    selectedFrequency !== "ALL" ||
     selectedPriority !== "ALL" ||
     selectedDone !== "ALL" ||
     appliedSearch !== undefined ||
@@ -523,10 +530,12 @@ export default function TodosPage() {
             dateFrom={selectedDateFrom}
             dateTo={selectedDateTo}
             done={selectedDone}
+            frequency={selectedFrequency}
             hasActiveFilters={hasActiveBoardFilters}
             priority={selectedPriority}
             search={searchInput}
             onClear={() => {
+              setSelectedFrequency("ALL");
               setSelectedPriority("ALL");
               setSelectedDone("ALL");
               setSearchInput("");
@@ -538,6 +547,10 @@ export default function TodosPage() {
             onDateToChange={setSelectedDateTo}
             onDoneChange={(value) => {
               setSelectedDone(value);
+              setCurrentPage(1);
+            }}
+            onFrequencyChange={(value) => {
+              setSelectedFrequency(value);
               setCurrentPage(1);
             }}
             onPriorityChange={(value) => {
@@ -575,6 +588,7 @@ export default function TodosPage() {
                 action={{
                   label: "Clear filters",
                   onClick: () => {
+                    setSelectedFrequency("ALL");
                     setSelectedPriority("ALL");
                     setSelectedDone("ALL");
                     setSearchInput("");
