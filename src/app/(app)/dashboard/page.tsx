@@ -25,7 +25,9 @@ import { DashboardExpenseCategoriesChart } from "./dashboard/dashboard-expense-c
 import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
 import { DashboardMonthSwitcher } from "./dashboard/dashboard-month-switcher";
 import { DashboardSummaryCard } from "./dashboard/dashboard-summary-card";
+import { DashboardTodoAdviser } from "./dashboard/dashboard-todo-adviser";
 import {
+  buildDashboardTodoAdviserSummary,
   buildDailyExpenseCategoryData,
   buildMonthlyBarChartData,
   CURRENT_YEAR,
@@ -133,6 +135,10 @@ export default function DashboardPage() {
         CURRENT_YEAR,
       ),
     [expenseCategories, expenses, selectedMonth],
+  );
+  const todoAdviserSummary = useMemo(
+    () => buildDashboardTodoAdviserSummary(allTodos),
+    [allTodos],
   );
 
   const totalIncome = sumIncomeAmounts(income);
@@ -255,6 +261,8 @@ export default function DashboardPage() {
             description="All todo prices that are still marked as not done"
           />
         </section>
+
+        <DashboardTodoAdviser summary={todoAdviserSummary} />
 
         <DashboardBarChart
           key={`${selectedMonth}-${CURRENT_YEAR}`}
