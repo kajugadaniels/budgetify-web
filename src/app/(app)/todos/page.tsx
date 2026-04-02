@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PaginationControls } from "@/components/ui/pagination-controls";
-import { MAX_TODO_IMAGES } from "@/constant/todos/upload";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
@@ -13,19 +13,16 @@ import {
   listExpenseCategories,
 } from "@/lib/api/expenses/expenses.api";
 import {
-  createTodo,
   deleteTodo,
-  deleteTodoImage,
   listTodos,
   listTodosPage,
   updateTodo,
 } from "@/lib/api/todos/todos.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
 import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
-import type { CreateTodoRequest, TodoResponse } from "@/lib/types/todo.types";
+import type { TodoResponse } from "@/lib/types/todo.types";
 import { rwfCompact } from "@/lib/utils/currency";
 import { TodoExpenseDialog } from "./todos/todo-expense-dialog";
-import { TodoFormDialog } from "./todos/todo-form-dialog";
 import { TodoGalleryDialog } from "./todos/todo-gallery-dialog";
 import { TodosBoard } from "./todos/todos-board";
 import { TodosBoardFilters } from "./todos/todos-board-filters";
@@ -36,51 +33,41 @@ import type {
   TodoBoardPriorityFilter,
   TodoExpenseDialogState,
   TodoExpenseFormValues,
-  TodoFormDialogState,
-  TodoFormValues,
   TodoGalleryState,
 } from "./todos/todos-page.types";
 import {
-  applyTodoFormPatch,
   canRecordTodoExpense,
-  createEmptyTodoForm,
   createEmptyTodoExpenseForm,
   createTodoExpenseFormFromEntry,
-  createTodoFormFromEntry,
   formatTodoDate,
   sortTodos,
-  validateTodoUploadFile,
 } from "./todos/todos.utils";
 
 export default function TodosPage() {
   const { token } = useAuth();
   const toast = useToast();
+  const router = useRouter();
 
   const [entries, setEntries] = useState<TodoResponse[]>([]);
   const [pageEntries, setPageEntries] = useState<TodoResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [recordingExpense, setRecordingExpense] = useState(false);
   const [doneBusyId, setDoneBusyId] = useState<string | null>(null);
   const [recordExpenseBusyId, setRecordExpenseBusyId] = useState<string | null>(
     null,
   );
-  const [imageBusyKey, setImageBusyKey] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [formDialog, setFormDialog] = useState<TodoFormDialogState>(null);
   const [expenseDialog, setExpenseDialog] =
     useState<TodoExpenseDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<TodoResponse | null>(null);
   const [galleryTarget, setGalleryTarget] = useState<TodoGalleryState>(null);
-  const [form, setForm] = useState<TodoFormValues>(() => createEmptyTodoForm());
   const [expenseForm, setExpenseForm] = useState<TodoExpenseFormValues>(() =>
     createEmptyTodoExpenseForm(),
   );
-  const [pendingImages, setPendingImages] = useState<File[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<
     ExpenseCategoryOptionResponse[]
   >([]);
@@ -181,11 +168,6 @@ export default function TodosPage() {
     };
   }, [token]);
 
-  const editingEntry =
-    formDialog?.mode === "edit"
-      ? entries.find((entry) => entry.id === formDialog.entry.id) ?? null
-      : null;
-
   const galleryEntry =
     galleryTarget !== null
       ? entries.find((entry) => entry.id === galleryTarget.todoId) ?? null
@@ -210,16 +192,12 @@ export default function TodosPage() {
     setRefreshKey((current) => current + 1);
   }
 
-  function openCreateDialog() {
-    setForm(createEmptyTodoForm());
-    setPendingImages([]);
-    setFormDialog({ mode: "create" });
+  function openCreatePage() {
+    router.push("/todos/new");
   }
 
-  function openEditDialog(entry: TodoResponse) {
-    setForm(createTodoFormFromEntry(entry));
-    setPendingImages([]);
-    setFormDialog({ mode: "edit", entry });
+  function openEditPage(entry: TodoResponse) {
+    router.push(`/todos/${entry.id}/edit`);
   }
 
   function openExpenseDialog(entry: TodoResponse) {
@@ -244,19 +222,9 @@ export default function TodosPage() {
     setExpenseDialog({ entry });
   }
 
-  function closeFormDialog() {
-    setFormDialog(null);
-    setForm(createEmptyTodoForm());
-    setPendingImages([]);
-  }
-
   function closeExpenseDialog() {
     setExpenseDialog(null);
     setExpenseForm(createEmptyTodoExpenseForm());
-  }
-
-  function updateForm(next: Partial<TodoFormValues>) {
-    setForm((current) => applyTodoFormPatch(current, next));
   }
 
   function updateExpenseForm(next: Partial<TodoExpenseFormValues>) {
@@ -265,115 +233,6 @@ export default function TodosPage() {
 
   function openGallery(todoId: string, index: number) {
     setGalleryTarget({ todoId, index });
-  }
-
-  function handleAddPendingImages(files: File[]) {
-    if (files.length === 0) return;
-
-    const nextFiles: File[] = [];
-    const errors: string[] = [];
-    const remainingSlots = Math.max(MAX_TODO_IMAGES - pendingImages.length, 0);
-
-    if (remainingSlots === 0) {
-      toast.error(`You can attach up to ${MAX_TODO_IMAGES} images per save.`);
-      return;
-    }
-
-    for (const file of files) {
-      const validationError = validateTodoUploadFile(file);
-
-      if (validationError) {
-        errors.push(validationError);
-        continue;
-      }
-
-      if (nextFiles.length >= remainingSlots) {
-        errors.push(`You can attach up to ${MAX_TODO_IMAGES} images per save.`);
-        break;
-      }
-
-      nextFiles.push(file);
-    }
-
-    if (nextFiles.length > 0) {
-      setPendingImages((current) => [...current, ...nextFiles]);
-    }
-
-    if (errors.length > 0) {
-      toast.error(errors[0] ?? "Some images could not be added.");
-    }
-  }
-
-  function handleRemovePendingImage(index: number) {
-    setPendingImages((current) => current.filter((_, fileIndex) => fileIndex !== index));
-  }
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!token || !formDialog) return;
-
-    const price = Number(form.price);
-    if (!form.name.trim() || Number.isNaN(price) || price <= 0) {
-      toast.error("Enter a name and a price greater than zero.");
-      return;
-    }
-
-    if (form.frequency === "WEEKLY" && form.frequencyDays.length === 0) {
-      toast.error("Select at least one weekday for this recurring todo.");
-      return;
-    }
-
-    if (form.frequency !== "ONCE" && form.occurrenceDates.length === 0) {
-      toast.error("Select at least one occurrence for this recurring todo.");
-      return;
-    }
-
-    const payload: CreateTodoRequest = {
-      name: form.name.trim(),
-      price,
-      priority: form.priority,
-      done: form.done,
-      frequency: form.frequency,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      frequencyDays: form.frequencyDays,
-      occurrenceDates: form.occurrenceDates,
-    };
-
-    setSaving(true);
-
-    try {
-      if (formDialog.mode === "edit") {
-        await updateTodo(
-          token,
-          formDialog.entry.id,
-          payload,
-          pendingImages,
-        );
-        toast.success("Wishlist item updated.");
-        triggerRefresh();
-      } else {
-        await createTodo(token, payload, pendingImages);
-        toast.success("Wishlist item added.");
-
-        if (currentPage !== 1) {
-          setCurrentPage(1);
-        } else {
-          triggerRefresh();
-        }
-      }
-
-      closeFormDialog();
-    } catch (saveError) {
-      toast.error(
-        saveError instanceof ApiError
-          ? saveError.message
-          : "Wishlist item could not be saved right now.",
-      );
-    } finally {
-      setSaving(false);
-    }
   }
 
   async function handleDelete() {
@@ -389,13 +248,6 @@ export default function TodosPage() {
       }
 
       toast.success("Wishlist item deleted.");
-
-      if (
-        formDialog?.mode === "edit" &&
-        formDialog.entry.id === deleteTarget.id
-      ) {
-        closeFormDialog();
-      }
 
       if (galleryTarget?.todoId === deleteTarget.id) {
         setGalleryTarget(null);
@@ -521,52 +373,10 @@ export default function TodosPage() {
     }
   }
 
-  async function handleSetCover(imageId: string) {
-    if (!token || !editingEntry) return;
-
-    setImageBusyKey(`cover:${imageId}`);
-
-    try {
-      await updateTodo(token, editingEntry.id, {
-        primaryImageId: imageId,
-      });
-      triggerRefresh();
-      toast.success("Cover image updated.");
-    } catch (imageError) {
-      toast.error(
-        imageError instanceof ApiError
-          ? imageError.message
-          : "Cover image could not be updated.",
-      );
-    } finally {
-      setImageBusyKey(null);
-    }
-  }
-
-  async function handleDeleteImage(imageId: string) {
-    if (!token || !editingEntry) return;
-
-    setImageBusyKey(`delete:${imageId}`);
-
-    try {
-      await deleteTodoImage(token, editingEntry.id, imageId);
-      triggerRefresh();
-      toast.info("Image removed from wishlist item.");
-    } catch (imageError) {
-      toast.error(
-        imageError instanceof ApiError
-          ? imageError.message
-          : "Image could not be removed.",
-      );
-    } finally {
-      setImageBusyKey(null);
-    }
-  }
-
   return (
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <TodosHeader onCreate={openCreateDialog} />
+        <TodosHeader onCreate={openCreatePage} />
 
         <section className="animate-dashboard-rise">
           <div className="group relative overflow-hidden rounded-[28px] border border-primary/12 bg-[linear-gradient(145deg,rgba(28,24,18,0.95)_0%,rgba(17,13,10,0.99)_100%)] px-4 py-4 shadow-[0_18px_56px_rgba(24,16,8,0.24)] md:px-5">
@@ -715,7 +525,7 @@ export default function TodosPage() {
                 description="Add the products or goals you want to save for, then keep the top lane brutally selective."
                 action={{
                   label: "Add item",
-                  onClick: openCreateDialog,
+                  onClick: openCreatePage,
                 }}
               />
             ) : totalItems === 0 ? (
@@ -737,7 +547,7 @@ export default function TodosPage() {
                 busyRecordExpenseId={recordExpenseBusyId}
                 entries={pageEntries}
                 onDelete={setDeleteTarget}
-                onEdit={openEditDialog}
+                onEdit={openEditPage}
                 onOpenGallery={openGallery}
                 onRecordExpense={openExpenseDialog}
                 onToggleDone={handleToggleDone}
@@ -756,30 +566,6 @@ export default function TodosPage() {
           />
         </section>
       </div>
-
-      {formDialog ? (
-        <TodoFormDialog
-          key={formDialog.mode === "edit" ? formDialog.entry.id : "create"}
-          editingEntry={editingEntry}
-          form={form}
-          imageBusyKey={imageBusyKey}
-          mode={formDialog.mode}
-          pendingImages={pendingImages}
-          saving={saving}
-          onAddPendingImages={handleAddPendingImages}
-          onChange={updateForm}
-          onClose={closeFormDialog}
-          onDeleteImage={handleDeleteImage}
-          onOpenGallery={(index) => {
-            if (editingEntry) {
-              openGallery(editingEntry.id, index);
-            }
-          }}
-          onRemovePendingImage={handleRemovePendingImage}
-          onSetCover={handleSetCover}
-          onSubmit={handleSubmit}
-        />
-      ) : null}
 
       {expenseDialog ? (
         <TodoExpenseDialog
