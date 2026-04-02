@@ -62,6 +62,7 @@ export interface UpdateTodoRequest {
 }
 
 export interface ListTodosParams {
+  frequency?: TodoFrequency;
   priority?: TodoPriority;
   done?: boolean;
   search?: string;
