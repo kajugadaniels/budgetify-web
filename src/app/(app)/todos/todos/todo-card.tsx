@@ -2,6 +2,12 @@ import { PRIORITY_META } from "@/constant/todos/priority-meta";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { rwf } from "@/lib/utils/currency";
 import { TodoImageCarousel } from "./todo-image-carousel";
+import {
+  canRecordTodoExpense,
+  formatTodoFrequencyLabel,
+  formatTodoScheduleSummary,
+  isRecurringTodo,
+} from "./todos.utils";
 
 interface TodoCardProps {
   busyDone: boolean;
@@ -25,6 +31,15 @@ export function TodoCard({
   onToggleDone,
 }: TodoCardProps) {
   const meta = PRIORITY_META[entry.priority];
+  const recurring = isRecurringTodo(entry);
+  const canRecord = canRecordTodoExpense(entry);
+  const remainingShare =
+    recurring && entry.remainingAmount !== null && entry.price > 0
+      ? Math.max(
+          0,
+          Math.min(100, Math.round((entry.remainingAmount / entry.price) * 100)),
+        )
+      : 0;
 
   return (
     <article className="group relative overflow-hidden rounded-[30px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(199,191,167,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-3 shadow-[0_24px_44px_rgba(0,0,0,0.22)]">
@@ -47,6 +62,9 @@ export function TodoCard({
               >
                 {meta.label}
               </span>
+              <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                {formatTodoFrequencyLabel(entry.frequency)}
+              </span>
               <button
                 type="button"
                 onClick={() => onToggleDone(entry)}
@@ -65,6 +83,9 @@ export function TodoCard({
             <p className="mt-3 truncate text-lg font-semibold tracking-heading-sm text-text-primary">
               {entry.name}
             </p>
+            <p className="mt-2 text-xs leading-5 text-text-secondary">
+              {formatTodoScheduleSummary(entry)}
+            </p>
           </div>
 
           <div className="shrink-0 rounded-[20px] px-4 py-3 text-right">
@@ -77,21 +98,42 @@ export function TodoCard({
           </div>
         </div>
 
+        {recurring ? (
+          <div className="mt-4 rounded-[18px] border border-white/8 bg-white/[0.03] px-3.5 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
+                Remaining budget
+              </p>
+              <span className="text-xs font-medium text-text-primary">
+                {rwf(Number(entry.remainingAmount ?? 0))}
+              </span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/6">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,rgba(199,191,167,0.42),rgba(199,191,167,1),rgba(228,192,99,0.64))]"
+                style={{ width: `${remainingShare}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
+
         <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-white/8 pt-4">
           <button
             type="button"
             onClick={() => onRecordExpense(entry)}
-            disabled={busyRecordExpense || entry.done}
+            disabled={busyRecordExpense || !canRecord}
             className={
-              busyRecordExpense || entry.done
+              busyRecordExpense || !canRecord
                 ? "rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-text-secondary opacity-70"
                 : "rounded-full border border-primary/25 bg-primary/10 px-3.5 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/16"
             }
           >
             {busyRecordExpense
               ? "Recording..."
-              : entry.done
-                ? "Recorded"
+              : !canRecord
+                ? recurring
+                  ? "No budget left"
+                  : "Recorded"
                 : "Record expense"}
           </button>
           <button
