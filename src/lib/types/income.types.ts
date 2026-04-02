@@ -43,6 +43,9 @@ export interface ListIncomeParams {
   year?: number;
   category?: IncomeCategory;
   received?: boolean;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 }
