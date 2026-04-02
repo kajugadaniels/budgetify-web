@@ -26,11 +26,6 @@ export interface TodoExpenseFormValues {
   date: string;
 }
 
-export type TodoFormDialogState =
-  | { mode: "create" }
-  | { mode: "edit"; entry: TodoResponse }
-  | null;
-
 export type TodoGalleryState = {
   todoId: string;
   index: number;
