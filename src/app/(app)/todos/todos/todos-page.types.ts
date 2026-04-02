@@ -6,6 +6,7 @@ import type {
 } from "@/lib/types/todo.types";
 
 export type TodoBoardPriorityFilter = TodoPriority | "ALL";
+export type TodoBoardFrequencyFilter = TodoFrequency | "ALL";
 export type TodoBoardDoneFilter = "ALL" | "DONE" | "NOT_DONE";
 
 export interface TodoFormValues {
