@@ -48,6 +48,7 @@ export interface DashboardTodoAdviserItem {
   frequency: "WEEKLY" | "MONTHLY";
   id: string;
   name: string;
+  remainingOccurrenceCount: number;
   remainingAmount: number;
   targetAmount: number;
   usedAmount: number;
@@ -177,17 +178,26 @@ export function buildDashboardTodoAdviserSummary(
           ? Math.max(Number(entry.remainingAmount), 0)
           : targetAmount;
       const usedAmount = Math.max(targetAmount - remainingAmount, 0);
+      const remainingOccurrenceCount = Math.max(
+        entry.occurrenceDates.length - entry.recordedOccurrenceDates.length,
+        0,
+      );
 
       return {
         id: entry.id,
         name: entry.name,
         frequency: entry.frequency,
+        remainingOccurrenceCount,
         targetAmount,
         usedAmount,
         remainingAmount,
       } satisfies DashboardTodoAdviserItem;
     })
-    .sort((left, right) => right.remainingAmount - left.remainingAmount);
+    .sort(
+      (left, right) =>
+        right.remainingOccurrenceCount - left.remainingOccurrenceCount ||
+        right.remainingAmount - left.remainingAmount,
+    );
 
   return items.reduce<DashboardTodoAdviserSummary>(
     (summary, item) => ({
