@@ -44,6 +44,22 @@ export interface DashboardLoanStatusDatum {
   value: number;
 }
 
+export interface DashboardTodoAdviserItem {
+  frequency: "WEEKLY" | "MONTHLY";
+  id: string;
+  name: string;
+  remainingAmount: number;
+  targetAmount: number;
+  usedAmount: number;
+}
+
+export interface DashboardTodoAdviserSummary {
+  items: DashboardTodoAdviserItem[];
+  remainingAmount: number;
+  targetAmount: number;
+  usedAmount: number;
+}
+
 export function formatDashboardMonthLabel(month: number): string {
   return MONTH_OPTIONS.find((item) => item.value === month)?.label ?? "Month";
 }
@@ -147,6 +163,55 @@ export function sumTodoAmounts(
 
     return sum + Number(entry.price);
   }, 0);
+}
+
+export function buildDashboardTodoAdviserSummary(
+  entries: TodoResponse[],
+): DashboardTodoAdviserSummary {
+  const items = entries
+    .filter(isRecurringAdviserTodo)
+    .map((entry) => {
+      const targetAmount = Number(entry.price);
+      const remainingAmount =
+        entry.remainingAmount !== null
+          ? Math.max(Number(entry.remainingAmount), 0)
+          : targetAmount;
+      const usedAmount = Math.max(targetAmount - remainingAmount, 0);
+
+      return {
+        id: entry.id,
+        name: entry.name,
+        frequency: entry.frequency,
+        targetAmount,
+        usedAmount,
+        remainingAmount,
+      } satisfies DashboardTodoAdviserItem;
+    })
+    .sort((left, right) => right.remainingAmount - left.remainingAmount);
+
+  return items.reduce<DashboardTodoAdviserSummary>(
+    (summary, item) => ({
+      items: [...summary.items, item],
+      targetAmount: summary.targetAmount + item.targetAmount,
+      usedAmount: summary.usedAmount + item.usedAmount,
+      remainingAmount: summary.remainingAmount + item.remainingAmount,
+    }),
+    {
+      items: [],
+      targetAmount: 0,
+      usedAmount: 0,
+      remainingAmount: 0,
+    },
+  );
+}
+
+function isRecurringAdviserTodo(
+  entry: TodoResponse,
+): entry is TodoResponse & { frequency: "WEEKLY" | "MONTHLY" } {
+  return (
+    !entry.done &&
+    (entry.frequency === "WEEKLY" || entry.frequency === "MONTHLY")
+  );
 }
 
 export function buildDailyExpenseCategoryData(
