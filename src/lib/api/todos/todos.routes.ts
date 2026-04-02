@@ -2,6 +2,7 @@ const BASE = "/api/v1/todos";
 
 export const TODOS_ROUTES = {
   list:        (params?: {
+    frequency?: string;
     priority?: string;
     done?: boolean;
     search?: string;
@@ -11,6 +12,10 @@ export const TODOS_ROUTES = {
     limit?: number;
   }) => {
     const searchParams = new URLSearchParams();
+
+    if (params?.frequency !== undefined) {
+      searchParams.set("frequency", String(params.frequency));
+    }
 
     if (params?.priority !== undefined) {
       searchParams.set("priority", String(params.priority));
