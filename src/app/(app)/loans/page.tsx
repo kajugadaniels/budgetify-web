@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PaginationControls } from "@/components/ui/pagination-controls";
@@ -68,6 +68,9 @@ export default function LoansPage() {
   const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [selectedPaid, setSelectedPaid] =
     useState<LoanLedgerPaidFilter>("ALL");
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedDateFrom, setSelectedDateFrom] = useState("");
+  const [selectedDateTo, setSelectedDateTo] = useState("");
   const [formDialog, setFormDialog] = useState<LoanFormDialogState>(null);
   const [settlementDialog, setSettlementDialog] =
     useState<LoanSettlementDialogState>(null);
@@ -75,6 +78,15 @@ export default function LoansPage() {
   const [form, setForm] = useState<LoanFormValues>(() => createEmptyLoanForm());
   const [settlementForm, setSettlementForm] =
     useState<LoanSettlementFormValues>(() => createEmptyLoanSettlementForm());
+  const deferredSearch = useDeferredValue(searchInput);
+  const appliedSearch =
+    deferredSearch.trim().length >= 3 ? deferredSearch.trim() : undefined;
+  const hasExplicitDateFilter =
+    selectedDateFrom.length > 0 || selectedDateTo.length > 0;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [appliedSearch, selectedDateFrom, selectedDateTo]);
 
   useEffect(() => {
     if (!token) return;
@@ -86,18 +98,20 @@ export default function LoansPage() {
       setError(null);
 
       try {
+        const filters = {
+          month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
+          year: hasExplicitDateFilter ? undefined : selectedYear,
+          paid:
+            selectedPaid === "ALL" ? undefined : selectedPaid === "PAID",
+          search: appliedSearch,
+          dateFrom: selectedDateFrom || undefined,
+          dateTo: selectedDateTo || undefined,
+        };
+
         const [summaryResponse, pageResponse] = await Promise.all([
-          listLoans(sessionToken, {
-            month: selectedMonth + 1,
-            year: selectedYear,
-          }),
+          listLoans(sessionToken, filters),
           listLoansPage(sessionToken, {
-            month: selectedMonth + 1,
-            year: selectedYear,
-            paid:
-              selectedPaid === "ALL"
-                ? undefined
-                : selectedPaid === "PAID",
+            ...filters,
             page: currentPage,
             limit: DEFAULT_PAGE_SIZE,
           }),
@@ -135,13 +149,26 @@ export default function LoansPage() {
     return () => {
       ignore = true;
     };
-  }, [currentPage, refreshKey, selectedMonth, selectedPaid, selectedYear, token]);
+  }, [
+    currentPage,
+    appliedSearch,
+    hasExplicitDateFilter,
+    refreshKey,
+    selectedDateFrom,
+    selectedDateTo,
+    selectedMonth,
+    selectedPaid,
+    selectedYear,
+    token,
+  ]);
 
   const selectedMonthLabel = resolveLoanMonthLabel(selectedMonth);
   const hasActiveFilters =
     selectedMonth !== defaultMonth ||
     selectedYear !== defaultYear ||
-    selectedPaid !== "ALL";
+    selectedPaid !== "ALL" ||
+    appliedSearch !== undefined ||
+    hasExplicitDateFilter;
   const totalLoans = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
   const paidAmount = entries
     .filter((entry) => entry.paid)
@@ -461,16 +488,24 @@ export default function LoansPage() {
           </div>
 
           <LoansLedgerFilters
+            dateFrom={selectedDateFrom}
+            dateTo={selectedDateTo}
             hasActiveFilters={hasActiveFilters}
             month={selectedMonth}
             paid={selectedPaid}
+            search={searchInput}
             year={selectedYear}
             onClear={() => {
               setSelectedMonth(defaultMonth);
               setSelectedYear(defaultYear);
               setSelectedPaid("ALL");
+              setSearchInput("");
+              setSelectedDateFrom("");
+              setSelectedDateTo("");
               setCurrentPage(1);
             }}
+            onDateFromChange={setSelectedDateFrom}
+            onDateToChange={setSelectedDateTo}
             onMonthChange={(value) => {
               setSelectedMonth(value);
               setCurrentPage(1);
@@ -479,6 +514,7 @@ export default function LoansPage() {
               setSelectedPaid(value);
               setCurrentPage(1);
             }}
+            onSearchChange={setSearchInput}
             onYearChange={(value) => {
               setSelectedYear(value);
               setCurrentPage(1);
@@ -513,13 +549,16 @@ export default function LoansPage() {
             <div className="px-5 pb-5 md:px-6 md:pb-6">
               <EmptyState
                 title="No ledger matches"
-                description="Try another month, year, or payment state to reveal more loan rows."
+                description="Try another search, date range, month, year, or payment state to reveal more loan rows."
                 action={{
                   label: "Clear filters",
                   onClick: () => {
                     setSelectedMonth(defaultMonth);
                     setSelectedYear(defaultYear);
                     setSelectedPaid("ALL");
+                    setSearchInput("");
+                    setSelectedDateFrom("");
+                    setSelectedDateTo("");
                     setCurrentPage(1);
                   },
                 }}
