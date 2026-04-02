@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PaginationControls } from "@/components/ui/pagination-controls";
@@ -64,6 +64,9 @@ export default function SavingPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedYear, setSelectedYear] = useState(defaultYear);
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedDateFrom, setSelectedDateFrom] = useState("");
+  const [selectedDateTo, setSelectedDateTo] = useState("");
   const [formDialog, setFormDialog] = useState<SavingFormDialogState>(null);
   const [expenseDialog, setExpenseDialog] =
     useState<SavingExpenseDialogState>(null);
@@ -74,6 +77,15 @@ export default function SavingPage() {
   const [expenseForm, setExpenseForm] = useState<SavingExpenseFormValues>(() =>
     createEmptySavingExpenseForm(),
   );
+  const deferredSearch = useDeferredValue(searchInput);
+  const appliedSearch =
+    deferredSearch.trim().length >= 3 ? deferredSearch.trim() : undefined;
+  const hasExplicitDateFilter =
+    selectedDateFrom.length > 0 || selectedDateTo.length > 0;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [appliedSearch, selectedDateFrom, selectedDateTo]);
 
   useEffect(() => {
     if (!token) return;
@@ -85,14 +97,18 @@ export default function SavingPage() {
       setError(null);
 
       try {
+        const filters = {
+          month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
+          year: hasExplicitDateFilter ? undefined : selectedYear,
+          search: appliedSearch,
+          dateFrom: selectedDateFrom || undefined,
+          dateTo: selectedDateTo || undefined,
+        };
+
         const [summaryResponse, pageResponse] = await Promise.all([
-          listSavings(sessionToken, {
-            month: selectedMonth + 1,
-            year: selectedYear,
-          }),
+          listSavings(sessionToken, filters),
           listSavingsPage(sessionToken, {
-            month: selectedMonth + 1,
-            year: selectedYear,
+            ...filters,
             page: currentPage,
             limit: DEFAULT_PAGE_SIZE,
           }),
@@ -130,11 +146,24 @@ export default function SavingPage() {
     return () => {
       ignore = true;
     };
-  }, [currentPage, refreshKey, selectedMonth, selectedYear, token]);
+  }, [
+    currentPage,
+    appliedSearch,
+    hasExplicitDateFilter,
+    refreshKey,
+    selectedDateFrom,
+    selectedDateTo,
+    selectedMonth,
+    selectedYear,
+    token,
+  ]);
 
   const selectedMonthLabel = resolveSavingMonthLabel(selectedMonth);
   const hasActiveFilters =
-    selectedMonth !== defaultMonth || selectedYear !== defaultYear;
+    selectedMonth !== defaultMonth ||
+    selectedYear !== defaultYear ||
+    appliedSearch !== undefined ||
+    hasExplicitDateFilter;
   const totalSaved = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
   const activeEntries = entries.filter((entry) => entry.stillHave);
   const stillHaveSaved = activeEntries.reduce(
@@ -452,18 +481,27 @@ export default function SavingPage() {
           </div>
 
           <SavingLedgerFilters
+            dateFrom={selectedDateFrom}
+            dateTo={selectedDateTo}
             hasActiveFilters={hasActiveFilters}
             month={selectedMonth}
+            search={searchInput}
             year={selectedYear}
             onClear={() => {
               setSelectedMonth(defaultMonth);
               setSelectedYear(defaultYear);
+              setSearchInput("");
+              setSelectedDateFrom("");
+              setSelectedDateTo("");
               setCurrentPage(1);
             }}
+            onDateFromChange={setSelectedDateFrom}
+            onDateToChange={setSelectedDateTo}
             onMonthChange={(value) => {
               setSelectedMonth(value);
               setCurrentPage(1);
             }}
+            onSearchChange={setSearchInput}
             onYearChange={(value) => {
               setSelectedYear(value);
               setCurrentPage(1);
@@ -491,6 +529,24 @@ export default function SavingPage() {
                 action={{
                   label: "Add saving",
                   onClick: openCreateDialog,
+                }}
+              />
+            </div>
+          ) : totalItems === 0 ? (
+            <div className="px-5 pb-5 md:px-6 md:pb-6">
+              <EmptyState
+                title="No ledger matches"
+                description="Try another search, date range, month, or year to reveal more saving entries."
+                action={{
+                  label: "Clear filters",
+                  onClick: () => {
+                    setSelectedMonth(defaultMonth);
+                    setSelectedYear(defaultYear);
+                    setSearchInput("");
+                    setSelectedDateFrom("");
+                    setSelectedDateTo("");
+                    setCurrentPage(1);
+                  },
                 }}
               />
             </div>
