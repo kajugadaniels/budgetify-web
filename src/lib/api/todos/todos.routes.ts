@@ -4,6 +4,9 @@ export const TODOS_ROUTES = {
   list:        (params?: {
     priority?: string;
     done?: boolean;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
     page?: number;
     limit?: number;
   }) => {
@@ -15,6 +18,18 @@ export const TODOS_ROUTES = {
 
     if (params?.done !== undefined) {
       searchParams.set("done", String(params.done));
+    }
+
+    if (params?.search !== undefined) {
+      searchParams.set("search", params.search);
+    }
+
+    if (params?.dateFrom !== undefined) {
+      searchParams.set("dateFrom", params.dateFrom);
+    }
+
+    if (params?.dateTo !== undefined) {
+      searchParams.set("dateTo", params.dateTo);
     }
 
     if (params?.page !== undefined) {
