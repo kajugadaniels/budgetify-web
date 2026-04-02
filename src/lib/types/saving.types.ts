@@ -28,6 +28,9 @@ export interface UpdateSavingRequest {
 export interface ListSavingsParams {
   month?: number;
   year?: number;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 }
