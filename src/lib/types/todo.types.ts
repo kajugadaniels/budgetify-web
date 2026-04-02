@@ -1,4 +1,5 @@
 export type TodoPriority = "TOP_PRIORITY" | "PRIORITY" | "NOT_PRIORITY";
+export type TodoFrequency = "ONCE" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
 export interface TodoImageResponse {
   id: string;
@@ -19,6 +20,13 @@ export interface TodoResponse {
   price: number;
   priority: TodoPriority;
   done: boolean;
+  frequency: TodoFrequency;
+  startDate: string | null;
+  endDate: string | null;
+  frequencyDays: number[];
+  occurrenceDates: string[];
+  recordedOccurrenceDates: string[];
+  remainingAmount: number | null;
   coverImageUrl: string | null;
   imageCount: number;
   images: TodoImageResponse[];
@@ -31,6 +39,11 @@ export interface CreateTodoRequest {
   price: number;
   priority: TodoPriority;
   done: boolean;
+  frequency: TodoFrequency;
+  startDate: string;
+  endDate?: string;
+  frequencyDays?: number[];
+  occurrenceDates?: string[];
 }
 
 export interface UpdateTodoRequest {
@@ -38,6 +51,13 @@ export interface UpdateTodoRequest {
   price?: number;
   priority?: TodoPriority;
   done?: boolean;
+  frequency?: TodoFrequency;
+  startDate?: string;
+  endDate?: string;
+  frequencyDays?: number[];
+  occurrenceDates?: string[];
+  deductAmount?: number;
+  recordedOccurrenceDate?: string;
   primaryImageId?: string;
 }
 
