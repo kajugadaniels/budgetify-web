@@ -10,6 +10,8 @@ import {
   listExpenses,
 } from "@/lib/api/expenses/expenses.api";
 import { listIncome } from "@/lib/api/income/income.api";
+import { listLoans } from "@/lib/api/loans/loans.api";
+import { getMyPartnership } from "@/lib/api/partnerships/partnerships.api";
 import { listSavings } from "@/lib/api/savings/savings.api";
 import { listTodos } from "@/lib/api/todos/todos.api";
 import type {
@@ -17,6 +19,8 @@ import type {
   ExpenseResponse,
 } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
+import type { LoanResponse } from "@/lib/types/loan.types";
+import type { PartnershipResponse } from "@/lib/types/partnership.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { rwf, rwfCompact, usd, usdCompact } from "@/lib/utils/currency";
@@ -24,17 +28,20 @@ import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardExpenseCategoriesChart } from "./dashboard/dashboard-expense-categories-chart";
 import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
 import { DashboardMonthSwitcher } from "./dashboard/dashboard-month-switcher";
+import { DashboardPartnerActivity } from "./dashboard/dashboard-partner-activity";
 import { DashboardPendingIncomeCard } from "./dashboard/dashboard-pending-income-card";
 import { DashboardSavingsRateCard } from "./dashboard/dashboard-savings-rate-card";
 import { DashboardSummaryCard } from "./dashboard/dashboard-summary-card";
 import { DashboardTodoAdviser } from "./dashboard/dashboard-todo-adviser";
 import { DashboardUpcomingTodoSchedule } from "./dashboard/dashboard-upcoming-todo-schedule";
 import {
+  buildDashboardPartnerActivitySummary,
   buildDashboardTodoAdviserSummary,
   buildDailyExpenseCategoryData,
   buildUpcomingTodoSchedule,
   buildMonthlyBarChartData,
   CURRENT_YEAR,
+  filterEntriesByMonth,
   formatDashboardMonthLabel,
   sumExpenseAmounts,
   sumIncomeAmounts,
@@ -45,17 +52,19 @@ import {
 const CURRENT_MONTH = new Date().getMonth();
 
 export default function DashboardPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [income, setIncome] = useState<IncomeResponse[]>([]);
   const [expenses, setExpenses] = useState<ExpenseResponse[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<
     ExpenseCategoryOptionResponse[]
   >([]);
+  const [monthlyLoans, setMonthlyLoans] = useState<LoanResponse[]>([]);
   const [allIncome, setAllIncome] = useState<IncomeResponse[]>([]);
   const [allExpenses, setAllExpenses] = useState<ExpenseResponse[]>([]);
   const [allSavings, setAllSavings] = useState<SavingResponse[]>([]);
   const [allTodos, setAllTodos] = useState<TodoResponse[]>([]);
+  const [partnership, setPartnership] = useState<PartnershipResponse | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,14 +86,17 @@ export default function DashboardPage() {
           allSavingResponse,
           expenseCategoryResponse,
           allTodoResponse,
+          partnershipResponse,
           incomeResponse,
           expenseResponse,
+          monthlyLoanResponse,
         ] = await Promise.all([
           listIncome(sessionToken),
           listExpenses(sessionToken),
           listSavings(sessionToken),
           listExpenseCategories(sessionToken).catch(() => []),
           listTodos(sessionToken),
+          getMyPartnership(sessionToken).catch(() => null),
           listIncome(sessionToken, {
             month: selectedMonth + 1,
             year: CURRENT_YEAR,
@@ -93,6 +105,10 @@ export default function DashboardPage() {
             month: selectedMonth + 1,
             year: CURRENT_YEAR,
           }),
+          listLoans(sessionToken, {
+            month: selectedMonth + 1,
+            year: CURRENT_YEAR,
+          }).catch(() => []),
         ]);
 
         if (!ignore) {
@@ -101,8 +117,10 @@ export default function DashboardPage() {
           setAllSavings(allSavingResponse);
           setExpenseCategories(expenseCategoryResponse);
           setAllTodos(allTodoResponse);
+          setPartnership(partnershipResponse);
           setIncome(incomeResponse);
           setExpenses(expenseResponse);
+          setMonthlyLoans(monthlyLoanResponse);
         }
       } catch (loadError) {
         if (!ignore) {
@@ -148,6 +166,22 @@ export default function DashboardPage() {
     () => buildUpcomingTodoSchedule(allTodos),
     [allTodos],
   );
+  const monthlySavings = useMemo(
+    () => filterEntriesByMonth(allSavings, selectedMonth, CURRENT_YEAR),
+    [allSavings, selectedMonth],
+  );
+  const partnerActivitySummary = useMemo(
+    () =>
+      buildDashboardPartnerActivitySummary({
+        currentUser: user,
+        expenses,
+        income,
+        loans: monthlyLoans,
+        partnership,
+        savings: monthlySavings,
+      }),
+    [expenses, income, monthlyLoans, monthlySavings, partnership, user],
+  );
 
   const totalIncome = sumIncomeAmounts(income);
   const totalExpenses = sumExpenseAmounts(expenses);
@@ -169,6 +203,7 @@ export default function DashboardPage() {
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[560px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[310px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[390px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[340px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
           <div className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-6">
@@ -293,6 +328,12 @@ export default function DashboardPage() {
         <DashboardPendingIncomeCard
           entries={income}
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
+
+        <DashboardPartnerActivity
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          summary={partnerActivitySummary}
           year={CURRENT_YEAR}
         />
 
