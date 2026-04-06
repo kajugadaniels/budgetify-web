@@ -1,3 +1,5 @@
+import type { CreatedBySummary } from "./created-by.types";
+
 export type IncomeCategory =
   | "SALARY"
   | "FREELANCE"
@@ -18,6 +20,7 @@ export interface IncomeResponse {
   category: IncomeCategory;
   date: string;
   received: boolean;
+  createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
 }
