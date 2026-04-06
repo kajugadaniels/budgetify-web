@@ -121,6 +121,22 @@ export interface DashboardPartnerActivitySummary {
   totalUsdAmount: number;
 }
 
+export interface DashboardMonthComparisonMetric {
+  currentAmount: number;
+  deltaAmount: number;
+  deltaPercent: number | null;
+  label: string;
+  previousAmount: number;
+  tone: "positive" | "negative" | "neutral";
+  trend: "up" | "down" | "flat";
+}
+
+export interface DashboardMonthComparisonSummary {
+  currentLabel: string;
+  metrics: DashboardMonthComparisonMetric[];
+  previousLabel: string;
+}
+
 export function formatDashboardMonthLabel(month: number): string {
   return MONTH_OPTIONS.find((item) => item.value === month)?.label ?? "Month";
 }
@@ -477,6 +493,62 @@ export function buildDashboardPartnerActivitySummary(input: {
   };
 }
 
+export function buildDashboardMonthComparisonSummary(input: {
+  expenses: ExpenseResponse[];
+  income: IncomeResponse[];
+  month: number;
+  year: number;
+}): DashboardMonthComparisonSummary {
+  const previousPeriod = getPreviousMonthPeriod(input.month, input.year);
+  const currentIncome = sumIncomeAmounts(
+    filterEntriesByMonth(input.income, input.month, input.year),
+  );
+  const previousIncome = sumIncomeAmounts(
+    filterEntriesByMonth(
+      input.income,
+      previousPeriod.month,
+      previousPeriod.year,
+    ),
+  );
+  const currentExpenses = sumExpenseAmounts(
+    filterEntriesByMonth(input.expenses, input.month, input.year),
+  );
+  const previousExpenses = sumExpenseAmounts(
+    filterEntriesByMonth(
+      input.expenses,
+      previousPeriod.month,
+      previousPeriod.year,
+    ),
+  );
+  const currentNetFlow = currentIncome - currentExpenses;
+  const previousNetFlow = previousIncome - previousExpenses;
+
+  return {
+    currentLabel: `${formatDashboardMonthLabel(input.month)} ${input.year}`,
+    metrics: [
+      createDashboardMonthComparisonMetric({
+        currentAmount: currentIncome,
+        label: "Income",
+        higherIsBetter: true,
+        previousAmount: previousIncome,
+      }),
+      createDashboardMonthComparisonMetric({
+        currentAmount: currentExpenses,
+        label: "Expense",
+        higherIsBetter: false,
+        previousAmount: previousExpenses,
+      }),
+      createDashboardMonthComparisonMetric({
+        currentAmount: currentNetFlow,
+        label: "Net flow",
+        higherIsBetter: true,
+        previousAmount: previousNetFlow,
+      }),
+    ],
+    previousLabel: `${formatDashboardMonthLabel(previousPeriod.month)} ${previousPeriod.year}`,
+  };
+}
+
 function isRecurringAdviserTodo(
   entry: TodoResponse,
 ): entry is TodoResponse & { frequency: "WEEKLY" | "MONTHLY" } {
@@ -639,6 +711,40 @@ function compareDashboardDatesDesc(
   return new Date(right.date).getTime() - new Date(left.date).getTime();
 }
 
+function createDashboardMonthComparisonMetric(input: {
+  currentAmount: number;
+  higherIsBetter: boolean;
+  label: string;
+  previousAmount: number;
+}): DashboardMonthComparisonMetric {
+  const deltaAmount = input.currentAmount - input.previousAmount;
+  const trend =
+    deltaAmount > 0 ? "up" : deltaAmount < 0 ? "down" : "flat";
+  const tone =
+    deltaAmount === 0
+      ? "neutral"
+      : input.higherIsBetter
+        ? deltaAmount > 0
+          ? "positive"
+          : "negative"
+        : deltaAmount < 0
+          ? "positive"
+          : "negative";
+
+  return {
+    currentAmount: input.currentAmount,
+    deltaAmount,
+    deltaPercent:
+      input.previousAmount === 0
+        ? null
+        : Math.abs(deltaAmount) / Math.abs(input.previousAmount) * 100,
+    label: input.label,
+    previousAmount: input.previousAmount,
+    tone,
+    trend,
+  };
+}
+
 function createDashboardPartnerPersonSummary(
   identity: DashboardPartnerActivityIdentity,
   isCurrentUser: boolean,
@@ -650,6 +756,23 @@ function createDashboardPartnerPersonSummary(
     latestActivity: null,
     rwfAmount: 0,
     usdAmount: 0,
+  };
+}
+
+function getPreviousMonthPeriod(month: number, year: number): {
+  month: number;
+  year: number;
+} {
+  if (month === 0) {
+    return {
+      month: 11,
+      year: year - 1,
+    };
+  }
+
+  return {
+    month: month - 1,
+    year,
   };
 }
 
