@@ -50,7 +50,7 @@ export function DashboardSavingsRateCard({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+      <div className="mt-5 grid gap-3 lg:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
         <div className="rounded-[26px] border border-danger/10 bg-danger/5 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
