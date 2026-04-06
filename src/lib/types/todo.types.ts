@@ -1,3 +1,5 @@
+import type { CreatedBySummary } from "./created-by.types";
+
 export type TodoPriority = "TOP_PRIORITY" | "PRIORITY" | "NOT_PRIORITY";
 export type TodoFrequency = "ONCE" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
@@ -30,6 +32,7 @@ export interface TodoResponse {
   coverImageUrl: string | null;
   imageCount: number;
   images: TodoImageResponse[];
+  createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
 }
