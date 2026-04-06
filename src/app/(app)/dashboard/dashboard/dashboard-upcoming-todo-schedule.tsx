@@ -106,6 +106,9 @@ function DayCard({ day }: { day: DashboardUpcomingTodoScheduleDay }) {
 export function DashboardUpcomingTodoSchedule({
   summary,
 }: DashboardUpcomingTodoScheduleProps) {
+  const leadDays = summary.days.slice(0, 3);
+  const trailingDays = summary.days.slice(3);
+
   return (
     <section className="glass-panel rounded-[32px] p-5 md:p-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -150,10 +153,18 @@ export function DashboardUpcomingTodoSchedule({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-7">
-        {summary.days.map((day) => (
-          <DayCard key={day.date} day={day} />
-        ))}
+      <div className="mt-6 space-y-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          {leadDays.map((day) => (
+            <DayCard key={day.date} day={day} />
+          ))}
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {trailingDays.map((day) => (
+            <DayCard key={day.date} day={day} />
+          ))}
+        </div>
       </div>
     </section>
   );
