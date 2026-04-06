@@ -111,7 +111,7 @@ export function createTodoExpenseFormFromEntry(
   const defaultDate =
     isRecurringTodo(entry) && getRemainingOccurrenceDates(entry).length > 0
       ? getRemainingOccurrenceDates(entry)[0]
-      : entry.startDate ?? getTodayDateValue();
+      : getTodayDateValue();
 
   return {
     amount: String(getSuggestedTodoExpenseAmount(entry)),
