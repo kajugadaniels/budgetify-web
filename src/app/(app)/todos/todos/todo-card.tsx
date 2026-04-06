@@ -1,4 +1,5 @@
 import { PRIORITY_META } from "@/constant/todos/priority-meta";
+import { CreatedByPill } from "@/components/ui/created-by-pill";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { rwf } from "@/lib/utils/currency";
 import { TodoImageCarousel } from "./todo-image-carousel";
@@ -86,6 +87,7 @@ export function TodoCard({
             <p className="mt-2 text-xs leading-5 text-text-secondary">
               {formatTodoScheduleSummary(entry)}
             </p>
+            <CreatedByPill creator={entry.createdBy} />
           </div>
 
           <div className="shrink-0 rounded-[20px] px-4 py-3 text-right">
