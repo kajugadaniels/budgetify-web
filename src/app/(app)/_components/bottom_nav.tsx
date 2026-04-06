@@ -59,9 +59,12 @@ export function BottomNav() {
 
             <div className="min-w-0 overflow-x-auto [scrollbar-width:none]">
               <div className="flex min-w-max items-center gap-1 md:gap-2">
-                {NAV_ITEMS.map(({ href, label, shortLabel, icon }) => {
+                {NAV_ITEMS.map(({ href, label, shortLabel, icon, badge }) => {
                   const isActive =
                     pathname === href || pathname.startsWith(`${href}/`);
+                  const showBadge =
+                    badge !== undefined &&
+                    Date.now() < new Date(badge.expiresAt).getTime();
 
                   return (
                     <Link
@@ -85,11 +88,25 @@ export function BottomNav() {
                         {icon}
                       </span>
 
-                      <span className="truncate text-[10px] font-medium leading-none sm:hidden">
-                        {shortLabel}
-                      </span>
-                      <span className="hidden truncate text-xs font-medium leading-none sm:block">
-                        {label}
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate text-[10px] font-medium leading-none sm:hidden">
+                          {shortLabel}
+                        </span>
+                        <span className="hidden truncate text-xs font-medium leading-none sm:block">
+                          {label}
+                        </span>
+                        {showBadge ? (
+                          <span
+                            className={cn(
+                              "inline-flex rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em]",
+                              isActive
+                                ? "border-primary/20 bg-primary/12 text-primary"
+                                : "border-primary/16 bg-primary/10 text-primary/88",
+                            )}
+                          >
+                            {badge.label}
+                          </span>
+                        ) : null}
                       </span>
                     </Link>
                   );
