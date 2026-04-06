@@ -61,6 +61,26 @@ export interface DashboardTodoAdviserSummary {
   usedAmount: number;
 }
 
+export interface DashboardUpcomingTodoScheduleItem {
+  amount: number;
+  frequency: TodoResponse["frequency"];
+  id: string;
+  name: string;
+}
+
+export interface DashboardUpcomingTodoScheduleDay {
+  date: string;
+  items: DashboardUpcomingTodoScheduleItem[];
+  totalAmount: number;
+}
+
+export interface DashboardUpcomingTodoScheduleSummary {
+  days: DashboardUpcomingTodoScheduleDay[];
+  daysWithPlans: number;
+  occurrenceCount: number;
+  totalAmount: number;
+}
+
 export function formatDashboardMonthLabel(month: number): string {
   return MONTH_OPTIONS.find((item) => item.value === month)?.label ?? "Month";
 }
@@ -215,6 +235,81 @@ export function buildDashboardTodoAdviserSummary(
   );
 }
 
+export function buildUpcomingTodoSchedule(
+  entries: TodoResponse[],
+): DashboardUpcomingTodoScheduleSummary {
+  const startDate = getLocalDateOnlyValue(new Date());
+  const nextSevenDays = Array.from({ length: 7 }, (_, index) =>
+    getLocalDateOnlyValue(addLocalDays(new Date(), index)),
+  );
+  const dayMap = new Map(
+    nextSevenDays.map((date) => [
+      date,
+      {
+        date,
+        items: [] as DashboardUpcomingTodoScheduleItem[],
+        totalAmount: 0,
+      } satisfies DashboardUpcomingTodoScheduleDay,
+    ]),
+  );
+
+  entries
+    .filter((entry) => !entry.done)
+    .forEach((entry) => {
+      const remainingDates = entry.occurrenceDates
+        .filter((date) => !entry.recordedOccurrenceDates.includes(date))
+        .sort();
+
+      if (remainingDates.length === 0) {
+        return;
+      }
+
+      const amount = resolveUpcomingTodoOccurrenceAmount(entry, remainingDates);
+
+      remainingDates.forEach((date) => {
+        if (date < startDate) {
+          return;
+        }
+
+        const day = dayMap.get(date);
+
+        if (!day) {
+          return;
+        }
+
+        day.items.push({
+          amount,
+          frequency: entry.frequency,
+          id: entry.id,
+          name: entry.name,
+        });
+        day.totalAmount += amount;
+      });
+    });
+
+  const days = nextSevenDays.map((date) => {
+    const day = dayMap.get(date)!;
+
+    return {
+      ...day,
+      items: [...day.items].sort(
+        (left, right) =>
+          right.amount - left.amount || left.name.localeCompare(right.name),
+      ),
+      totalAmount: roundDashboardCurrency(day.totalAmount),
+    };
+  });
+
+  return {
+    days,
+    daysWithPlans: days.filter((day) => day.items.length > 0).length,
+    occurrenceCount: days.reduce((sum, day) => sum + day.items.length, 0),
+    totalAmount: roundDashboardCurrency(
+      days.reduce((sum, day) => sum + day.totalAmount, 0),
+    ),
+  };
+}
+
 function isRecurringAdviserTodo(
   entry: TodoResponse,
 ): entry is TodoResponse & { frequency: "WEEKLY" | "MONTHLY" } {
@@ -355,6 +450,40 @@ export function formatDashboardDateLabel(value: string): string {
 
 function toDateInputValue(date: Date): string {
   return date.toISOString().split("T")[0] ?? "";
+}
+
+function getLocalDateOnlyValue(date: Date): string {
+  const offset = date.getTimezoneOffset() * 60_000;
+
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function addLocalDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function resolveUpcomingTodoOccurrenceAmount(
+  entry: TodoResponse,
+  remainingDates: string[],
+): number {
+  if (entry.frequency === "ONCE") {
+    return roundDashboardCurrency(Number(entry.price));
+  }
+
+  const remainingAmount = entry.remainingAmount ?? entry.price;
+
+  if (remainingDates.length === 0 || remainingAmount <= 0) {
+    return 0;
+  }
+
+  return roundDashboardCurrency(Number(remainingAmount) / remainingDates.length);
+}
+
+function roundDashboardCurrency(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function humanizeDashboardCategory(value: string): string {
