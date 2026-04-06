@@ -48,7 +48,11 @@ export default function VerifyPage() {
         const auth = await verifyEmailOtp({ email, otp });
         login(auth);
         sessionStorage.removeItem("budgetify_otp_email");
-        router.push("/dashboard");
+        const nextPath = sessionStorage.getItem("budgetify_auth_redirect");
+        sessionStorage.removeItem("budgetify_auth_redirect");
+        router.push(
+          nextPath && nextPath.startsWith("/") ? nextPath : "/dashboard",
+        );
       } catch (err) {
         toast.error(
           err instanceof ApiError
