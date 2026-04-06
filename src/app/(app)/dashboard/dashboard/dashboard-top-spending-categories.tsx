@@ -59,7 +59,7 @@ export function DashboardTopSpendingCategories({
       </div>
 
       {topCategory ? (
-        <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(280px,0.82fr)_minmax(0,1.18fr)]">
+        <div className="mt-5 grid gap-4 2xl:grid-cols-[minmax(260px,0.84fr)_minmax(0,1.16fr)]">
           <Link
             href={`/expenses?category=${topCategory.category}&month=${month + 1}`}
             className="rounded-[28px] border border-primary/14 bg-[linear-gradient(160deg,rgba(196,164,132,0.12),rgba(255,255,255,0.02))] p-5 transition-colors hover:bg-[linear-gradient(160deg,rgba(196,164,132,0.16),rgba(255,255,255,0.03))]"
