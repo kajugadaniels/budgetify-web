@@ -1,3 +1,5 @@
+import type { CreatedBySummary } from "./created-by.types";
+
 export interface SavingResponse {
   id: string;
   label: string;
@@ -5,6 +7,7 @@ export interface SavingResponse {
   date: string;
   note: string | null;
   stillHave: boolean;
+  createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
 }
