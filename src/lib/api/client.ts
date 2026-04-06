@@ -66,7 +66,9 @@ export async function apiFetch<T>(
     return undefined as T;
   }
 
-  const data: unknown = await response.json();
+  const rawText = await response.text();
+  const data: unknown =
+    rawText.trim().length === 0 ? null : JSON.parse(rawText);
 
   if (!response.ok) {
     const err = data as { error?: string; message?: string };
