@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
 import { initiateEmailAuth } from "@/lib/api/auth/auth.api";
@@ -13,10 +13,12 @@ interface LoginPageClientProps {
 
 export function LoginPageClient({ googleClientId }: LoginPageClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const redirectPath = searchParams.get("redirect");
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -27,6 +29,11 @@ export function LoginPageClient({ googleClientId }: LoginPageClientProps) {
     try {
       await initiateEmailAuth({ email: trimmed });
       sessionStorage.setItem("budgetify_otp_email", trimmed);
+      if (redirectPath?.startsWith("/")) {
+        sessionStorage.setItem("budgetify_auth_redirect", redirectPath);
+      } else {
+        sessionStorage.removeItem("budgetify_auth_redirect");
+      }
       router.push("/verify");
     } catch (error) {
       toast.error(
@@ -102,7 +109,10 @@ export function LoginPageClient({ googleClientId }: LoginPageClientProps) {
           <div className="h-px flex-1 bg-border" />
         </div>
 
-        <GoogleSignInButton clientId={googleClientId} />
+        <GoogleSignInButton
+          clientId={googleClientId}
+          redirectPath={redirectPath}
+        />
 
         <p className="mt-6 text-center text-xs leading-relaxed text-text-secondary/40">
           By continuing, you agree to our Terms of Service
