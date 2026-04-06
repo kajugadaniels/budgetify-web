@@ -16,6 +16,7 @@ interface IncomeTableProps {
   entries: IncomeResponse[];
   onDelete: (entry: IncomeResponse) => void;
   onEdit: (entry: IncomeResponse) => void;
+  onRecordNextMonth: (entry: IncomeResponse) => void;
   onToggleReceived: (entry: IncomeResponse) => void;
 }
 
@@ -26,11 +27,12 @@ export function IncomeTable({
   entries,
   onDelete,
   onEdit,
+  onRecordNextMonth,
   onToggleReceived,
 }: IncomeTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[900px] border-separate border-spacing-0">
+      <table className="w-full min-w-[980px] border-separate border-spacing-0">
         <thead>
           <tr className="text-left">
             {["Source", "Category", "Date", "Received", "Amount", "Actions"].map((label) => (
@@ -90,7 +92,7 @@ export function IncomeTable({
                 </p>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => onEdit(entry)}
@@ -98,6 +100,14 @@ export function IncomeTable({
                     className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRecordNextMonth(entry)}
+                    disabled={!canEdit}
+                    className="rounded-full border border-primary/18 bg-primary/8 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/14 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Record for next month
                   </button>
                   <button
                     type="button"
