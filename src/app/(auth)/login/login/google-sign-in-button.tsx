@@ -15,6 +15,7 @@ import { ApiError } from "@/lib/api/client";
 
 interface GoogleSignInButtonProps {
   clientId: string;
+  redirectPath?: string | null;
 }
 
 interface GoogleCredentialResponse {
@@ -61,7 +62,10 @@ declare global {
   }
 }
 
-export function GoogleSignInButton({ clientId }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({
+  clientId,
+  redirectPath,
+}: GoogleSignInButtonProps) {
   const router = useRouter();
   const { login } = useAuth();
   const toast = useToast();
@@ -88,8 +92,13 @@ export function GoogleSignInButton({ clientId }: GoogleSignInButtonProps) {
         const auth = await googleAuth({ idToken });
         login(auth);
         sessionStorage.removeItem("budgetify_otp_email");
+        const nextPath =
+          redirectPath && redirectPath.startsWith("/")
+            ? redirectPath
+            : sessionStorage.getItem("budgetify_auth_redirect") ?? "/dashboard";
+        sessionStorage.removeItem("budgetify_auth_redirect");
         toast.success("Signed in with Google.");
-        router.replace("/dashboard");
+        router.replace(nextPath);
         router.refresh();
       } catch (error) {
         toast.error(
@@ -101,7 +110,7 @@ export function GoogleSignInButton({ clientId }: GoogleSignInButtonProps) {
         setBusy(false);
       }
     },
-    [login, router, toast],
+    [login, redirectPath, router, toast],
   );
 
   useEffect(() => {
