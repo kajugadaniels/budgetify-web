@@ -217,38 +217,28 @@ export default function DashboardPage() {
   const totalPendingTodoAmount = sumTodoAmounts(allTodos, {
     pendingOnly: true,
   });
-  const selectedMonthLabel = formatDashboardMonthLabel(selectedMonth);
 
   if (loading) {
     return (
       <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4">
-          <div className="glass-panel h-[168px] animate-pulse rounded-[32px]" />
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6">
+          <div className="glass-panel h-[120px] animate-pulse rounded-[32px]" />
+          <div className="glass-panel h-[88px] animate-pulse rounded-[28px]" />
+          <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[560px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[310px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[320px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[390px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[360px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[340px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
+          <div className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
-                className="glass-panel h-[170px] animate-pulse rounded-[30px]"
+                className="glass-panel h-[200px] animate-pulse rounded-[30px]"
               />
             ))}
-          </div>
-
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.42fr)_minmax(340px,0.86fr)]">
-            <div className="grid gap-4">
-              <div className="glass-panel h-[500px] animate-pulse rounded-[36px]" />
-              <div className="glass-panel h-[560px] animate-pulse rounded-[36px]" />
-              <div className="glass-panel h-[430px] animate-pulse rounded-[36px]" />
-              <div className="glass-panel h-[430px] animate-pulse rounded-[36px]" />
-            </div>
-
-            <div className="grid gap-4">
-              <div className="glass-panel h-[300px] animate-pulse rounded-[36px]" />
-              <div className="glass-panel h-[320px] animate-pulse rounded-[36px]" />
-              <div className="glass-panel h-[370px] animate-pulse rounded-[36px]" />
-              <div className="glass-panel h-[360px] animate-pulse rounded-[36px]" />
-              <div className="glass-panel h-[470px] animate-pulse rounded-[36px]" />
-              <div className="glass-panel h-[340px] animate-pulse rounded-[36px]" />
-            </div>
           </div>
         </div>
       </div>
@@ -276,70 +266,61 @@ export default function DashboardPage() {
 
   return (
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4">
-        <section className="glass-panel rounded-[32px] p-5 md:p-6">
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)] xl:items-end">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <section className="glass-panel rounded-[32px] p-6 md:p-7">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
                 Dashboard
               </p>
-              <h1 className="mt-2 text-[clamp(2rem,4vw,2.6rem)] font-semibold tracking-heading-lg text-text-primary">
-                A tighter view of {selectedMonthLabel}
+              <h1 className="mt-2 text-3xl font-semibold tracking-heading-lg text-text-primary">
+                Monthly overview
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-                Review the month quickly, compare it to the one before it, and
-                spot the records that need attention without scrolling through a
-                long stack of panels.
+                Switch between months to see the total income and expenses for
+                that period, alongside all-time savings you still hold and the
+                money left after income minus expense, plus the cost of todos
+                you still have not completed. The charts below then break that
+                movement down by day and by expense category.
               </p>
             </div>
 
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-3 md:p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
-                    Active month
-                  </p>
-                  <p className="mt-1 text-lg font-semibold tracking-[-0.04em] text-text-primary">
-                    {selectedMonthLabel} {CURRENT_YEAR}
-                  </p>
-                </div>
-                <span className="rounded-full border border-white/10 bg-background/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary">
-                  Switch month
-                </span>
-              </div>
-
-              <DashboardMonthSwitcher
-                embedded
-                months={MONTH_OPTIONS}
-                selectedMonth={selectedMonth}
-                onSelect={setSelectedMonth}
-              />
-            </div>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-text-secondary">
+              {formatDashboardMonthLabel(selectedMonth)} {CURRENT_YEAR}
+            </span>
           </div>
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <DashboardMonthSwitcher
+          months={MONTH_OPTIONS}
+          selectedMonth={selectedMonth}
+          onSelect={setSelectedMonth}
+        />
+
+        <section className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-3">
           <DashboardSummaryCard
             label="Total income"
             tone="income"
             compactValue={rwfCompact(totalIncome)}
             fullValue={rwf(totalIncome)}
-            description={`Received in ${selectedMonthLabel} ${CURRENT_YEAR}`}
+            description={`Received in ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
           />
           <DashboardSummaryCard
             label="Total expense"
             tone="expense"
             compactValue={rwfCompact(totalExpenses)}
             fullValue={rwf(totalExpenses)}
-            description={`Recorded for ${selectedMonthLabel} ${CURRENT_YEAR}`}
+            description={`Recorded for ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
           />
           <DashboardSummaryCard
             label="Net flow this month"
             tone={monthlyNetFlow >= 0 ? "income" : "expense"}
             compactValue={rwfCompact(monthlyNetFlow)}
             fullValue={rwf(monthlyNetFlow)}
-            description={`Income minus expense for ${selectedMonthLabel} ${CURRENT_YEAR}`}
+            description={`Selected month income minus expense for ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
           />
+        </section>
+        <section className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-3">
           <DashboardSummaryCard
             label="Savings you still have"
             tone="saving"
@@ -363,59 +344,53 @@ export default function DashboardPage() {
           />
         </section>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.42fr)_minmax(340px,0.86fr)]">
-          <div className="grid gap-4">
-            <DashboardBarChart
-              key={`${selectedMonth}-${CURRENT_YEAR}`}
-              data={dailyChartData}
-              monthLabel={selectedMonthLabel}
-              year={CURRENT_YEAR}
-            />
+        <DashboardSavingsRateCard
+          incomeAmount={totalIncome}
+          expenseAmount={totalExpenses}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
 
-            <DashboardExpenseCategoriesChart
-              data={dailyExpenseCategoryData}
-              month={selectedMonth}
-              monthLabel={selectedMonthLabel}
-              year={CURRENT_YEAR}
-            />
+        <DashboardPendingIncomeCard
+          entries={income}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
 
-            <DashboardPartnerActivity
-              monthLabel={selectedMonthLabel}
-              summary={partnerActivitySummary}
-              year={CURRENT_YEAR}
-            />
+        <DashboardMonthComparison summary={monthComparisonSummary} />
 
-            <DashboardUpcomingTodoSchedule summary={upcomingTodoSchedule} />
-          </div>
+        <DashboardPartnerActivity
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          summary={partnerActivitySummary}
+          year={CURRENT_YEAR}
+        />
 
-          <div className="grid gap-4">
-            <DashboardSavingsRateCard
-              incomeAmount={totalIncome}
-              expenseAmount={totalExpenses}
-              monthLabel={selectedMonthLabel}
-              year={CURRENT_YEAR}
-            />
+        <DashboardUpcomingTodoSchedule summary={upcomingTodoSchedule} />
 
-            <DashboardMonthComparison summary={monthComparisonSummary} />
+        <DashboardTodoAdviser summary={todoAdviserSummary} />
 
-            <DashboardPendingIncomeCard
-              entries={income}
-              monthLabel={selectedMonthLabel}
-              year={CURRENT_YEAR}
-            />
+        <DashboardBarChart
+          key={`${selectedMonth}-${CURRENT_YEAR}`}
+          data={dailyChartData}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
 
-            <DashboardTopSpendingCategories
-              month={selectedMonth}
-              monthLabel={selectedMonthLabel}
-              summary={topSpendingCategoriesSummary}
-              year={CURRENT_YEAR}
-            />
+        <DashboardTopSpendingCategories
+          month={selectedMonth}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          summary={topSpendingCategoriesSummary}
+          year={CURRENT_YEAR}
+        />
 
-            <DashboardTodoAdviser summary={todoAdviserSummary} />
+        <DashboardExpenseCategoriesChart
+          data={dailyExpenseCategoryData}
+          month={selectedMonth}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
 
-            <DashboardLoansChart token={token} />
-          </div>
-        </div>
+        <DashboardLoansChart token={token} />
       </div>
     </div>
   );
