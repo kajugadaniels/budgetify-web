@@ -1,5 +1,6 @@
 import type { SavingResponse } from "@/lib/types/saving.types";
 import { usd } from "@/lib/utils/currency";
+import { CreatedByPill } from "@/components/ui/created-by-pill";
 import { formatSavingDate, formatSavingNote } from "./saving.utils";
 
 interface SavingTableProps {
@@ -45,6 +46,7 @@ export function SavingTable({
                   <p className="mt-1 text-xs text-text-secondary/70">
                     Created {formatSavingDate(entry.createdAt)}
                   </p>
+                  <CreatedByPill creator={entry.createdBy} />
                 </div>
               </td>
               <td className="border-t border-white/6 px-5 py-4 text-sm text-text-secondary md:px-6">
