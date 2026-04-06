@@ -34,12 +34,14 @@ import { DashboardPendingIncomeCard } from "./dashboard/dashboard-pending-income
 import { DashboardSavingsRateCard } from "./dashboard/dashboard-savings-rate-card";
 import { DashboardSummaryCard } from "./dashboard/dashboard-summary-card";
 import { DashboardTodoAdviser } from "./dashboard/dashboard-todo-adviser";
+import { DashboardTopSpendingCategories } from "./dashboard/dashboard-top-spending-categories";
 import { DashboardUpcomingTodoSchedule } from "./dashboard/dashboard-upcoming-todo-schedule";
 import {
   buildDashboardMonthComparisonSummary,
   buildDashboardPartnerActivitySummary,
   buildDashboardTodoAdviserSummary,
   buildDailyExpenseCategoryData,
+  buildTopSpendingCategoriesSummary,
   buildUpcomingTodoSchedule,
   buildMonthlyBarChartData,
   CURRENT_YEAR,
@@ -160,6 +162,16 @@ export default function DashboardPage() {
       ),
     [expenseCategories, expenses, selectedMonth],
   );
+  const topSpendingCategoriesSummary = useMemo(
+    () =>
+      buildTopSpendingCategoriesSummary(
+        expenses,
+        expenseCategories,
+        selectedMonth,
+        CURRENT_YEAR,
+      ),
+    [expenseCategories, expenses, selectedMonth],
+  );
   const todoAdviserSummary = useMemo(
     () => buildDashboardTodoAdviserSummary(allTodos),
     [allTodos],
@@ -217,6 +229,7 @@ export default function DashboardPage() {
           <div className="glass-panel h-[310px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[320px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[390px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[360px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[340px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
           <div className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-6">
@@ -360,6 +373,13 @@ export default function DashboardPage() {
           key={`${selectedMonth}-${CURRENT_YEAR}`}
           data={dailyChartData}
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
+
+        <DashboardTopSpendingCategories
+          month={selectedMonth}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          summary={topSpendingCategoriesSummary}
           year={CURRENT_YEAR}
         />
 
