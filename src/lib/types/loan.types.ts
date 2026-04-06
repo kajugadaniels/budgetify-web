@@ -1,3 +1,4 @@
+import type { CreatedBySummary } from "./created-by.types";
 import type { ExpenseResponse } from "./expense.types";
 
 export interface LoanResponse {
@@ -7,6 +8,7 @@ export interface LoanResponse {
   date: string;
   paid: boolean;
   note: string | null;
+  createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
 }
