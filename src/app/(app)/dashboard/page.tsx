@@ -27,6 +27,7 @@ import { rwf, rwfCompact, usd, usdCompact } from "@/lib/utils/currency";
 import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardExpenseCategoriesChart } from "./dashboard/dashboard-expense-categories-chart";
 import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
+import { DashboardMonthComparison } from "./dashboard/dashboard-month-comparison";
 import { DashboardMonthSwitcher } from "./dashboard/dashboard-month-switcher";
 import { DashboardPartnerActivity } from "./dashboard/dashboard-partner-activity";
 import { DashboardPendingIncomeCard } from "./dashboard/dashboard-pending-income-card";
@@ -35,6 +36,7 @@ import { DashboardSummaryCard } from "./dashboard/dashboard-summary-card";
 import { DashboardTodoAdviser } from "./dashboard/dashboard-todo-adviser";
 import { DashboardUpcomingTodoSchedule } from "./dashboard/dashboard-upcoming-todo-schedule";
 import {
+  buildDashboardMonthComparisonSummary,
   buildDashboardPartnerActivitySummary,
   buildDashboardTodoAdviserSummary,
   buildDailyExpenseCategoryData,
@@ -182,6 +184,16 @@ export default function DashboardPage() {
       }),
     [expenses, income, monthlyLoans, monthlySavings, partnership, user],
   );
+  const monthComparisonSummary = useMemo(
+    () =>
+      buildDashboardMonthComparisonSummary({
+        expenses: allExpenses,
+        income: allIncome,
+        month: selectedMonth,
+        year: CURRENT_YEAR,
+      }),
+    [allExpenses, allIncome, selectedMonth],
+  );
 
   const totalIncome = sumIncomeAmounts(income);
   const totalExpenses = sumExpenseAmounts(expenses);
@@ -203,6 +215,7 @@ export default function DashboardPage() {
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[560px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[310px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[320px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[390px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[340px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
@@ -330,6 +343,8 @@ export default function DashboardPage() {
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
           year={CURRENT_YEAR}
         />
+
+        <DashboardMonthComparison summary={monthComparisonSummary} />
 
         <DashboardPartnerActivity
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
