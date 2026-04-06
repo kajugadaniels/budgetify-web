@@ -1,3 +1,5 @@
+import type { CreatedBySummary } from "./created-by.types";
+
 export type ExpenseCategory =
   | "FOOD_DINING"
   | "TRANSPORT"
@@ -25,6 +27,7 @@ export interface ExpenseResponse {
   category: ExpenseCategory;
   date: string;
   note: string | null;
+  createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
 }
