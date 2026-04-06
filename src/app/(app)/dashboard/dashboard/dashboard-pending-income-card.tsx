@@ -65,9 +65,9 @@ export function DashboardPendingIncomeCard({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,0.88fr)_minmax(320px,1.12fr)]">
+      <div className="mt-5 grid gap-3 xl:grid-cols-1 2xl:grid-cols-[minmax(0,0.92fr)_minmax(280px,1.08fr)]">
         <div className="rounded-[26px] border border-white/8 bg-white/[0.03] p-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-3">
             <div className="rounded-[20px] border border-success/10 bg-success/5 p-4">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-success/72">
                 Received
