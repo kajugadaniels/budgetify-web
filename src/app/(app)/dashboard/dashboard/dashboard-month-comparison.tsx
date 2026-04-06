@@ -122,7 +122,7 @@ export function DashboardMonthComparison({
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-3">
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
         {summary.metrics.map((metric) => (
           <MetricCard key={metric.label} metric={metric} />
         ))}
