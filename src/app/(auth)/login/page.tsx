@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { LoginPageClient } from "./login/login-page-client";
 
 export default function LoginPage() {
@@ -6,5 +7,9 @@ export default function LoginPage() {
     process.env.NEXT_GOOGLE_CLIENT_ID ??
     "";
 
-  return <LoginPageClient googleClientId={googleClientId} />;
+  return (
+    <Suspense fallback={<div className="w-full max-w-md" />}>
+      <LoginPageClient googleClientId={googleClientId} />
+    </Suspense>
+  );
 }
