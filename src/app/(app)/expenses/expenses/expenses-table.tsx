@@ -3,6 +3,7 @@ import type {
   ExpenseResponse,
 } from "@/lib/types/expense.types";
 import { rwf } from "@/lib/utils/currency";
+import { CreatedByPill } from "@/components/ui/created-by-pill";
 import {
   formatExpenseDate,
   formatExpenseNote,
@@ -52,6 +53,7 @@ export function ExpensesTable({
                   <p className="mt-1 text-xs text-text-secondary/70">
                     Created {formatExpenseDate(entry.createdAt)}
                   </p>
+                  <CreatedByPill creator={entry.createdBy} />
                 </div>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
