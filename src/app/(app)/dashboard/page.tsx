@@ -24,6 +24,7 @@ import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardExpenseCategoriesChart } from "./dashboard/dashboard-expense-categories-chart";
 import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
 import { DashboardMonthSwitcher } from "./dashboard/dashboard-month-switcher";
+import { DashboardPendingIncomeCard } from "./dashboard/dashboard-pending-income-card";
 import { DashboardSavingsRateCard } from "./dashboard/dashboard-savings-rate-card";
 import { DashboardSummaryCard } from "./dashboard/dashboard-summary-card";
 import { DashboardTodoAdviser } from "./dashboard/dashboard-todo-adviser";
@@ -162,6 +163,7 @@ export default function DashboardPage() {
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[560px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[310px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[340px] animate-pulse rounded-[36px]" />
           <div className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
@@ -227,7 +229,7 @@ export default function DashboardPage() {
           onSelect={setSelectedMonth}
         />
 
-        <section className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-6">
+        <section className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-3">
           <DashboardSummaryCard
             label="Total income"
             tone="income"
@@ -249,6 +251,8 @@ export default function DashboardPage() {
             fullValue={rwf(monthlyNetFlow)}
             description={`Selected month income minus expense for ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
           />
+        </section>
+        <section className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-3">
           <DashboardSummaryCard
             label="Savings you still have"
             tone="saving"
@@ -275,6 +279,12 @@ export default function DashboardPage() {
         <DashboardSavingsRateCard
           incomeAmount={totalIncome}
           expenseAmount={totalExpenses}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
+
+        <DashboardPendingIncomeCard
+          entries={income}
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
           year={CURRENT_YEAR}
         />
