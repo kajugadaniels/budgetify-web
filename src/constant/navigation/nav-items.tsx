@@ -3,6 +3,7 @@ import {
   ExpensesIcon,
   IncomeIcon,
   LoansIcon,
+  PartnersIcon,
   ProfileIcon,
   SavingIcon,
   TodosIcon,
@@ -51,6 +52,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Loans",
     shortLabel: "Loans",
     icon: <LoansIcon />,
+  },
+  {
+    href: "/partners",
+    label: "Partners",
+    shortLabel: "Partners",
+    icon: <PartnersIcon />,
   },
   {
     href: "/profile",
