@@ -143,6 +143,7 @@ export default function DashboardPage() {
 
   const totalIncome = sumIncomeAmounts(income);
   const totalExpenses = sumExpenseAmounts(expenses);
+  const monthlyNetFlow = totalIncome - totalExpenses;
   const totalActiveSavings = sumSavingAmounts(allSavings, {
     stillHaveOnly: true,
   });
@@ -159,8 +160,8 @@ export default function DashboardPage() {
           <div className="glass-panel h-[88px] animate-pulse rounded-[28px]" />
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[560px] animate-pulse rounded-[36px]" />
-          <div className="grid gap-4 xl:grid-cols-5">
-            {Array.from({ length: 5 }).map((_, index) => (
+          <div className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-6">
+            {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
                 className="glass-panel h-[200px] animate-pulse rounded-[30px]"
@@ -224,7 +225,7 @@ export default function DashboardPage() {
           onSelect={setSelectedMonth}
         />
 
-        <section className="grid gap-4 xl:grid-cols-5">
+        <section className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-6">
           <DashboardSummaryCard
             label="Total income"
             tone="income"
@@ -238,6 +239,13 @@ export default function DashboardPage() {
             compactValue={rwfCompact(totalExpenses)}
             fullValue={rwf(totalExpenses)}
             description={`Recorded for ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
+          />
+          <DashboardSummaryCard
+            label="Net flow this month"
+            tone={monthlyNetFlow >= 0 ? "income" : "expense"}
+            compactValue={rwfCompact(monthlyNetFlow)}
+            fullValue={rwf(monthlyNetFlow)}
+            description={`Selected month income minus expense for ${formatDashboardMonthLabel(selectedMonth)} ${CURRENT_YEAR}`}
           />
           <DashboardSummaryCard
             label="Savings you still have"
