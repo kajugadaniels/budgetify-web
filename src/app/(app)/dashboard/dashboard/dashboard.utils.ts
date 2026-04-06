@@ -137,6 +137,20 @@ export interface DashboardMonthComparisonSummary {
   previousLabel: string;
 }
 
+export interface DashboardTopSpendingCategoryItem {
+  amount: number;
+  category: ExpenseCategory;
+  entryCount: number;
+  label: string;
+  share: number;
+}
+
+export interface DashboardTopSpendingCategoriesSummary {
+  items: DashboardTopSpendingCategoryItem[];
+  topCategory: DashboardTopSpendingCategoryItem | null;
+  totalAmount: number;
+}
+
 export function formatDashboardMonthLabel(month: number): string {
   return MONTH_OPTIONS.find((item) => item.value === month)?.label ?? "Month";
 }
@@ -613,6 +627,64 @@ export function buildDailyExpenseCategoryData(
       total,
     };
   });
+}
+
+export function buildTopSpendingCategoriesSummary(
+  entries: ExpenseResponse[],
+  categories: ExpenseCategoryOptionResponse[],
+  month: number,
+  year: number,
+): DashboardTopSpendingCategoriesSummary {
+  const labelLookup = new Map(
+    categories.map((category) => [category.value, category.label]),
+  );
+  const totals = new Map<
+    ExpenseCategory,
+    { amount: number; entryCount: number; label: string }
+  >();
+
+  entries.forEach((entry) => {
+    const entryDate = new Date(entry.date);
+
+    if (
+      entryDate.getMonth() !== month ||
+      entryDate.getFullYear() !== year
+    ) {
+      return;
+    }
+
+    const current = totals.get(entry.category);
+
+    totals.set(entry.category, {
+      amount: (current?.amount ?? 0) + Number(entry.amount),
+      entryCount: (current?.entryCount ?? 0) + 1,
+      label:
+        current?.label ??
+        labelLookup.get(entry.category) ??
+        humanizeDashboardCategory(entry.category),
+    });
+  });
+
+  const items = Array.from(totals.entries())
+    .map(([category, value]) => ({
+      amount: value.amount,
+      category,
+      entryCount: value.entryCount,
+      label: value.label,
+      share: 0,
+    }))
+    .sort((left, right) => right.amount - left.amount);
+  const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+
+  items.forEach((item) => {
+    item.share = totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0;
+  });
+
+  return {
+    items,
+    topCategory: items[0] ?? null,
+    totalAmount,
+  };
 }
 
 export function resolveDashboardLoanDateRange(
