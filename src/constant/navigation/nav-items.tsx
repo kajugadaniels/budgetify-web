@@ -10,6 +10,10 @@ import {
 } from "./nav-icons";
 
 export interface NavItem {
+  badge?: {
+    expiresAt: string;
+    label: string;
+  };
   href: string;
   label: string;
   shortLabel: string;
@@ -58,6 +62,10 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Partners",
     shortLabel: "Partners",
     icon: <PartnersIcon />,
+    badge: {
+      label: "New",
+      expiresAt: "2026-05-07T00:00:00+02:00",
+    },
   },
   {
     href: "/profile",
