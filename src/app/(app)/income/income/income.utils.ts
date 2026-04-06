@@ -50,6 +50,18 @@ export function createIncomeFormFromEntry(
   };
 }
 
+export function createIncomeFormForNextMonth(
+  entry: IncomeResponse,
+): IncomeFormValues {
+  return {
+    label: entry.label,
+    amount: String(entry.amount),
+    category: entry.category,
+    date: getNextMonthDate(entry.date),
+    received: false,
+  };
+}
+
 export function sortIncomeEntries(entries: IncomeResponse[]): IncomeResponse[] {
   return [...entries].sort(
     (left, right) =>
@@ -99,6 +111,30 @@ function getMonthDefaultDate(month: number, year: number): string {
   }
 
   return `${year}-${String(month + 1).padStart(2, "0")}-01`;
+}
+
+function getNextMonthDate(value: string): string {
+  const sourceDate = new Date(value);
+
+  if (Number.isNaN(sourceDate.getTime())) {
+    return getTodayString();
+  }
+
+  const sourceYear = sourceDate.getUTCFullYear();
+  const sourceMonth = sourceDate.getUTCMonth();
+  const sourceDay = sourceDate.getUTCDate();
+  const targetYear = sourceMonth === 11 ? sourceYear + 1 : sourceYear;
+  const targetMonth = (sourceMonth + 1) % 12;
+  const maxTargetDay = new Date(
+    Date.UTC(targetYear, targetMonth + 1, 0),
+  ).getUTCDate();
+  const targetDay = Math.min(sourceDay, maxTargetDay);
+
+  return [
+    targetYear,
+    String(targetMonth + 1).padStart(2, "0"),
+    String(targetDay).padStart(2, "0"),
+  ].join("-");
 }
 
 export function resolveIncomeCategoryLabel(
