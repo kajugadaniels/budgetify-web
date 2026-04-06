@@ -24,6 +24,7 @@ import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardExpenseCategoriesChart } from "./dashboard/dashboard-expense-categories-chart";
 import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
 import { DashboardMonthSwitcher } from "./dashboard/dashboard-month-switcher";
+import { DashboardSavingsRateCard } from "./dashboard/dashboard-savings-rate-card";
 import { DashboardSummaryCard } from "./dashboard/dashboard-summary-card";
 import { DashboardTodoAdviser } from "./dashboard/dashboard-todo-adviser";
 import {
@@ -160,6 +161,7 @@ export default function DashboardPage() {
           <div className="glass-panel h-[88px] animate-pulse rounded-[28px]" />
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[560px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[310px] animate-pulse rounded-[36px]" />
           <div className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
@@ -269,6 +271,13 @@ export default function DashboardPage() {
             description="All todo prices that are still marked as not done"
           />
         </section>
+
+        <DashboardSavingsRateCard
+          incomeAmount={totalIncome}
+          expenseAmount={totalExpenses}
+          monthLabel={formatDashboardMonthLabel(selectedMonth)}
+          year={CURRENT_YEAR}
+        />
 
         <DashboardTodoAdviser summary={todoAdviserSummary} />
 
