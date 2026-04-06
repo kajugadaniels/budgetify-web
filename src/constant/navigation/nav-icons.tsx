@@ -139,3 +139,25 @@ export function LoansIcon() {
     </svg>
   );
 }
+
+export function PartnersIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="9" cy="8" r="3" />
+      <circle cx="17" cy="10" r="3" opacity="0.75" />
+      <path d="M4 19c0-3 2.686-5.5 6-5.5" />
+      <path d="M12 19c0-2.8 2.239-5 5-5" />
+      <path d="M12 12.5l1.8 1.8 4.2-4.2" />
+    </svg>
+  );
+}
