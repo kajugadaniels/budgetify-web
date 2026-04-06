@@ -38,6 +38,7 @@ import {
   createEmptyIncomeForm,
   createIncomeFormFromCategories,
   createIncomeFormFromEntry,
+  createIncomeFormForNextMonth,
   formatIncomeDate,
   getCurrentMonthIndex,
   getCurrentYear,
@@ -244,6 +245,16 @@ export default function IncomePage() {
 
     setForm(createIncomeFormFromEntry(entry));
     setFormDialog({ mode: "edit", entry });
+  }
+
+  function openRecordNextMonthDialog(entry: IncomeResponse) {
+    if (!canManageCategories) {
+      toast.error(categoriesError ?? "Income categories are unavailable right now.");
+      return;
+    }
+
+    setForm(createIncomeFormForNextMonth(entry));
+    setFormDialog({ mode: "create" });
   }
 
   function closeFormDialog() {
@@ -575,6 +586,7 @@ export default function IncomePage() {
               entries={pageEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
+              onRecordNextMonth={openRecordNextMonthDialog}
               onToggleReceived={handleToggleReceived}
             />
           )}
