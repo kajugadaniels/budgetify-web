@@ -3,6 +3,7 @@ import type {
   IncomeResponse,
 } from "@/lib/types/income.types";
 import { rwf } from "@/lib/utils/currency";
+import { CreatedByPill } from "@/components/ui/created-by-pill";
 import {
   formatIncomeDate,
   resolveIncomeCategoryLabel,
@@ -53,6 +54,7 @@ export function IncomeTable({
                   <p className="mt-1 text-xs text-text-secondary/70">
                     Created {formatIncomeDate(entry.createdAt)}
                   </p>
+                  <CreatedByPill creator={entry.createdBy} />
                 </div>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
