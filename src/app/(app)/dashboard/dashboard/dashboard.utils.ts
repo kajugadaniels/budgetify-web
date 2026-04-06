@@ -6,8 +6,10 @@ import type {
 } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
 import type { LoanResponse } from "@/lib/types/loan.types";
+import type { PartnershipResponse } from "@/lib/types/partnership.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
 import type { TodoResponse } from "@/lib/types/todo.types";
+import type { UserProfileResponse } from "@/lib/types/user.types";
 
 export const CURRENT_YEAR = new Date().getFullYear();
 
@@ -79,6 +81,44 @@ export interface DashboardUpcomingTodoScheduleSummary {
   daysWithPlans: number;
   occurrenceCount: number;
   totalAmount: number;
+}
+
+export interface DashboardPartnerActivityIdentity {
+  avatarUrl: string | null;
+  email?: string | null;
+  firstName: string | null;
+  fullName?: string | null;
+  id: string;
+  lastName: string | null;
+}
+
+export interface DashboardPartnerActivityRecord {
+  amount: number;
+  creator: DashboardPartnerActivityIdentity;
+  currency: "RWF" | "USD";
+  date: string;
+  id: string;
+  label: string;
+  type: "EXPENSE" | "INCOME" | "LOAN" | "SAVING";
+}
+
+export interface DashboardPartnerActivityPersonSummary {
+  entryCount: number;
+  identity: DashboardPartnerActivityIdentity;
+  isCurrentUser: boolean;
+  latestActivity: DashboardPartnerActivityRecord | null;
+  rwfAmount: number;
+  usdAmount: number;
+}
+
+export interface DashboardPartnerActivitySummary {
+  activePeopleCount: number;
+  currentUser: DashboardPartnerActivityPersonSummary | null;
+  latestActivities: DashboardPartnerActivityRecord[];
+  partner: DashboardPartnerActivityPersonSummary | null;
+  totalEntries: number;
+  totalRwfAmount: number;
+  totalUsdAmount: number;
 }
 
 export function formatDashboardMonthLabel(month: number): string {
@@ -310,6 +350,133 @@ export function buildUpcomingTodoSchedule(
   };
 }
 
+export function buildDashboardPartnerActivitySummary(input: {
+  currentUser: UserProfileResponse | null;
+  expenses: ExpenseResponse[];
+  income: IncomeResponse[];
+  loans: LoanResponse[];
+  partnership: PartnershipResponse | null;
+  savings: SavingResponse[];
+}): DashboardPartnerActivitySummary {
+  const currentUserIdentity = input.currentUser
+    ? toDashboardPartnerIdentity(input.currentUser)
+    : null;
+  const acceptedPartner =
+    input.partnership?.status === "ACCEPTED" ? input.partnership.partner : null;
+  const partnerIdentity = acceptedPartner
+    ? toDashboardPartnerIdentity(acceptedPartner)
+    : null;
+  const records = [
+    ...input.income.map((entry) =>
+      toDashboardPartnerActivityRecord({
+        amount: Number(entry.amount),
+        creator: entry.createdBy,
+        currency: "RWF",
+        date: entry.date,
+        id: entry.id,
+        label: entry.label,
+        type: "INCOME",
+      }),
+    ),
+    ...input.expenses.map((entry) =>
+      toDashboardPartnerActivityRecord({
+        amount: Number(entry.amount),
+        creator: entry.createdBy,
+        currency: "RWF",
+        date: entry.date,
+        id: entry.id,
+        label: entry.label,
+        type: "EXPENSE",
+      }),
+    ),
+    ...input.loans.map((entry) =>
+      toDashboardPartnerActivityRecord({
+        amount: Number(entry.amount),
+        creator: entry.createdBy,
+        currency: "RWF",
+        date: entry.date,
+        id: entry.id,
+        label: entry.label,
+        type: "LOAN",
+      }),
+    ),
+    ...input.savings.map((entry) =>
+      toDashboardPartnerActivityRecord({
+        amount: Number(entry.amount),
+        creator: entry.createdBy,
+        currency: "USD",
+        date: entry.date,
+        id: entry.id,
+        label: entry.label,
+        type: "SAVING",
+      }),
+    ),
+  ].sort(compareDashboardDatesDesc);
+
+  const people = new Map<string, DashboardPartnerActivityPersonSummary>();
+
+  if (currentUserIdentity) {
+    people.set(
+      currentUserIdentity.id,
+      createDashboardPartnerPersonSummary(currentUserIdentity, true),
+    );
+  }
+
+  if (partnerIdentity) {
+    people.set(
+      partnerIdentity.id,
+      createDashboardPartnerPersonSummary(partnerIdentity, false),
+    );
+  }
+
+  records.forEach((record) => {
+    const existing = people.get(record.creator.id);
+
+    if (!existing) {
+      people.set(
+        record.creator.id,
+        createDashboardPartnerPersonSummary(record.creator, false),
+      );
+    }
+
+    const person = people.get(record.creator.id)!;
+    person.entryCount += 1;
+
+    if (record.currency === "USD") {
+      person.usdAmount += record.amount;
+    } else {
+      person.rwfAmount += record.amount;
+    }
+
+    if (
+      !person.latestActivity ||
+      compareDashboardDatesDesc(record, person.latestActivity) < 0
+    ) {
+      person.latestActivity = record;
+    }
+  });
+
+  const currentUserSummary = currentUserIdentity
+    ? (people.get(currentUserIdentity.id) ?? null)
+    : null;
+  const partnerSummary = partnerIdentity
+    ? (people.get(partnerIdentity.id) ?? null)
+    : Array.from(people.values()).find(
+        (person) => person.identity.id !== currentUserIdentity?.id,
+      ) ?? null;
+  const summaries = Array.from(people.values());
+
+  return {
+    activePeopleCount: summaries.filter((person) => person.entryCount > 0).length,
+    currentUser: currentUserSummary,
+    latestActivities: records.slice(0, 6),
+    partner: partnerSummary,
+    totalEntries: records.length,
+    totalRwfAmount: summaries.reduce((sum, person) => sum + person.rwfAmount, 0),
+    totalUsdAmount: summaries.reduce((sum, person) => sum + person.usdAmount, 0),
+  };
+}
+
 function isRecurringAdviserTodo(
   entry: TodoResponse,
 ): entry is TodoResponse & { frequency: "WEEKLY" | "MONTHLY" } {
@@ -463,6 +630,74 @@ function addLocalDays(date: Date, days: number): Date {
   next.setDate(next.getDate() + days);
   next.setHours(0, 0, 0, 0);
   return next;
+}
+
+function compareDashboardDatesDesc(
+  left: { date: string },
+  right: { date: string },
+): number {
+  return new Date(right.date).getTime() - new Date(left.date).getTime();
+}
+
+function createDashboardPartnerPersonSummary(
+  identity: DashboardPartnerActivityIdentity,
+  isCurrentUser: boolean,
+): DashboardPartnerActivityPersonSummary {
+  return {
+    entryCount: 0,
+    identity,
+    isCurrentUser,
+    latestActivity: null,
+    rwfAmount: 0,
+    usdAmount: 0,
+  };
+}
+
+function toDashboardPartnerActivityRecord(input: {
+  amount: number;
+  creator: DashboardPartnerActivityIdentity;
+  currency: "RWF" | "USD";
+  date: string;
+  id: string;
+  label: string;
+  type: "EXPENSE" | "INCOME" | "LOAN" | "SAVING";
+}): DashboardPartnerActivityRecord {
+  return {
+    amount: input.amount,
+    creator: toDashboardPartnerIdentity(input.creator),
+    currency: input.currency,
+    date: input.date,
+    id: input.id,
+    label: input.label,
+    type: input.type,
+  };
+}
+
+function toDashboardPartnerIdentity(
+  user: DashboardPartnerActivityIdentity,
+): DashboardPartnerActivityIdentity;
+function toDashboardPartnerIdentity(
+  user: NonNullable<PartnershipResponse["partner"]>,
+): DashboardPartnerActivityIdentity;
+function toDashboardPartnerIdentity(
+  user: UserProfileResponse,
+): DashboardPartnerActivityIdentity;
+function toDashboardPartnerIdentity(user: {
+  avatarUrl: string | null;
+  email?: string | null;
+  firstName: string | null;
+  fullName?: string | null;
+  id: string;
+  lastName: string | null;
+}): DashboardPartnerActivityIdentity {
+  return {
+    avatarUrl: user.avatarUrl,
+    email: user.email ?? null,
+    firstName: user.firstName,
+    fullName: user.fullName ?? null,
+    id: user.id,
+    lastName: user.lastName,
+  };
 }
 
 function resolveUpcomingTodoOccurrenceAmount(
