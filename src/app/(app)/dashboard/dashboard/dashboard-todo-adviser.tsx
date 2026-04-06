@@ -25,7 +25,7 @@ export function DashboardTodoAdviser({
 
   if (summary.items.length === 0) {
     return (
-      <section className="overflow-hidden rounded-[32px] border border-primary/10 bg-[linear-gradient(145deg,rgba(27,22,17,0.94)_0%,rgba(18,14,11,0.98)_100%)] p-6 md:p-7">
+      <section className="overflow-hidden rounded-[32px] border border-primary/10 bg-[linear-gradient(145deg,rgba(27,22,17,0.94)_0%,rgba(18,14,11,0.98)_100%)] p-5 md:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/65">
@@ -48,13 +48,13 @@ export function DashboardTodoAdviser({
   }
 
   return (
-    <section className="relative overflow-hidden rounded-[32px] border border-primary/12 bg-[linear-gradient(145deg,rgba(29,24,18,0.95)_0%,rgba(17,13,10,0.99)_100%)] p-6 md:p-7">
+    <section className="relative overflow-hidden rounded-[32px] border border-primary/12 bg-[linear-gradient(145deg,rgba(29,24,18,0.95)_0%,rgba(17,13,10,0.99)_100%)] p-5 md:p-6">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -right-16 top-0 h-40 w-40 rounded-full bg-primary/12 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-warning/10 blur-3xl" />
       </div>
 
-      <div className="relative z-10 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+      <div className="relative z-10 grid gap-4 2xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
         <div>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
