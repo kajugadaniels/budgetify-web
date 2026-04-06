@@ -5,5 +5,6 @@ export const ROUTE_TITLES: Record<string, string> = {
   "/todos": "Todos",
   "/saving": "Saving",
   "/loans": "Loans",
+  "/partners": "Partners",
   "/profile": "Profile",
 };
