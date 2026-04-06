@@ -127,8 +127,8 @@ export function DashboardLoansChart({ token }: DashboardLoansChartProps) {
 
   return (
     <section className="glass-panel overflow-hidden rounded-[36px] p-5 md:p-6">
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
           <div className="max-w-2xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary/62">
               Loans overview
@@ -142,7 +142,7 @@ export function DashboardLoansChart({ token }: DashboardLoansChartProps) {
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end lg:justify-end">
+          <div className="flex flex-col gap-3 2xl:flex-row 2xl:flex-wrap 2xl:items-end 2xl:justify-end">
             <label className="flex flex-col gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
                 From
