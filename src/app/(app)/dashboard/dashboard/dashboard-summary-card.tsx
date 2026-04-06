@@ -52,7 +52,7 @@ export function DashboardSummaryCard({
       type="button"
       onClick={() => setShowFullValue((current) => !current)}
       aria-pressed={showFullValue}
-      className="glass-panel rounded-[30px] p-5 text-left transition-colors hover:bg-white/3 md:p-6"
+      className="glass-panel rounded-[30px] p-4 text-left transition-colors hover:bg-white/3 md:p-5"
     >
       <div className="flex items-center justify-between gap-3">
         <span
@@ -63,10 +63,10 @@ export function DashboardSummaryCard({
         <span className={`h-2.5 w-2.5 rounded-full ${styles.dot}`} />
       </div>
 
-      <p className={`mt-6 text-[1.75rem] font-semibold tracking-heading-md ${styles.value}`}>
+      <p className={`mt-5 text-[1.6rem] font-semibold tracking-heading-md ${styles.value}`}>
         {visibleValue}
       </p>
-      <p className="mt-3 text-sm leading-6 text-text-secondary">{description}</p>
+      <p className="mt-2.5 text-sm leading-6 text-text-secondary">{description}</p>
       <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.14em] text-text-secondary/55">
         Click to {showFullValue ? "collapse" : "expand"}
       </p>
