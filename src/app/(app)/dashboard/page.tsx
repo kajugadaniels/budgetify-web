@@ -28,9 +28,11 @@ import { DashboardPendingIncomeCard } from "./dashboard/dashboard-pending-income
 import { DashboardSavingsRateCard } from "./dashboard/dashboard-savings-rate-card";
 import { DashboardSummaryCard } from "./dashboard/dashboard-summary-card";
 import { DashboardTodoAdviser } from "./dashboard/dashboard-todo-adviser";
+import { DashboardUpcomingTodoSchedule } from "./dashboard/dashboard-upcoming-todo-schedule";
 import {
   buildDashboardTodoAdviserSummary,
   buildDailyExpenseCategoryData,
+  buildUpcomingTodoSchedule,
   buildMonthlyBarChartData,
   CURRENT_YEAR,
   formatDashboardMonthLabel,
@@ -142,6 +144,10 @@ export default function DashboardPage() {
     () => buildDashboardTodoAdviserSummary(allTodos),
     [allTodos],
   );
+  const upcomingTodoSchedule = useMemo(
+    () => buildUpcomingTodoSchedule(allTodos),
+    [allTodos],
+  );
 
   const totalIncome = sumIncomeAmounts(income);
   const totalExpenses = sumExpenseAmounts(expenses);
@@ -164,6 +170,7 @@ export default function DashboardPage() {
           <div className="glass-panel h-[560px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[310px] animate-pulse rounded-[36px]" />
           <div className="glass-panel h-[340px] animate-pulse rounded-[36px]" />
+          <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
           <div className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
@@ -288,6 +295,8 @@ export default function DashboardPage() {
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
           year={CURRENT_YEAR}
         />
+
+        <DashboardUpcomingTodoSchedule summary={upcomingTodoSchedule} />
 
         <DashboardTodoAdviser summary={todoAdviserSummary} />
 
