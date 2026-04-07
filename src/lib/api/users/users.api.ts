@@ -33,3 +33,12 @@ export async function uploadProfileAvatar(
     body: formData,
   });
 }
+
+export async function requestAccountDeletion(
+  token: string,
+): Promise<UserProfileResponse> {
+  return apiFetch<UserProfileResponse>(USERS_ROUTES.deletionRequest, {
+    method: "POST",
+    token,
+  });
+}
