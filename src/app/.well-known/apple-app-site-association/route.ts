@@ -6,7 +6,7 @@ function readAppIds(): string[] {
   return (
     process.env.IOS_APP_LINK_APP_IDS ??
     process.env.IOS_APP_LINK_APP_ID ??
-    "LPJVN6ARMX.com.example.budgetify.app"
+    "LPJVN6ARMX.africa.nexcode.budgetify"
   )
     .split(/[,\n]/)
     .map((value) => value.trim())
