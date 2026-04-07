@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
 import {
   getProfile,
+  requestAccountDeletion,
   updateProfile,
   uploadProfileAvatar,
 } from "@/lib/api/users/users.api";
@@ -30,6 +31,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [requestingDeletion, setRequestingDeletion] = useState(false);
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
   const [lastName, setLastName] = useState(user?.lastName ?? "");
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
@@ -152,6 +154,38 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleRequestDeletion() {
+    if (!token || !profile || requestingDeletion) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Your account will be scheduled for deletion in 30 days. Any new login or account activity before then will cancel the request automatically. Do you want to continue?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRequestingDeletion(true);
+
+    try {
+      const nextProfile = await requestAccountDeletion(token);
+      syncProfile(nextProfile);
+      toast.success(
+        "Deletion request received. Avoid signing in or recording anything if you want it to continue.",
+      );
+    } catch (requestError) {
+      toast.error(
+        requestError instanceof ApiError
+          ? requestError.message
+          : "Account deletion could not be scheduled right now.",
+      );
+    } finally {
+      setRequestingDeletion(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
@@ -187,6 +221,7 @@ export default function ProfilePage() {
 
   const displayName = getProfileDisplayName(profile);
   const initial = getProfileInitial(displayName);
+  const hasPendingDeletion = Boolean(profile.accountDeletionScheduledFor);
 
   return (
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
@@ -243,6 +278,77 @@ export default function ProfilePage() {
               }}
               onSubmit={handleSave}
             />
+
+            <section className="mt-6 rounded-[32px] border border-danger/20 bg-[linear-gradient(180deg,rgba(255,107,107,0.08),rgba(255,107,107,0.02))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-danger/70">
+                    Account deletion
+                  </p>
+                  <h2 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
+                    {hasPendingDeletion
+                      ? "Your deletion request is scheduled"
+                      : "Close this account permanently"}
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-text-secondary">
+                    {hasPendingDeletion
+                      ? `Your account is scheduled to be deleted on ${formatProfileDate(profile.accountDeletionScheduledFor)}. To let this complete, stop using the account until that date.`
+                      : "Request a permanent account deletion. Budgetify will wait 30 days before removing the account so you have time to change your mind."}
+                  </p>
+                </div>
+
+                <div className="rounded-[24px] border border-white/10 bg-background-secondary/60 px-4 py-3 text-sm text-text-secondary md:max-w-[280px]">
+                  {hasPendingDeletion ? (
+                    <>
+                      <p className="font-semibold text-text-primary">
+                        Automatic cancellation
+                      </p>
+                      <p className="mt-2 leading-6">
+                        Any new sign-in or account activity, including recording
+                        income, expenses, savings, loans, or todos, will cancel
+                        this request automatically.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-text-primary">
+                        Before you request it
+                      </p>
+                      <p className="mt-2 leading-6">
+                        If you later sign in again or record anything, the
+                        deletion request is denied automatically and the account
+                        stays active.
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs leading-5 text-text-secondary">
+                  {hasPendingDeletion
+                    ? `Requested on ${formatProfileDate(profile.accountDeletionRequestedAt)}`
+                    : "You will receive a confirmation email immediately after the request is accepted."}
+                </p>
+
+                {hasPendingDeletion ? (
+                  <span className="inline-flex items-center justify-center rounded-full border border-danger/25 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger">
+                    Deletion scheduled
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRequestDeletion}
+                    disabled={requestingDeletion || saving}
+                    className="inline-flex items-center justify-center rounded-full border border-danger/30 bg-danger/12 px-5 py-3 text-sm font-semibold text-danger transition-colors hover:bg-danger/18 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {requestingDeletion
+                      ? "Scheduling..."
+                      : "Request account deletion"}
+                  </button>
+                )}
+              </div>
+            </section>
           </section>
         </div>
       </div>
