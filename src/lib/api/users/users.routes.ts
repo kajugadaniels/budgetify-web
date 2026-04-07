@@ -4,4 +4,5 @@ export const USERS_ROUTES = {
   me: `${BASE}/me`,
   updateMe: `${BASE}/me`,
   avatar: `${BASE}/me/avatar`,
+  deletionRequest: `${BASE}/me/deletion-request`,
 } as const;
