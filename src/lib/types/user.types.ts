@@ -10,6 +10,8 @@ export interface UserProfileResponse {
   isEmailVerified: boolean;
   status: UserStatus;
   lastLoginAt: string | null;
+  accountDeletionRequestedAt: string | null;
+  accountDeletionScheduledFor: string | null;
   createdAt: string;
   updatedAt: string;
 }
