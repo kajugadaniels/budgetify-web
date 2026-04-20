@@ -45,4 +45,7 @@ export const SAVINGS_ROUTES = {
   },
   create: BASE,
   byId: (id: string) => `${BASE}/${id}`,
+  deposits: (id: string) => `${BASE}/${id}/deposits`,
+  withdrawals: (id: string) => `${BASE}/${id}/withdrawals`,
+  transactions: (id: string) => `${BASE}/${id}/transactions`,
 } as const;
