@@ -2,8 +2,11 @@ import { apiFetch } from "../client";
 import { collectPaginatedItems } from "../pagination";
 import type {
   CreateSavingRequest,
+  CreateSavingDepositRequest,
+  CreateSavingWithdrawalRequest,
   ListSavingsParams,
   SavingResponse,
+  SavingTransactionResponse,
   UpdateSavingRequest,
 } from "../../types/saving.types";
 import type { PaginatedResponse } from "../../types/pagination.types";
@@ -45,6 +48,42 @@ export async function updateSaving(
 ): Promise<SavingResponse> {
   return apiFetch<SavingResponse>(SAVINGS_ROUTES.byId(id), {
     method: "PATCH",
+    token,
+    body,
+  });
+}
+
+export async function listSavingTransactions(
+  token: string,
+  id: string,
+): Promise<SavingTransactionResponse[]> {
+  return apiFetch<SavingTransactionResponse[]>(
+    SAVINGS_ROUTES.transactions(id),
+    {
+      token,
+    },
+  );
+}
+
+export async function createSavingDeposit(
+  token: string,
+  id: string,
+  body: CreateSavingDepositRequest,
+): Promise<SavingResponse> {
+  return apiFetch<SavingResponse>(SAVINGS_ROUTES.deposits(id), {
+    method: "POST",
+    token,
+    body,
+  });
+}
+
+export async function createSavingWithdrawal(
+  token: string,
+  id: string,
+  body: CreateSavingWithdrawalRequest,
+): Promise<SavingResponse> {
+  return apiFetch<SavingResponse>(SAVINGS_ROUTES.withdrawals(id), {
+    method: "POST",
     token,
     body,
   });
