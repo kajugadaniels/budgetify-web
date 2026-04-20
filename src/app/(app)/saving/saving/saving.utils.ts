@@ -1,8 +1,10 @@
 import { MONTH_OPTIONS } from "@/constant/months";
 import type { SavingResponse } from "@/lib/types/saving.types";
 import type {
-  SavingExpenseFormValues,
+  SavingDepositFormValues,
   SavingFormValues,
+  SavingSourceAllocationValues,
+  SavingWithdrawalFormValues,
 } from "./saving-page.types";
 
 export function getTodayString(): string {
@@ -39,7 +41,6 @@ export function createEmptySavingForm(
 ): SavingFormValues {
   return {
     label: "",
-    amount: "",
     date: getMonthDefaultDate(month, year),
     note: "",
   };
@@ -50,25 +51,56 @@ export function createSavingFormFromEntry(
 ): SavingFormValues {
   return {
     label: entry.label,
-    amount: String(entry.amount),
     date: entry.date.split("T")[0] ?? getTodayString(),
     note: entry.note ?? "",
   };
 }
 
-export function createEmptySavingExpenseForm(): SavingExpenseFormValues {
+export function createEmptySourceAllocation(): SavingSourceAllocationValues {
   return {
-    amountRwf: "",
+    incomeId: "",
+    amount: "",
+    currency: "RWF",
+  };
+}
+
+export function createEmptySavingDepositForm(): SavingDepositFormValues {
+  return {
+    amount: "",
+    currency: "RWF",
+    date: getTodayString(),
+    note: "",
+    sources: [createEmptySourceAllocation()],
+  };
+}
+
+export function createSavingDepositFormFromEntry(
+  entry: SavingResponse,
+): SavingDepositFormValues {
+  return {
+    amount: "",
+    currency: "RWF",
+    date: entry.date.split("T")[0] ?? getTodayString(),
+    note: entry.note ?? "",
+    sources: [createEmptySourceAllocation()],
+  };
+}
+
+export function createEmptySavingWithdrawalForm(): SavingWithdrawalFormValues {
+  return {
+    amount: "",
+    currency: "RWF",
     date: getTodayString(),
     note: "",
   };
 }
 
-export function createSavingExpenseFormFromEntry(
+export function createSavingWithdrawalFormFromEntry(
   entry: SavingResponse,
-): SavingExpenseFormValues {
+): SavingWithdrawalFormValues {
   return {
-    amountRwf: "",
+    amount: "",
+    currency: "RWF",
     date: entry.date.split("T")[0] ?? getTodayString(),
     note: entry.note ?? "",
   };
