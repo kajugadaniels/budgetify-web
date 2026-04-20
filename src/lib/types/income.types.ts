@@ -1,4 +1,5 @@
 import type { CreatedBySummary } from "./created-by.types";
+import type { Currency } from "./currency.types";
 
 export type IncomeCategory =
   | "SALARY"
@@ -17,6 +18,8 @@ export interface IncomeResponse {
   id: string;
   label: string;
   amount: number;
+  currency: Currency;
+  amountRwf: number;
   category: IncomeCategory;
   date: string;
   received: boolean;
@@ -28,6 +31,7 @@ export interface IncomeResponse {
 export interface CreateIncomeRequest {
   label: string;
   amount: number;
+  currency?: Currency;
   category: IncomeCategory;
   date: string;
   received: boolean;
@@ -36,6 +40,7 @@ export interface CreateIncomeRequest {
 export interface UpdateIncomeRequest {
   label?: string;
   amount?: number;
+  currency?: Currency;
   category?: IncomeCategory;
   date?: string;
   received?: boolean;
