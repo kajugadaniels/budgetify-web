@@ -350,9 +350,29 @@ export default function SavingPage() {
       return;
     }
 
+    const targetAmount = Number(form.targetAmount);
+    if (Number.isNaN(targetAmount) || targetAmount <= 0) {
+      toast.error("Enter a target amount greater than zero.");
+      return;
+    }
+
+    if (!form.startDate || !form.endDate) {
+      toast.error("Select both the start date and end date.");
+      return;
+    }
+
+    if (new Date(form.endDate).getTime() < new Date(form.startDate).getTime()) {
+      toast.error("End date must be the same as or later than start date.");
+      return;
+    }
+
     const payload: CreateSavingRequest = {
       label: form.label.trim(),
       date: form.date,
+      targetAmount,
+      targetCurrency: form.targetCurrency,
+      startDate: form.startDate,
+      endDate: form.endDate,
       ...(form.note.trim() ? { note: form.note.trim() } : {}),
       amount: 0,
       currency: "RWF",
