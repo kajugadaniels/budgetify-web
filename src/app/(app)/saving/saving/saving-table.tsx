@@ -1,7 +1,11 @@
 import type { SavingResponse } from "@/lib/types/saving.types";
 import { rwf } from "@/lib/utils/currency";
 import { CreatedByPill } from "@/components/ui/created-by-pill";
-import { formatSavingDate, formatSavingNote } from "./saving.utils";
+import {
+  formatSavingDate,
+  formatSavingNote,
+  formatSavingTimeframe,
+} from "./saving.utils";
 
 interface SavingTableProps {
   entries: SavingResponse[];
@@ -25,7 +29,7 @@ export function SavingTable({
       <table className="w-full min-w-[1080px] border-separate border-spacing-0">
         <thead>
           <tr className="text-left">
-            {["Label", "Date", "Balance", "Flows", "Note", "Actions"].map((label) => (
+            {["Label", "Plan", "Balance", "Flows", "Note", "Actions"].map((label) => (
               <th
                 key={label}
                 className="px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/55 md:px-6"
@@ -50,7 +54,25 @@ export function SavingTable({
                 </div>
               </td>
               <td className="border-t border-white/6 px-5 py-4 text-sm text-text-secondary md:px-6">
-                {formatSavingDate(entry.date)}
+                <p className="font-medium text-text-primary">
+                  {entry.targetAmountRwf ? rwf(entry.targetAmountRwf) : "No target"}
+                </p>
+                <p className="mt-1 text-xs text-text-secondary/70">
+                  {formatSavingTimeframe(entry)}
+                  {entry.startDate && entry.endDate
+                    ? ` · ${formatSavingDate(entry.startDate)} to ${formatSavingDate(entry.endDate)}`
+                    : ""}
+                </p>
+                <p className="mt-1 text-xs text-text-secondary/70">
+                  {entry.targetProgressPercentage !== null
+                    ? `${Math.round(entry.targetProgressPercentage)}% target`
+                    : "No progress target"}
+                </p>
+                <p className="mt-1 text-xs text-text-secondary/70">
+                  {entry.timeframeProgressPercentage !== null
+                    ? `${Math.round(entry.timeframeProgressPercentage)}% of timeframe elapsed`
+                    : "No timeframe progress"}
+                </p>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <p
