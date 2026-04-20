@@ -1,23 +1,52 @@
-import type { SavingResponse } from "@/lib/types/saving.types";
+import type { Currency } from "@/lib/types/currency.types";
+import type {
+  SavingResponse,
+  SavingTransactionResponse,
+} from "@/lib/types/saving.types";
 
 export interface SavingFormValues {
   label: string;
-  amount: string;
   date: string;
   note: string;
 }
 
-export interface SavingExpenseFormValues {
-  amountRwf: string;
+export interface SavingSourceAllocationValues {
+  incomeId: string;
+  amount: string;
+  currency: Currency;
+}
+
+export interface SavingDepositFormValues {
+  amount: string;
+  currency: Currency;
+  date: string;
+  note: string;
+  sources: SavingSourceAllocationValues[];
+}
+
+export interface SavingWithdrawalFormValues {
+  amount: string;
+  currency: Currency;
   date: string;
   note: string;
 }
 
 export type SavingFormDialogState =
-  | { mode: "create" }
-  | { mode: "edit"; entry: SavingResponse }
+  | { mode: "create" | "edit"; entry?: SavingResponse }
   | null;
 
-export type SavingExpenseDialogState =
+export type SavingDepositDialogState =
   | { entry: SavingResponse }
+  | null;
+
+export type SavingWithdrawalDialogState =
+  | { entry: SavingResponse }
+  | null;
+
+export type SavingHistoryDialogState =
+  | {
+      entry: SavingResponse;
+      transactions: SavingTransactionResponse[];
+      loading: boolean;
+    }
   | null;
