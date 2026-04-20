@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog } from "@/components/ui/dialog";
+import { rwf } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 import type { SavingFormValues } from "./saving-page.types";
 
@@ -24,6 +25,13 @@ export function SavingFormDialog({
   onSubmit,
   onChange,
 }: SavingFormDialogProps) {
+  const targetPreview =
+    Number(form.targetAmount) > 0
+      ? form.targetCurrency === "USD"
+        ? `${Number(form.targetAmount).toFixed(2)} USD`
+        : rwf(Number(form.targetAmount))
+      : "Enter target amount";
+
   return (
     <Dialog onClose={onClose} className="sm:max-w-xl">
       <div className="mb-6">
@@ -54,6 +62,67 @@ export function SavingFormDialog({
               type="date"
               value={form.date}
               onChange={(event) => onChange({ date: event.target.value })}
+              className={INPUT_CLASS}
+              required
+            />
+          </Field>
+
+          <Field label="Target amount">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min={0.01}
+              value={form.targetAmount}
+              onChange={(event) =>
+                onChange({ targetAmount: event.target.value })
+              }
+              placeholder="1000000"
+              className={INPUT_CLASS}
+              required
+            />
+          </Field>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Target currency">
+            <select
+              value={form.targetCurrency}
+              onChange={(event) =>
+                onChange({
+                  targetCurrency: event.target.value as "RWF" | "USD",
+                })
+              }
+              className={INPUT_CLASS}
+            >
+              <option value="RWF">RWF</option>
+              <option value="USD">USD</option>
+            </select>
+          </Field>
+
+          <Field label="Target preview">
+            <div className="rounded-2xl border border-white/8 bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+              {targetPreview}
+            </div>
+          </Field>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Start date">
+            <input
+              type="date"
+              value={form.startDate}
+              onChange={(event) => onChange({ startDate: event.target.value })}
+              className={INPUT_CLASS}
+              required
+            />
+          </Field>
+
+          <Field label="End date">
+            <input
+              type="date"
+              value={form.endDate}
+              onChange={(event) => onChange({ endDate: event.target.value })}
               className={INPUT_CLASS}
               required
             />
