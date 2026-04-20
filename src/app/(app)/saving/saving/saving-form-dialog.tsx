@@ -31,7 +31,7 @@ export function SavingFormDialog({
           {mode === "edit" ? "Edit saving" : "New saving"}
         </p>
         <h2 className="mt-2 text-2xl font-semibold tracking-heading-md text-text-primary">
-          {mode === "edit" ? "Update entry" : "Add saving entry"}
+          {mode === "edit" ? "Update saving bucket" : "Add saving bucket"}
         </h2>
       </div>
 
@@ -49,20 +49,6 @@ export function SavingFormDialog({
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Amount (USD)">
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              value={form.amount}
-              onChange={(event) => onChange({ amount: event.target.value })}
-              placeholder="250"
-              min={0.01}
-              className={INPUT_CLASS}
-              required
-            />
-          </Field>
-
           <Field label="Date">
             <input
               type="date"
@@ -101,7 +87,7 @@ export function SavingFormDialog({
               ? "Saving..."
               : mode === "edit"
                 ? "Save changes"
-                : "Add saving"}
+                : "Create saving"}
           </button>
         </div>
       </form>
