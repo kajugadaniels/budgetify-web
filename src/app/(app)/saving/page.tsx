@@ -7,37 +7,50 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
-import { createExpense } from "@/lib/api/expenses/expenses.api";
+import { listIncome } from "@/lib/api/income/income.api";
 import {
   createSaving,
+  createSavingDeposit,
+  createSavingWithdrawal,
   deleteSaving,
+  listSavingTransactions,
   listSavings,
   listSavingsPage,
   updateSaving,
 } from "@/lib/api/savings/savings.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
+import type { IncomeResponse } from "@/lib/types/income.types";
 import type {
   CreateSavingRequest,
   SavingResponse,
+  SavingTransactionResponse,
 } from "@/lib/types/saving.types";
-import { usd, usdCompact } from "@/lib/utils/currency";
+import { rwf, rwfCompact } from "@/lib/utils/currency";
+import { SavingDepositDialog } from "./saving/saving-deposit-dialog";
 import { SavingExpenseDialog } from "./saving/saving-expense-dialog";
 import { SavingFormDialog } from "./saving/saving-form-dialog";
 import { SavingHeader } from "./saving/saving-header";
+import { SavingHistoryDialog } from "./saving/saving-history-dialog";
 import { SavingLedgerFilters } from "./saving/saving-ledger-filters";
 import type {
-  SavingExpenseDialogState,
-  SavingExpenseFormValues,
+  SavingDepositDialogState,
+  SavingDepositFormValues,
   SavingFormDialogState,
   SavingFormValues,
+  SavingHistoryDialogState,
+  SavingWithdrawalDialogState,
+  SavingWithdrawalFormValues,
 } from "./saving/saving-page.types";
 import { SavingTable } from "./saving/saving-table";
 import { SavingTableSkeleton } from "./saving/saving-table-skeleton";
 import {
-  createEmptySavingExpenseForm,
+  createEmptySavingDepositForm,
   createEmptySavingForm,
-  createSavingExpenseFormFromEntry,
+  createEmptySavingWithdrawalForm,
+  createEmptySourceAllocation,
+  createSavingDepositFormFromEntry,
   createSavingFormFromEntry,
+  createSavingWithdrawalFormFromEntry,
   formatSavingDate,
   getCurrentMonthIndex,
   getCurrentYear,
@@ -53,11 +66,16 @@ export default function SavingPage() {
 
   const [entries, setEntries] = useState<SavingResponse[]>([]);
   const [pageEntries, setPageEntries] = useState<SavingResponse[]>([]);
+  const [receivedIncomes, setReceivedIncomes] = useState<IncomeResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [recordingExpense, setRecordingExpense] = useState(false);
-  const [stillHaveBusyId, setStillHaveBusyId] = useState<string | null>(null);
+  const [depositSaving, setDepositSaving] = useState(false);
+  const [withdrawalSaving, setWithdrawalSaving] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyTransactions, setHistoryTransactions] = useState<
+    SavingTransactionResponse[]
+  >([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -68,15 +86,23 @@ export default function SavingPage() {
   const [selectedDateFrom, setSelectedDateFrom] = useState("");
   const [selectedDateTo, setSelectedDateTo] = useState("");
   const [formDialog, setFormDialog] = useState<SavingFormDialogState>(null);
-  const [expenseDialog, setExpenseDialog] =
-    useState<SavingExpenseDialogState>(null);
+  const [depositDialog, setDepositDialog] =
+    useState<SavingDepositDialogState>(null);
+  const [withdrawalDialog, setWithdrawalDialog] =
+    useState<SavingWithdrawalDialogState>(null);
+  const [historyDialog, setHistoryDialog] =
+    useState<SavingHistoryDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<SavingResponse | null>(null);
   const [form, setForm] = useState<SavingFormValues>(() =>
     createEmptySavingForm(),
   );
-  const [expenseForm, setExpenseForm] = useState<SavingExpenseFormValues>(() =>
-    createEmptySavingExpenseForm(),
+  const [depositForm, setDepositForm] = useState<SavingDepositFormValues>(() =>
+    createEmptySavingDepositForm(),
   );
+  const [withdrawalForm, setWithdrawalForm] =
+    useState<SavingWithdrawalFormValues>(() =>
+      createEmptySavingWithdrawalForm(),
+    );
   const deferredSearch = useDeferredValue(searchInput);
   const appliedSearch =
     deferredSearch.trim().length >= 3 ? deferredSearch.trim() : undefined;
@@ -105,14 +131,16 @@ export default function SavingPage() {
           dateTo: selectedDateTo || undefined,
         };
 
-        const [summaryResponse, pageResponse] = await Promise.all([
-          listSavings(sessionToken, filters),
-          listSavingsPage(sessionToken, {
-            ...filters,
-            page: currentPage,
-            limit: DEFAULT_PAGE_SIZE,
-          }),
-        ]);
+        const [summaryResponse, pageResponse, incomeResponse] =
+          await Promise.all([
+            listSavings(sessionToken, filters),
+            listSavingsPage(sessionToken, {
+              ...filters,
+              page: currentPage,
+              limit: DEFAULT_PAGE_SIZE,
+            }),
+            listIncome(sessionToken, { received: true }),
+          ]);
 
         if (!ignore) {
           setEntries(sortSavingEntries(summaryResponse));
@@ -125,6 +153,12 @@ export default function SavingPage() {
           setPageEntries(sortSavingEntries(pageResponse.items));
           setTotalItems(pageResponse.meta.totalItems);
           setTotalPages(pageResponse.meta.totalPages);
+          setReceivedIncomes(
+            incomeResponse.sort(
+              (left, right) =>
+                new Date(right.date).getTime() - new Date(left.date).getTime(),
+            ),
+          );
         }
       } catch (loadError) {
         if (!ignore) {
@@ -164,19 +198,29 @@ export default function SavingPage() {
     selectedYear !== defaultYear ||
     appliedSearch !== undefined ||
     hasExplicitDateFilter;
-  const totalSaved = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
-  const activeEntries = entries.filter((entry) => entry.stillHave);
-  const stillHaveSaved = activeEntries.reduce(
-    (sum, entry) => sum + Number(entry.amount),
+  const totalBalance = entries.reduce(
+    (sum, entry) => sum + entry.currentBalanceRwf,
+    0,
+  );
+  const totalDeposited = entries.reduce(
+    (sum, entry) => sum + entry.totalDepositedRwf,
+    0,
+  );
+  const totalWithdrawn = entries.reduce(
+    (sum, entry) => sum + entry.totalWithdrawnRwf,
+    0,
+  );
+  const activeEntries = entries.filter((entry) => entry.currentBalanceRwf > 0);
+  const activeBalance = activeEntries.reduce(
+    (sum, entry) => sum + entry.currentBalanceRwf,
     0,
   );
   const largestSaving = [...entries].sort(
-    (left, right) => Number(right.amount) - Number(left.amount),
+    (left, right) => right.currentBalanceRwf - left.currentBalanceRwf,
   )[0];
   const latestEntry = entries[0];
-  const inactiveSaved = Math.max(totalSaved - stillHaveSaved, 0);
   const activeShare =
-    totalSaved > 0 ? Math.round((stillHaveSaved / totalSaved) * 100) : 0;
+    totalDeposited > 0 ? Math.round((activeBalance / totalDeposited) * 100) : 0;
 
   function triggerRefresh() {
     setRefreshKey((current) => current + 1);
@@ -208,22 +252,92 @@ export default function SavingPage() {
     setForm(createEmptySavingForm(selectedMonth, selectedYear));
   }
 
-  function openExpenseDialog(entry: SavingResponse) {
-    setExpenseForm(createSavingExpenseFormFromEntry(entry));
-    setExpenseDialog({ entry });
+  function openDepositDialog(entry: SavingResponse) {
+    setDepositForm(createSavingDepositFormFromEntry(entry));
+    setDepositDialog({ entry });
   }
 
-  function closeExpenseDialog() {
-    setExpenseDialog(null);
-    setExpenseForm(createEmptySavingExpenseForm());
+  function closeDepositDialog() {
+    setDepositDialog(null);
+    setDepositForm(createEmptySavingDepositForm());
+  }
+
+  function openWithdrawalDialog(entry: SavingResponse) {
+    setWithdrawalForm(createSavingWithdrawalFormFromEntry(entry));
+    setWithdrawalDialog({ entry });
+  }
+
+  function closeWithdrawalDialog() {
+    setWithdrawalDialog(null);
+    setWithdrawalForm(createEmptySavingWithdrawalForm());
+  }
+
+  async function openHistoryDialog(entry: SavingResponse) {
+    if (!token) return;
+
+    setHistoryDialog({ entry, transactions: [], loading: true });
+    setHistoryLoading(true);
+
+    try {
+      const transactions = await listSavingTransactions(token, entry.id);
+      setHistoryTransactions(transactions);
+      setHistoryDialog({ entry, transactions, loading: false });
+    } catch (historyError) {
+      toast.error(
+        historyError instanceof ApiError
+          ? historyError.message
+          : "Saving history could not be loaded right now.",
+      );
+      setHistoryDialog(null);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  function closeHistoryDialog() {
+    setHistoryDialog(null);
+    setHistoryTransactions([]);
   }
 
   function updateForm(next: Partial<SavingFormValues>) {
     setForm((current) => ({ ...current, ...next }));
   }
 
-  function updateExpenseForm(next: Partial<SavingExpenseFormValues>) {
-    setExpenseForm((current) => ({ ...current, ...next }));
+  function updateDepositForm(next: Partial<SavingDepositFormValues>) {
+    setDepositForm((current) => ({ ...current, ...next }));
+  }
+
+  function updateDepositSource(
+    index: number,
+    next: Partial<SavingDepositFormValues["sources"][number]>,
+  ) {
+    setDepositForm((current) => ({
+      ...current,
+      sources: current.sources.map((source, sourceIndex) =>
+        sourceIndex === index ? { ...source, ...next } : source,
+      ),
+    }));
+  }
+
+  function addDepositSource() {
+    setDepositForm((current) => ({
+      ...current,
+      sources: [...current.sources, createEmptySourceAllocation()],
+    }));
+  }
+
+  function removeDepositSource(index: number) {
+    setDepositForm((current) => ({
+      ...current,
+      sources:
+        current.sources.length === 1
+          ? current.sources
+          : current.sources.filter((_, sourceIndex) => sourceIndex !== index),
+    }));
+  }
+
+  function updateWithdrawalForm(next: Partial<SavingWithdrawalFormValues>) {
+    setWithdrawalForm((current) => ({ ...current, ...next }));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -231,29 +345,29 @@ export default function SavingPage() {
 
     if (!token || !formDialog) return;
 
-    const amount = Number(form.amount);
-    if (!form.label.trim() || Number.isNaN(amount) || amount <= 0) {
-      toast.error("Enter a label and a USD amount greater than zero.");
+    if (!form.label.trim()) {
+      toast.error("Enter a saving name.");
       return;
     }
 
     const payload: CreateSavingRequest = {
       label: form.label.trim(),
-      amount,
       date: form.date,
       ...(form.note.trim() ? { note: form.note.trim() } : {}),
+      amount: 0,
+      currency: "RWF",
     };
 
     setSaving(true);
 
     try {
-      if (formDialog.mode === "edit") {
+      if (formDialog.mode === "edit" && formDialog.entry) {
         await updateSaving(token, formDialog.entry.id, payload);
-        toast.success("Saving entry updated.");
+        toast.success("Saving bucket updated.");
         triggerRefresh();
       } else {
         await createSaving(token, payload);
-        toast.success("Saving entry added.");
+        toast.success("Saving bucket created.");
 
         if (currentPage !== 1) {
           setCurrentPage(1);
@@ -267,7 +381,7 @@ export default function SavingPage() {
       toast.error(
         saveError instanceof ApiError
           ? saveError.message
-          : "Saving entry could not be saved right now.",
+          : "Saving bucket could not be saved right now.",
       );
     } finally {
       setSaving(false);
@@ -287,14 +401,6 @@ export default function SavingPage() {
       }
 
       toast.success("Saving entry deleted.");
-
-      if (
-        formDialog?.mode === "edit" &&
-        formDialog.entry.id === deleteTarget.id
-      ) {
-        closeFormDialog();
-      }
-
       setDeleteTarget(null);
     } catch (deleteError) {
       toast.error(
@@ -305,67 +411,88 @@ export default function SavingPage() {
     }
   }
 
-  async function handleToggleStillHave(entry: SavingResponse) {
-    if (!token) return;
-
-    const nextStillHave = !entry.stillHave;
-    setStillHaveBusyId(entry.id);
-
-    try {
-      await updateSaving(token, entry.id, { stillHave: nextStillHave });
-      triggerRefresh();
-      toast.success(
-        nextStillHave
-          ? "Saving marked as still available."
-          : "Saving marked as no longer available.",
-      );
-    } catch (toggleError) {
-      toast.error(
-        toggleError instanceof ApiError
-          ? toggleError.message
-          : "Saving availability could not be updated right now.",
-      );
-    } finally {
-      setStillHaveBusyId(null);
-    }
-  }
-
-  async function handleRecordExpense(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
+  async function handleDeposit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!token || !expenseDialog) return;
+    if (!token || !depositDialog) return;
 
-    const amount = Number(expenseForm.amountRwf);
+    const amount = Number(depositForm.amount);
+    const invalidSource = depositForm.sources.find(
+      (source) =>
+        !source.incomeId ||
+        Number.isNaN(Number(source.amount)) ||
+        Number(source.amount) <= 0,
+    );
 
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast.error("Enter the converted expense amount in RWF.");
+    if (Number.isNaN(amount) || amount <= 0 || invalidSource) {
+      toast.error("Enter a deposit amount and valid income sources.");
       return;
     }
 
-    setRecordingExpense(true);
+    setDepositSaving(true);
 
     try {
-      await createExpense(token, {
-        label: expenseDialog.entry.label,
+      await createSavingDeposit(token, depositDialog.entry.id, {
         amount,
-        category: "SAVINGS",
-        date: expenseForm.date,
-        ...(expenseForm.note.trim() ? { note: expenseForm.note.trim() } : {}),
+        currency: depositForm.currency,
+        date: depositForm.date,
+        ...(depositForm.note.trim() ? { note: depositForm.note.trim() } : {}),
+        incomeSources: depositForm.sources.map((source) => ({
+          incomeId: source.incomeId,
+          amount: Number(source.amount),
+          currency: source.currency,
+        })),
       });
 
       triggerRefresh();
-      closeExpenseDialog();
-      toast.success("Expense recorded from saving.");
-    } catch (recordError) {
+      closeDepositDialog();
+      toast.success("Money added to saving.");
+    } catch (depositError) {
       toast.error(
-        recordError instanceof ApiError
-          ? recordError.message
-          : "Expense could not be recorded right now.",
+        depositError instanceof ApiError
+          ? depositError.message
+          : "Deposit could not be created right now.",
       );
     } finally {
-      setRecordingExpense(false);
+      setDepositSaving(false);
+    }
+  }
+
+  async function handleWithdrawal(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!token || !withdrawalDialog) return;
+
+    const amount = Number(withdrawalForm.amount);
+
+    if (Number.isNaN(amount) || amount <= 0) {
+      toast.error("Enter a withdrawal amount greater than zero.");
+      return;
+    }
+
+    setWithdrawalSaving(true);
+
+    try {
+      await createSavingWithdrawal(token, withdrawalDialog.entry.id, {
+        amount,
+        currency: withdrawalForm.currency,
+        date: withdrawalForm.date,
+        ...(withdrawalForm.note.trim()
+          ? { note: withdrawalForm.note.trim() }
+          : {}),
+      });
+
+      triggerRefresh();
+      closeWithdrawalDialog();
+      toast.success("Money withdrawn from saving.");
+    } catch (withdrawalError) {
+      toast.error(
+        withdrawalError instanceof ApiError
+          ? withdrawalError.message
+          : "Withdrawal could not be created right now.",
+      );
+    } finally {
+      setWithdrawalSaving(false);
     }
   }
 
@@ -396,10 +523,10 @@ export default function SavingPage() {
 
                   <div className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5 text-right">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/54">
-                      Ledger
+                      Buckets
                     </p>
                     <p className="mt-1 text-sm font-semibold text-text-primary">
-                      {entries.length} {entries.length === 1 ? "entry" : "entries"}
+                      {entries.length} {entries.length === 1 ? "saving" : "savings"}
                     </p>
                   </div>
                 </div>
@@ -407,7 +534,7 @@ export default function SavingPage() {
                 <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
                   <div>
                     <p className="text-[clamp(1.85rem,3.5vw,2.9rem)] font-semibold leading-none tracking-[-0.055em] text-white transition-transform duration-500 ease-out group-hover:translate-x-1">
-                      {usdCompact(totalSaved)}
+                      {rwfCompact(totalBalance)}
                     </p>
                     <div className="mt-2 h-1.5 w-[min(220px,52vw)] overflow-hidden rounded-full bg-white/6">
                       <div
@@ -419,10 +546,10 @@ export default function SavingPage() {
 
                   <div className="flex flex-wrap gap-2">
                     <span className="rounded-full border border-[rgba(125,211,252,0.18)] bg-[rgba(125,211,252,0.08)] px-2.5 py-1 text-[11px] font-medium text-[#7DD3FC]">
-                      {usdCompact(stillHaveSaved)} still have
+                      {rwfCompact(totalDeposited)} deposited
                     </span>
                     <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
-                      {usdCompact(inactiveSaved)} spent
+                      {rwfCompact(totalWithdrawn)} withdrawn
                     </span>
                   </div>
                 </div>
@@ -437,7 +564,7 @@ export default function SavingPage() {
                     <span className="h-1.5 w-1.5 rounded-full bg-[#7DD3FC]" />
                   </div>
                   <p className="mt-2 text-base font-semibold tracking-[-0.04em] text-text-primary">
-                    {latestEntry ? formatSavingDate(latestEntry.date) : "No entries yet"}
+                    {latestEntry ? formatSavingDate(latestEntry.date) : "No savings yet"}
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {latestEntry
@@ -449,19 +576,19 @@ export default function SavingPage() {
                 <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
-                      Largest
+                      Largest balance
                     </p>
                     <span className="text-[11px] font-medium text-[#7DD3FC]">
                       {activeShare}%
                     </span>
                   </div>
                   <p className="mt-2 text-base font-semibold leading-tight tracking-[-0.04em] text-text-primary">
-                    {largestSaving ? usdCompact(Number(largestSaving.amount)) : "$0.00"}
+                    {largestSaving ? rwfCompact(largestSaving.currentBalanceRwf) : "RWF 0"}
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {largestSaving
-                      ? `${largestSaving.label} · ${usd(Number(largestSaving.amount))}`
-                      : "Add a saving entry to start tracking your reserve."}
+                      ? `${largestSaving.label} · ${rwf(largestSaving.currentBalanceRwf)}`
+                      : "Create a saving bucket to start tracking reserves."}
                   </p>
                 </div>
               </div>
@@ -533,7 +660,7 @@ export default function SavingPage() {
             <div className="px-5 pb-5 md:px-6 md:pb-6">
               <EmptyState
                 title="No savings recorded yet"
-                description="Add your USD saving contributions so the ledger and monthly snapshots stay current."
+                description="Create a saving bucket, then fund it from received income to keep a clear ledger trail."
                 action={{
                   label: "Add saving",
                   onClick: openCreateDialog,
@@ -560,12 +687,12 @@ export default function SavingPage() {
             </div>
           ) : (
             <SavingTable
-              busyStillHaveId={stillHaveBusyId}
               entries={pageEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
-              onRecordExpense={openExpenseDialog}
-              onToggleStillHave={handleToggleStillHave}
+              onDeposit={openDepositDialog}
+              onWithdraw={openWithdrawalDialog}
+              onViewHistory={openHistoryDialog}
             />
           )}
 
@@ -591,14 +718,38 @@ export default function SavingPage() {
         />
       ) : null}
 
-      {expenseDialog ? (
+      {depositDialog ? (
+        <SavingDepositDialog
+          entry={depositDialog.entry}
+          form={depositForm}
+          incomes={receivedIncomes}
+          saving={depositSaving}
+          onChange={updateDepositForm}
+          onSourceChange={updateDepositSource}
+          onAddSource={addDepositSource}
+          onRemoveSource={removeDepositSource}
+          onClose={closeDepositDialog}
+          onSubmit={handleDeposit}
+        />
+      ) : null}
+
+      {withdrawalDialog ? (
         <SavingExpenseDialog
-          entry={expenseDialog.entry}
-          form={expenseForm}
-          saving={recordingExpense}
-          onChange={updateExpenseForm}
-          onClose={closeExpenseDialog}
-          onSubmit={handleRecordExpense}
+          entry={withdrawalDialog.entry}
+          form={withdrawalForm}
+          saving={withdrawalSaving}
+          onChange={updateWithdrawalForm}
+          onClose={closeWithdrawalDialog}
+          onSubmit={handleWithdrawal}
+        />
+      ) : null}
+
+      {historyDialog ? (
+        <SavingHistoryDialog
+          entry={historyDialog.entry}
+          loading={historyLoading || historyDialog.loading}
+          transactions={historyTransactions}
+          onClose={closeHistoryDialog}
         />
       ) : null}
 
