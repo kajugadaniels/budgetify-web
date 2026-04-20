@@ -1,9 +1,12 @@
 import type { CreatedBySummary } from "./created-by.types";
+import type { Currency } from "./currency.types";
 
 export interface SavingResponse {
   id: string;
   label: string;
   amount: number;
+  currency: Currency;
+  amountRwf: number;
   date: string;
   note: string | null;
   stillHave: boolean;
@@ -15,6 +18,7 @@ export interface SavingResponse {
 export interface CreateSavingRequest {
   label: string;
   amount: number;
+  currency?: Currency;
   date: string;
   note?: string;
   stillHave?: boolean;
@@ -23,6 +27,7 @@ export interface CreateSavingRequest {
 export interface UpdateSavingRequest {
   label?: string;
   amount?: number;
+  currency?: Currency;
   date?: string;
   note?: string;
   stillHave?: boolean;
