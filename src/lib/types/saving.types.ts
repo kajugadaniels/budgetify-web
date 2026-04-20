@@ -20,7 +20,7 @@ export interface SavingResponse {
 
 export interface CreateSavingRequest {
   label: string;
-  amount: number;
+  amount?: number;
   currency?: Currency;
   date: string;
   note?: string;
