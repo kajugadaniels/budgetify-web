@@ -23,7 +23,7 @@ import type { LoanResponse } from "@/lib/types/loan.types";
 import type { PartnershipResponse } from "@/lib/types/partnership.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
 import type { TodoResponse } from "@/lib/types/todo.types";
-import { rwf, rwfCompact, usd, usdCompact } from "@/lib/utils/currency";
+import { rwf, rwfCompact } from "@/lib/utils/currency";
 import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardExpenseCategoriesChart } from "./dashboard/dashboard-expense-categories-chart";
 import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
@@ -210,10 +210,15 @@ export default function DashboardPage() {
   const totalIncome = sumIncomeAmounts(income);
   const totalExpenses = sumExpenseAmounts(expenses);
   const monthlyNetFlow = totalIncome - totalExpenses;
-  const totalActiveSavings = sumSavingAmounts(allSavings, {
-    stillHaveOnly: true,
+  const totalActiveSavings = sumSavingAmounts(allSavings);
+  const totalSavingsDeposited = sumSavingAmounts(allSavings, {
+    depositedOnly: true,
   });
-  const moneyStillHave = sumIncomeAmounts(allIncome) - sumExpenseAmounts(allExpenses);
+  const totalSavingsWithdrawn = sumSavingAmounts(allSavings, {
+    withdrawnOnly: true,
+  });
+  const moneyStillHave =
+    sumIncomeAmounts(allIncome) - sumExpenseAmounts(allExpenses) - totalActiveSavings;
   const totalPendingTodoAmount = sumTodoAmounts(allTodos, {
     pendingOnly: true,
   });
@@ -278,10 +283,10 @@ export default function DashboardPage() {
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
                 Switch between months to see the total income and expenses for
-                that period, alongside all-time savings you still hold and the
-                money left after income minus expense, plus the cost of todos
-                you still have not completed. The charts below then break that
-                movement down by day and by expense category.
+                that period, alongside the current savings balance, available
+                money after expenses and savings allocations, plus the cost of
+                todos you still have not completed. The charts below then break
+                that movement down by day and by expense category.
               </p>
             </div>
 
@@ -322,18 +327,18 @@ export default function DashboardPage() {
         </section>
         <section className="grid gap-4 xl:grid-cols-3 2xl:grid-cols-3">
           <DashboardSummaryCard
-            label="Savings you still have"
+            label="Current savings balance"
             tone="saving"
-            compactValue={usdCompact(totalActiveSavings)}
-            fullValue={usd(totalActiveSavings)}
-            description="All-time USD savings still marked as available"
+            compactValue={rwfCompact(totalActiveSavings)}
+            fullValue={rwf(totalActiveSavings)}
+            description={`All-time balance across savings buckets · ${rwfCompact(totalSavingsDeposited)} deposited · ${rwfCompact(totalSavingsWithdrawn)} withdrawn`}
           />
           <DashboardSummaryCard
-            label="Money you still have"
+            label="Available money now"
             tone={moneyStillHave >= 0 ? "income" : "expense"}
             compactValue={rwfCompact(moneyStillHave)}
             fullValue={rwf(moneyStillHave)}
-            description="All received income minus all recorded expenses"
+            description="All received income minus expenses and current savings balance"
           />
           <DashboardSummaryCard
             label="Todo amount"
