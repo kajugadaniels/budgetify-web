@@ -10,8 +10,8 @@ export function SavingHeader({ onCreate }: SavingHeaderProps) {
           Saving
         </h1>
         <p className="mt-2 text-sm text-text-secondary">
-          Track every USD saving entry by recorded month and keep your reserve
-          growth visible.
+          Create saving buckets, fund them from received income, and withdraw
+          money with a full ledger trail.
         </p>
       </div>
 
