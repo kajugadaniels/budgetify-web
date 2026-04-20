@@ -39,9 +39,15 @@ export function createEmptySavingForm(
   month = getCurrentMonthIndex(),
   year = getCurrentYear(),
 ): SavingFormValues {
+  const defaultDate = getMonthDefaultDate(month, year);
+
   return {
     label: "",
-    date: getMonthDefaultDate(month, year),
+    date: defaultDate,
+    targetAmount: "",
+    targetCurrency: "RWF",
+    startDate: defaultDate,
+    endDate: defaultDate,
     note: "",
   };
 }
@@ -52,6 +58,11 @@ export function createSavingFormFromEntry(
   return {
     label: entry.label,
     date: entry.date.split("T")[0] ?? getTodayString(),
+    targetAmount:
+      entry.targetAmount === null ? "" : String(entry.targetAmount),
+    targetCurrency: entry.targetCurrency ?? "RWF",
+    startDate: entry.startDate ?? (entry.date.split("T")[0] ?? getTodayString()),
+    endDate: entry.endDate ?? (entry.date.split("T")[0] ?? getTodayString()),
     note: entry.note ?? "",
   };
 }
@@ -131,6 +142,23 @@ export function resolveSavingMonthLabel(month: number): string {
 export function formatSavingNote(note: string | null): string {
   const trimmed = note?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : "No note";
+}
+
+export function formatSavingTimeframe(entry: SavingResponse): string {
+  if (!entry.startDate || !entry.endDate || !entry.timeframeDays) {
+    return "No timeframe";
+  }
+
+  const years = Math.floor(entry.timeframeDays / 365);
+  const months = Math.floor((entry.timeframeDays % 365) / 30);
+  const days = entry.timeframeDays - years * 365 - months * 30;
+  const parts = [
+    years > 0 ? `${years}y` : null,
+    months > 0 ? `${months}m` : null,
+    days > 0 ? `${days}d` : null,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" ") : `${entry.timeframeDays}d`;
 }
 
 function getMonthDefaultDate(month: number, year: number): string {
