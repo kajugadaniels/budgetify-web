@@ -7,6 +7,14 @@ export interface SavingResponse {
   amount: number;
   currency: Currency;
   amountRwf: number;
+  targetAmount: number | null;
+  targetCurrency: Currency | null;
+  targetAmountRwf: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  timeframeDays: number | null;
+  targetProgressPercentage: number | null;
+  timeframeProgressPercentage: number | null;
   totalDepositedRwf: number;
   totalWithdrawnRwf: number;
   currentBalanceRwf: number;
@@ -22,6 +30,10 @@ export interface CreateSavingRequest {
   label: string;
   amount?: number;
   currency?: Currency;
+  targetAmount: number;
+  targetCurrency?: Currency;
+  startDate: string;
+  endDate: string;
   date: string;
   note?: string;
   stillHave?: boolean;
@@ -31,6 +43,10 @@ export interface UpdateSavingRequest {
   label?: string;
   amount?: number;
   currency?: Currency;
+  targetAmount?: number;
+  targetCurrency?: Currency;
+  startDate?: string;
+  endDate?: string;
   date?: string;
   note?: string;
   stillHave?: boolean;
