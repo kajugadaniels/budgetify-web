@@ -232,14 +232,18 @@ export function sumExpenseAmounts(entries: ExpenseResponse[]): number {
 
 export function sumSavingAmounts(
   entries: SavingResponse[],
-  options?: { stillHaveOnly?: boolean },
+  options?: { depositedOnly?: boolean; withdrawnOnly?: boolean },
 ): number {
   return entries.reduce((sum, entry) => {
-    if (options?.stillHaveOnly && !entry.stillHave) {
-      return sum;
+    if (options?.depositedOnly) {
+      return sum + entry.totalDepositedRwf;
     }
 
-    return sum + Number(entry.amount);
+    if (options?.withdrawnOnly) {
+      return sum + entry.totalWithdrawnRwf;
+    }
+
+    return sum + entry.currentBalanceRwf;
   }, 0);
 }
 
@@ -432,9 +436,9 @@ export function buildDashboardPartnerActivitySummary(input: {
     ),
     ...input.savings.map((entry) =>
       toDashboardPartnerActivityRecord({
-        amount: Number(entry.amount),
+        amount: entry.currentBalanceRwf,
         creator: entry.createdBy,
-        currency: "USD",
+        currency: "RWF",
         date: entry.date,
         id: entry.id,
         label: entry.label,
