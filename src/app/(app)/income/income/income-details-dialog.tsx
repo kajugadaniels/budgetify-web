@@ -5,6 +5,10 @@ import type { IncomeDetailResponse, IncomeResponse } from "@/lib/types/income.ty
 import { rwf } from "@/lib/utils/currency";
 import {
   formatIncomeDate,
+  resolveIncomeAllocationLabel,
+  resolveIncomeAvailabilityLabel,
+  resolveIncomeCashStateHint,
+  resolveIncomeCashStateLabel,
   resolveIncomeCategoryLabel,
 } from "./income.utils";
 import type { IncomeCategoryOptionResponse } from "@/lib/types/income.types";
@@ -36,6 +40,13 @@ export function IncomeDetailsDialog({
   const source = detail ?? entry;
   const allocated = detail?.allocatedToSavingsRwf ?? 0;
   const remaining = detail?.remainingAvailableRwf ?? source.amountRwf;
+  const allocationLabel = resolveIncomeAllocationLabel(source.allocationStatus);
+  const availabilityLabel = resolveIncomeAvailabilityLabel(
+    source.received,
+    source.allocationStatus,
+  );
+  const cashStateLabel = resolveIncomeCashStateLabel(source.received);
+  const cashStateHint = resolveIncomeCashStateHint(source.received);
 
   return (
     <Dialog onClose={onClose} className="sm:max-w-2xl">
@@ -51,6 +62,22 @@ export function IncomeDetailsDialog({
             {resolveIncomeCategoryLabel(categories, source.category)} · Recorded{" "}
             {formatIncomeDate(source.date)}
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-text-secondary">
+              {cashStateLabel}
+            </span>
+            <span
+              className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
+                source.allocationStatus === "FULLY_ALLOCATED"
+                  ? "border-primary/20 bg-primary/10 text-primary"
+                  : source.allocationStatus === "PARTIALLY_ALLOCATED"
+                    ? "border-warning/20 bg-warning/10 text-warning"
+                    : "border-success/20 bg-success/10 text-success"
+              }`}
+            >
+              {allocationLabel}
+            </span>
+          </div>
         </div>
 
         <button
@@ -70,9 +97,21 @@ export function IncomeDetailsDialog({
       ) : (
         <div className="space-y-4">
           <section className="grid gap-3 sm:grid-cols-3">
-            <StatCard label="Income amount" value={rwf(source.amountRwf)} />
-            <StatCard label="Moved to savings" value={rwf(allocated)} />
-            <StatCard label="Still free" value={rwf(remaining)} />
+            <StatCard
+              label="Recorded amount"
+              value={rwf(source.amountRwf)}
+              hint="Total income recorded for this row."
+            />
+            <StatCard
+              label="Parked in savings"
+              value={rwf(allocated)}
+              hint="Portion already linked to saving buckets."
+            />
+            <StatCard
+              label="Still free"
+              value={rwf(remaining)}
+              hint="Amount still available for spending or saving."
+            />
           </section>
 
           <section className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
@@ -82,7 +121,7 @@ export function IncomeDetailsDialog({
                   Cash state
                 </p>
                 <p className="mt-2 text-sm font-semibold text-text-primary">
-                  {source.received ? "Received cash" : "Scheduled only"}
+                  {cashStateLabel}
                 </p>
               </div>
               <span
@@ -92,14 +131,22 @@ export function IncomeDetailsDialog({
                     : "border-primary/20 bg-primary/10 text-primary"
                 }`}
               >
-                {source.received ? "Available to allocate" : "Not in hand yet"}
+                {availabilityLabel}
               </span>
             </div>
-            {!source.received ? (
-              <p className="mt-3 text-sm leading-6 text-text-secondary">
-                This income is still scheduled. It should only count as money you have after it is marked received.
-              </p>
-            ) : null}
+            <p className="mt-3 text-sm leading-6 text-text-secondary">
+              {cashStateHint}
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <InlineSummary
+                label="Allocated now"
+                value={rwf(allocated)}
+              />
+              <InlineSummary
+                label="Free right now"
+                value={rwf(remaining)}
+              />
+            </div>
           </section>
 
           <section className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
@@ -149,9 +196,14 @@ export function IncomeDetailsDialog({
                           Deposited {formatIncomeDate(allocation.transactionDate)}
                         </p>
                       </div>
-                      <p className="text-sm font-semibold text-primary">
-                        {rwf(allocation.amountRwf)}
-                      </p>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-primary">
+                          {rwf(allocation.amountRwf)}
+                        </p>
+                        <p className="mt-1 text-[11px] text-text-secondary">
+                          moved from this income
+                        </p>
+                      </div>
                     </div>
                     {allocation.note ? (
                       <p className="mt-2 text-sm leading-6 text-text-secondary">
@@ -181,7 +233,7 @@ export function IncomeDetailsDialog({
               </div>
             ) : (
               <p className="mt-4 text-sm leading-6 text-text-secondary">
-                No part of this income has been linked to a saving bucket yet.
+                No part of this income has been linked to a saving bucket yet. The full amount is still free.
               </p>
             )}
           </section>
@@ -201,13 +253,33 @@ export function IncomeDetailsDialog({
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+}) {
   return (
     <div className="rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/56">
         {label}
       </p>
       <p className="mt-3 text-lg font-semibold text-text-primary">{value}</p>
+      <p className="mt-2 text-xs leading-5 text-text-secondary">{hint}</p>
+    </div>
+  );
+}
+
+function InlineSummary({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[18px] border border-white/8 bg-surface-elevated/60 px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-semibold text-text-primary">{value}</p>
     </div>
   );
 }
