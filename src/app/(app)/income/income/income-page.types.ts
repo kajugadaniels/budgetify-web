@@ -1,4 +1,5 @@
 import type {
+  IncomeAllocationStatus,
   IncomeCategory,
   IncomeDetailResponse,
   IncomeResponse,
@@ -6,6 +7,7 @@ import type {
 
 export type IncomeLedgerCategoryFilter = IncomeCategory | "ALL";
 export type IncomeLedgerReceivedFilter = "ALL" | "RECEIVED" | "PENDING";
+export type IncomeLedgerAllocationFilter = IncomeAllocationStatus | "ALL";
 
 export interface IncomeFormValues {
   label: string;
