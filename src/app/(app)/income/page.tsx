@@ -7,6 +7,7 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
+import { listExpenses } from "@/lib/api/expenses/expenses.api";
 import {
   createIncome,
   deleteIncome,
@@ -15,13 +16,16 @@ import {
   listIncomeCategories,
   updateIncome,
 } from "@/lib/api/income/income.api";
+import { listSavings } from "@/lib/api/savings/savings.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
+import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type {
   CreateIncomeRequest,
   IncomeCategoryOptionResponse,
   IncomeResponse,
 } from "@/lib/types/income.types";
-import { rwf, rwfCompact } from "@/lib/utils/currency";
+import type { SavingResponse } from "@/lib/types/saving.types";
+import { rwfCompact } from "@/lib/utils/currency";
 import { IncomeFormDialog } from "./income/income-form-dialog";
 import { IncomeHeader } from "./income/income-header";
 import { IncomeLedgerFilters } from "./income/income-ledger-filters";
@@ -31,6 +35,7 @@ import type {
   IncomeLedgerCategoryFilter,
   IncomeLedgerReceivedFilter,
 } from "./income/income-page.types";
+import { IncomeSummaryCard } from "./income/income-summary-card";
 import { IncomeTable } from "./income/income-table";
 import { IncomeTableSkeleton } from "./income/income-table-skeleton";
 import {
@@ -39,11 +44,9 @@ import {
   createIncomeFormFromCategories,
   createIncomeFormFromEntry,
   createIncomeFormForNextMonth,
-  formatIncomeDate,
   getCurrentMonthIndex,
   getCurrentYear,
   resolveIncomeMonthLabel,
-  resolveIncomeCategoryLabel,
   sortIncomeEntries,
 } from "./income/income.utils";
 
@@ -54,6 +57,9 @@ export default function IncomePage() {
 
   const [entries, setEntries] = useState<IncomeResponse[]>([]);
   const [pageEntries, setPageEntries] = useState<IncomeResponse[]>([]);
+  const [summaryIncomeEntries, setSummaryIncomeEntries] = useState<IncomeResponse[]>([]);
+  const [summaryExpenses, setSummaryExpenses] = useState<ExpenseResponse[]>([]);
+  const [summarySavings, setSummarySavings] = useState<SavingResponse[]>([]);
   const [categories, setCategories] = useState<IncomeCategoryOptionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +124,57 @@ export default function IncomePage() {
       ignore = true;
     };
   }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const sessionToken = token;
+
+    let ignore = false;
+
+    async function loadSummaryData() {
+      try {
+        const summaryFilters = {
+          month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
+          year: hasExplicitDateFilter ? undefined : selectedYear,
+          dateFrom: selectedDateFrom || undefined,
+          dateTo: selectedDateTo || undefined,
+        };
+
+        const [incomeResponse, expenseResponse, savingsResponse] =
+          await Promise.all([
+            listIncome(sessionToken, summaryFilters),
+            listExpenses(sessionToken, summaryFilters),
+            listSavings(sessionToken, summaryFilters),
+          ]);
+
+        if (!ignore) {
+          setSummaryIncomeEntries(sortIncomeEntries(incomeResponse));
+          setSummaryExpenses(expenseResponse);
+          setSummarySavings(savingsResponse);
+        }
+      } catch {
+        if (!ignore) {
+          setSummaryIncomeEntries([]);
+          setSummaryExpenses([]);
+          setSummarySavings([]);
+        }
+      }
+    }
+
+    void loadSummaryData();
+
+    return () => {
+      ignore = true;
+    };
+  }, [
+    hasExplicitDateFilter,
+    refreshKey,
+    selectedDateFrom,
+    selectedDateTo,
+    selectedMonth,
+    selectedYear,
+    token,
+  ]);
 
   useEffect(() => {
     if (!token) return;
@@ -199,10 +256,22 @@ export default function IncomePage() {
     token,
   ]);
 
-  const totalIncome = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
-  const receivedIncome = entries
+  const totalIncome = summaryIncomeEntries.reduce(
+    (sum, entry) => sum + entry.amountRwf,
+    0,
+  );
+  const receivedIncome = summaryIncomeEntries
     .filter((entry) => entry.received)
-    .reduce((sum, entry) => sum + Number(entry.amount), 0);
+    .reduce((sum, entry) => sum + entry.amountRwf, 0);
+  const totalExpenses = summaryExpenses.reduce(
+    (sum, entry) => sum + Number(entry.amount),
+    0,
+  );
+  const totalSavingsBalance = summarySavings.reduce(
+    (sum, entry) => sum + entry.currentBalanceRwf,
+    0,
+  );
+  const availableMoneyNow = receivedIncome - totalExpenses - totalSavingsBalance;
   const selectedMonthLabel = resolveIncomeMonthLabel(selectedMonth);
   const ledgerCategoryOptions = buildIncomeLedgerCategoryOptions(
     categories,
@@ -214,10 +283,6 @@ export default function IncomePage() {
     selectedReceived !== "ALL" ||
     appliedSearch !== undefined ||
     hasExplicitDateFilter;
-  const mostRecentEntry = entries[0];
-  const highestEntry = [...entries].sort(
-    (left, right) => Number(right.amount) - Number(left.amount),
-  )[0];
   const canManageCategories = categories.length > 0;
   const pendingIncome = Math.max(totalIncome - receivedIncome, 0);
   const receivedShare =
@@ -439,45 +504,17 @@ export default function IncomePage() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
-                      Latest
-                    </p>
-                    <span className="h-1.5 w-1.5 rounded-full bg-success/80" />
-                  </div>
-                  <p className="mt-2 text-base font-semibold tracking-[-0.04em] text-text-primary">
-                    {mostRecentEntry
-                      ? formatIncomeDate(mostRecentEntry.date)
-                      : "No entries yet"}
-                  </p>
-                  <p className="mt-1.5 text-xs leading-5 text-text-secondary">
-                    {mostRecentEntry
-                      ? mostRecentEntry.label
-                      : `No income dated in ${selectedMonthLabel}.`}
-                  </p>
-                </div>
+                <IncomeSummaryCard
+                  eyebrow="Total income"
+                  value={rwfCompact(totalIncome)}
+                  detail={`${rwfCompact(receivedIncome)} received and ${rwfCompact(pendingIncome)} still pending in this period.`}
+                />
 
-                <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
-                      Strongest
-                    </p>
-                    <span className="text-[11px] font-medium text-success/78">
-                      {receivedShare}%
-                    </span>
-                  </div>
-                  <p className="mt-2 text-base font-semibold leading-tight tracking-[-0.04em] text-text-primary">
-                    {highestEntry
-                      ? resolveIncomeCategoryLabel(categories, highestEntry.category)
-                      : "No entries yet"}
-                  </p>
-                  <p className="mt-1.5 text-xs leading-5 text-text-secondary">
-                    {highestEntry
-                      ? `${highestEntry.label} · ${rwf(Number(highestEntry.amount))}`
-                      : "Add your first income entry."}
-                  </p>
-                </div>
+                <IncomeSummaryCard
+                  eyebrow="Available money now"
+                  value={rwfCompact(availableMoneyNow)}
+                  detail={`${rwfCompact(receivedIncome)} received minus ${rwfCompact(totalExpenses)} expenses and ${rwfCompact(totalSavingsBalance)} parked in savings.`}
+                />
               </div>
             </div>
           </div>
