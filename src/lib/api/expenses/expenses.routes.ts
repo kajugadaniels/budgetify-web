@@ -2,6 +2,7 @@ const BASE = "/api/v1/expenses";
 
 export const EXPENSES_ROUTES = {
   categories: `${BASE}/categories`,
+  mobileMoneyQuote: `${BASE}/mobile-money/quote`,
   list:   (params?: {
     month?: number;
     year?: number;
