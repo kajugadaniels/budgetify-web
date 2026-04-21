@@ -26,6 +26,7 @@ export type IncomeDetailsDialogState =
   | {
       entry: IncomeResponse;
       detail: IncomeDetailResponse | null;
+      highlightAllocationId?: string | null;
       loading: boolean;
     }
   | null;
