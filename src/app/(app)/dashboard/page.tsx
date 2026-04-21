@@ -350,7 +350,7 @@ export default function DashboardPage() {
         </section>
 
         <DashboardSavingsRateCard
-          incomeAmount={totalIncome}
+          availableMoneyAmount={moneyStillHave}
           expenseAmount={totalExpenses}
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
           year={CURRENT_YEAR}
