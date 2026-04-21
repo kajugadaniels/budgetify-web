@@ -7,24 +7,22 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
-import { listExpenses } from "@/lib/api/expenses/expenses.api";
 import {
   createIncome,
   deleteIncome,
+  getIncomeSummary,
   listIncome,
   listIncomePage,
   listIncomeCategories,
   updateIncome,
 } from "@/lib/api/income/income.api";
-import { listSavings } from "@/lib/api/savings/savings.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
-import type { ExpenseResponse } from "@/lib/types/expense.types";
 import type {
   CreateIncomeRequest,
   IncomeCategoryOptionResponse,
   IncomeResponse,
+  IncomeSummaryResponse,
 } from "@/lib/types/income.types";
-import type { SavingResponse } from "@/lib/types/saving.types";
 import { rwfCompact } from "@/lib/utils/currency";
 import { IncomeFormDialog } from "./income/income-form-dialog";
 import { IncomeHeader } from "./income/income-header";
@@ -57,9 +55,7 @@ export default function IncomePage() {
 
   const [entries, setEntries] = useState<IncomeResponse[]>([]);
   const [pageEntries, setPageEntries] = useState<IncomeResponse[]>([]);
-  const [summaryIncomeEntries, setSummaryIncomeEntries] = useState<IncomeResponse[]>([]);
-  const [summaryExpenses, setSummaryExpenses] = useState<ExpenseResponse[]>([]);
-  const [summarySavings, setSummarySavings] = useState<SavingResponse[]>([]);
+  const [summary, setSummary] = useState<IncomeSummaryResponse | null>(null);
   const [categories, setCategories] = useState<IncomeCategoryOptionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,30 +129,19 @@ export default function IncomePage() {
 
     async function loadSummaryData() {
       try {
-        const summaryFilters = {
+        const summaryResponse = await getIncomeSummary(sessionToken, {
           month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
           year: hasExplicitDateFilter ? undefined : selectedYear,
           dateFrom: selectedDateFrom || undefined,
           dateTo: selectedDateTo || undefined,
-        };
-
-        const [incomeResponse, expenseResponse, savingsResponse] =
-          await Promise.all([
-            listIncome(sessionToken, summaryFilters),
-            listExpenses(sessionToken, summaryFilters),
-            listSavings(sessionToken, summaryFilters),
-          ]);
+        });
 
         if (!ignore) {
-          setSummaryIncomeEntries(sortIncomeEntries(incomeResponse));
-          setSummaryExpenses(expenseResponse);
-          setSummarySavings(savingsResponse);
+          setSummary(summaryResponse);
         }
       } catch {
         if (!ignore) {
-          setSummaryIncomeEntries([]);
-          setSummaryExpenses([]);
-          setSummarySavings([]);
+          setSummary(null);
         }
       }
     }
@@ -256,22 +241,12 @@ export default function IncomePage() {
     token,
   ]);
 
-  const totalIncome = summaryIncomeEntries.reduce(
-    (sum, entry) => sum + entry.amountRwf,
-    0,
-  );
-  const receivedIncome = summaryIncomeEntries
-    .filter((entry) => entry.received)
-    .reduce((sum, entry) => sum + entry.amountRwf, 0);
-  const totalExpenses = summaryExpenses.reduce(
-    (sum, entry) => sum + Number(entry.amount),
-    0,
-  );
-  const totalSavingsBalance = summarySavings.reduce(
-    (sum, entry) => sum + entry.currentBalanceRwf,
-    0,
-  );
-  const availableMoneyNow = receivedIncome - totalExpenses - totalSavingsBalance;
+  const totalIncome = summary?.totalIncomeRwf ?? 0;
+  const receivedIncome = summary?.receivedIncomeRwf ?? 0;
+  const pendingIncome = summary?.pendingIncomeRwf ?? 0;
+  const totalExpenses = summary?.totalExpensesRwf ?? 0;
+  const totalSavingsBalance = summary?.totalSavingsBalanceRwf ?? 0;
+  const availableMoneyNow = summary?.availableMoneyNowRwf ?? 0;
   const selectedMonthLabel = resolveIncomeMonthLabel(selectedMonth);
   const ledgerCategoryOptions = buildIncomeLedgerCategoryOptions(
     categories,
@@ -284,16 +259,10 @@ export default function IncomePage() {
     appliedSearch !== undefined ||
     hasExplicitDateFilter;
   const canManageCategories = categories.length > 0;
-  const pendingIncome = Math.max(totalIncome - receivedIncome, 0);
   const receivedShare =
     totalIncome > 0 ? Math.round((receivedIncome / totalIncome) * 100) : 0;
-  const receivedEntriesCount = summaryIncomeEntries.filter(
-    (entry) => entry.received,
-  ).length;
-  const pendingEntriesCount = Math.max(
-    summaryIncomeEntries.length - receivedEntriesCount,
-    0,
-  );
+  const receivedEntriesCount = summary?.receivedIncomeCount ?? 0;
+  const pendingEntriesCount = summary?.pendingIncomeCount ?? 0;
 
   function triggerRefresh() {
     setRefreshKey((current) => current + 1);
