@@ -1,5 +1,6 @@
 import type {
   IncomeCategory,
+  IncomeDetailResponse,
   IncomeResponse,
 } from "@/lib/types/income.types";
 
@@ -17,4 +18,12 @@ export interface IncomeFormValues {
 export type IncomeFormDialogState =
   | { mode: "create" }
   | { mode: "edit"; entry: IncomeResponse }
+  | null;
+
+export type IncomeDetailsDialogState =
+  | {
+      entry: IncomeResponse;
+      detail: IncomeDetailResponse | null;
+      loading: boolean;
+    }
   | null;
