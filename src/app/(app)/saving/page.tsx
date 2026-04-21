@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
@@ -99,6 +100,10 @@ export default function SavingPage() {
     useState<SavingWithdrawalDialogState>(null);
   const [historyDialog, setHistoryDialog] =
     useState<SavingHistoryDialogState>(null);
+  const [pendingDepositReversal, setPendingDepositReversal] = useState<{
+    entry: SavingResponse;
+    transaction: SavingTransactionResponse;
+  } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SavingResponse | null>(null);
   const [form, setForm] = useState<SavingFormValues>(() =>
     createEmptySavingForm(),
@@ -333,6 +338,7 @@ export default function SavingPage() {
     setHistoryDialog(null);
     setHistoryTransactions([]);
     setReversingTransactionId(null);
+    setPendingDepositReversal(null);
   }
 
   function updateForm(next: Partial<SavingFormValues>) {
@@ -577,11 +583,18 @@ export default function SavingPage() {
     }
   }
 
-  async function handleReverseDeposit(
+  function requestReverseDeposit(
     entry: SavingResponse,
     transaction: SavingTransactionResponse,
   ) {
-    if (!token) return;
+    setPendingDepositReversal({ entry, transaction });
+  }
+
+  async function handleReverseDeposit() {
+    if (!pendingDepositReversal || !token) return;
+
+    const { entry, transaction } = pendingDepositReversal;
+    setPendingDepositReversal(null);
 
     setReversingTransactionId(transaction.id);
 
@@ -879,7 +892,20 @@ export default function SavingPage() {
           reversingTransactionId={reversingTransactionId}
           transactions={historyTransactions}
           onClose={closeHistoryDialog}
-          onReverseDeposit={handleReverseDeposit}
+          onReverseDeposit={requestReverseDeposit}
+        />
+      ) : null}
+
+      {pendingDepositReversal ? (
+        <ConfirmActionDialog
+          title="Reverse saving deposit"
+          description={`This will remove ${rwfCompact(
+            pendingDepositReversal.transaction.amountRwf,
+          )} from ${pendingDepositReversal.entry.label}, create a matching withdrawal, and free the linked income allocations again.`}
+          actionLabel="Reverse"
+          confirmLabel="Reverse deposit"
+          onCancel={() => setPendingDepositReversal(null)}
+          onConfirm={handleReverseDeposit}
         />
       ) : null}
 
