@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/client";
 import {
   createExpense,
   deleteExpense,
+  getExpenseSummary,
   listExpenseCategories,
   listExpenses,
   listExpensesPage,
@@ -24,14 +25,18 @@ import type {
   ExpenseResponse,
 } from "@/lib/types/expense.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
+import { ExpenseDetailsDialog } from "./expenses/expense-details-dialog";
 import { ExpenseFormDialog } from "./expenses/expense-form-dialog";
 import { ExpensesLedgerFilters } from "./expenses/expenses-ledger-filters";
 import { ExpensesHeader } from "./expenses/expenses-header";
+import { ExpensesSummaryCard } from "./expenses/expenses-summary-card";
 import type {
+  ExpenseDetailsDialogState,
   ExpenseFormDialogState,
   ExpenseFormValues,
-  ExpenseQuoteState,
   ExpenseLedgerCategoryFilter,
+  ExpenseQuoteState,
+  ExpenseSummaryState,
 } from "./expenses/expenses-page.types";
 import { ExpensesTable } from "./expenses/expenses-table";
 import { ExpensesTableSkeleton } from "./expenses/expenses-table-skeleton";
@@ -68,12 +73,19 @@ export default function ExpensesPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [formDialog, setFormDialog] = useState<ExpenseFormDialogState>(null);
+  const [detailsDialog, setDetailsDialog] =
+    useState<ExpenseDetailsDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<ExpenseResponse | null>(null);
   const [form, setForm] = useState<ExpenseFormValues>(() =>
     createEmptyExpenseForm(),
   );
   const [quote, setQuote] = useState<ExpenseQuoteState>({
     loading: false,
+    error: null,
+    data: null,
+  });
+  const [summary, setSummary] = useState<ExpenseSummaryState>({
+    loading: true,
     error: null,
     data: null,
   });
@@ -272,10 +284,59 @@ export default function ExpensesPage() {
     token,
   ]);
 
-  const totalSpent = entries.reduce(
-    (sum, entry) => sum + Number(entry.totalAmountRwf),
-    0,
-  );
+  useEffect(() => {
+    if (!token) return;
+    const sessionToken = token;
+    let ignore = false;
+
+    async function loadExpenseSummary() {
+      setSummary((current) => ({ ...current, loading: true, error: null }));
+
+      try {
+        const response = await getExpenseSummary(sessionToken, {
+          month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
+          year: hasExplicitDateFilter ? undefined : selectedYear,
+          dateFrom: selectedDateFrom || undefined,
+          dateTo: selectedDateTo || undefined,
+        });
+
+        if (!ignore) {
+          setSummary({
+            loading: false,
+            error: null,
+            data: response,
+          });
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          setSummary({
+            loading: false,
+            error:
+              loadError instanceof ApiError
+                ? loadError.message
+                : "Expense summary could not be loaded right now.",
+            data: null,
+          });
+        }
+      }
+    }
+
+    void loadExpenseSummary();
+
+    return () => {
+      ignore = true;
+    };
+  }, [
+    hasExplicitDateFilter,
+    refreshKey,
+    selectedDateFrom,
+    selectedDateTo,
+    selectedMonth,
+    selectedYear,
+    token,
+  ]);
+
+  const totalSpent = summary.data?.totalChargedExpensesRwf ?? 0;
   const selectedMonthLabel = resolveExpenseMonthLabel(selectedMonth);
   const ledgerCategoryOptions = buildExpenseLedgerCategoryOptions(
     categories,
@@ -292,10 +353,10 @@ export default function ExpensesPage() {
       Number(right.totalAmountRwf) - Number(left.totalAmountRwf),
   )[0];
   const canManageCategories = categories.length > 0;
-  const averageExpense = entries.length > 0 ? totalSpent / entries.length : 0;
+  const averageExpense = summary.data?.averageExpenseRwf ?? 0;
   const largestExpenseShare =
-    totalSpent > 0 && largestExpense
-      ? Math.round((Number(largestExpense.totalAmountRwf) / totalSpent) * 100)
+    totalSpent > 0 && summary.data
+      ? Math.round((summary.data.largestExpenseRwf / totalSpent) * 100)
       : 0;
 
   function triggerRefresh() {
@@ -322,10 +383,18 @@ export default function ExpensesPage() {
     setFormDialog({ mode: "edit", entry });
   }
 
+  function openDetailsDialog(entry: ExpenseResponse) {
+    setDetailsDialog({ entry });
+  }
+
   function closeFormDialog() {
     setFormDialog(null);
     setForm(createEmptyExpenseForm());
     setQuote({ loading: false, error: null, data: null });
+  }
+
+  function closeDetailsDialog() {
+    setDetailsDialog(null);
   }
 
   function updateForm(next: Partial<ExpenseFormValues>) {
@@ -446,6 +515,33 @@ export default function ExpensesPage() {
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <ExpensesHeader canCreate={canManageCategories} onCreate={openCreateDialog} />
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <ExpensesSummaryCard
+            eyebrow="Total charged"
+            value={rwfCompact(totalSpent)}
+            detail="Combined expense outflow including transfer fees."
+          />
+          <ExpensesSummaryCard
+            eyebrow="Payment fees"
+            value={rwfCompact(summary.data?.totalFeesRwf ?? 0)}
+            detail="Extra mobile money charges counted separately from the base spend."
+          />
+          <ExpensesSummaryCard
+            eyebrow="Average expense"
+            value={rwfCompact(averageExpense)}
+            detail="Average charged amount per recorded expense in this period."
+          />
+          <ExpensesSummaryCard
+            eyebrow="Available money now"
+            value={rwfCompact(summary.data?.availableMoneyNowRwf ?? 0)}
+            detail={
+              summary.error
+                ? summary.error
+                : "Money still available after expenses and active savings."
+            }
+          />
+        </section>
 
         <section className="animate-dashboard-rise">
           <div className="group relative overflow-hidden rounded-[28px] border border-danger/12 bg-[linear-gradient(145deg,rgba(28,18,20,0.94)_0%,rgba(16,11,14,0.98)_100%)] px-4 py-4 shadow-[0_18px_56px_rgba(28,8,12,0.26)] md:px-5">
@@ -640,6 +736,7 @@ export default function ExpensesPage() {
               canEdit={canManageCategories}
               entries={pageEntries}
               onDelete={setDeleteTarget}
+              onDetails={openDetailsDialog}
               onEdit={openEditDialog}
             />
           )}
@@ -667,6 +764,14 @@ export default function ExpensesPage() {
           onClose={closeFormDialog}
           onSubmit={handleSubmit}
           onChange={updateForm}
+        />
+      ) : null}
+
+      {detailsDialog ? (
+        <ExpenseDetailsDialog
+          categories={categories}
+          entry={detailsDialog.entry}
+          onClose={closeDetailsDialog}
         />
       ) : null}
 
