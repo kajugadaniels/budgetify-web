@@ -1,8 +1,8 @@
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 
 interface DashboardSavingsRateCardProps {
+  availableMoneyAmount: number;
   expenseAmount: number;
-  incomeAmount: number;
   monthLabel: string;
   year: number;
 }
@@ -12,14 +12,16 @@ function formatRate(value: number): string {
 }
 
 export function DashboardSavingsRateCard({
+  availableMoneyAmount,
   expenseAmount,
-  incomeAmount,
   monthLabel,
   year,
 }: DashboardSavingsRateCardProps) {
-  const spendingRate = incomeAmount > 0 ? (expenseAmount / incomeAmount) * 100 : 0;
-  const remainingAmount = incomeAmount - expenseAmount;
-  const remainingRate = incomeAmount > 0 ? (remainingAmount / incomeAmount) * 100 : 0;
+  const spendingRate =
+    availableMoneyAmount > 0 ? (expenseAmount / availableMoneyAmount) * 100 : 0;
+  const remainingAmount = availableMoneyAmount - expenseAmount;
+  const remainingRate =
+    availableMoneyAmount > 0 ? (remainingAmount / availableMoneyAmount) * 100 : 0;
   const positiveRemainingRate = Math.max(remainingRate, 0);
   const overspentRate = Math.max(-remainingRate, 0);
 
@@ -31,21 +33,21 @@ export function DashboardSavingsRateCard({
             Savings rate
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-text-primary">
-            Income split for {monthLabel} {year}
+            Available money split for {monthLabel} {year}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
-            Based on received income only. This shows how much of the selected
-            month has already been spent and how much is still left to save or
-            keep.
+            Based on available money now. This shows how much of the money that
+            is still free after savings allocations has already been spent and
+            how much is still left to keep.
           </p>
         </div>
 
         <div className="rounded-[22px] border border-white/10 bg-white/[0.03] px-4 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
-            Received this month
+            Available money now
           </p>
           <p className="mt-2 text-xl font-semibold tracking-[-0.04em] text-text-primary">
-            {rwfCompact(incomeAmount)}
+            {rwfCompact(availableMoneyAmount)}
           </p>
         </div>
       </div>
@@ -73,8 +75,8 @@ export function DashboardSavingsRateCard({
             />
           </div>
           <p className="mt-3 text-sm leading-6 text-text-secondary">
-            This is the share of received income already recorded as expense in
-            the selected month.
+            This is the share of available money now already recorded as
+            expense in the selected month.
           </p>
         </div>
 
@@ -126,8 +128,8 @@ export function DashboardSavingsRateCard({
           </div>
           <p className="mt-3 text-sm leading-6 text-text-secondary">
             {remainingAmount >= 0
-              ? "This is the part of this month's received income still available to save or keep."
-              : "Expenses are above received income for the selected month, so this shows the overrun."}
+              ? "This is the part of available money now still left after expenses."
+              : "Expenses are above available money now for the selected month, so this shows the overrun."}
           </p>
         </div>
       </div>
