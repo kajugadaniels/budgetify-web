@@ -4,6 +4,7 @@ import { EXPENSES_ROUTES } from "./expenses.routes";
 import type {
   CreateExpenseRequest,
   ExpenseCategoryOptionResponse,
+  ExpenseSummaryResponse,
   ListExpensesParams,
   MobileMoneyQuoteRequest,
   MobileMoneyQuoteResponse,
@@ -16,6 +17,20 @@ export async function listExpenseCategories(
   token: string,
 ): Promise<ExpenseCategoryOptionResponse[]> {
   return apiFetch<ExpenseCategoryOptionResponse[]>(EXPENSES_ROUTES.categories, {
+    token,
+  });
+}
+
+export async function getExpenseSummary(
+  token: string,
+  params?: {
+    month?: number;
+    year?: number;
+    dateFrom?: string;
+    dateTo?: string;
+  },
+): Promise<ExpenseSummaryResponse> {
+  return apiFetch<ExpenseSummaryResponse>(EXPENSES_ROUTES.summary(params), {
     token,
   });
 }
