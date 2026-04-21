@@ -8,6 +8,8 @@ import {
   formatExpenseDate,
   formatExpenseNote,
   resolveExpenseCategoryLabel,
+  resolveExpenseMobileMoneyChannelLabel,
+  resolveExpensePaymentMethodLabel,
 } from "./expenses.utils";
 
 interface ExpensesTableProps {
@@ -30,7 +32,7 @@ export function ExpensesTable({
       <table className="w-full min-w-[860px] border-separate border-spacing-0">
         <thead>
           <tr className="text-left">
-            {["Label", "Category", "Date", "Amount", "Note", "Actions"].map(
+            {["Label", "Category", "Date", "Charged", "Note", "Actions"].map(
               (label) => (
                 <th
                   key={label}
@@ -66,8 +68,26 @@ export function ExpensesTable({
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <p className="text-sm font-semibold tabular-nums text-danger">
-                  {rwf(Number(entry.amount))}
+                  {rwf(Number(entry.totalAmountRwf))}
                 </p>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-medium text-text-secondary">
+                    {resolveExpensePaymentMethodLabel(entry.paymentMethod)}
+                  </span>
+                  {entry.paymentMethod === "MOBILE_MONEY" &&
+                  entry.mobileMoneyChannel ? (
+                    <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                      {resolveExpenseMobileMoneyChannelLabel(
+                        entry.mobileMoneyChannel,
+                      )}
+                    </span>
+                  ) : null}
+                  {entry.feeAmountRwf > 0 ? (
+                    <span className="rounded-full border border-warning/20 bg-warning/10 px-2 py-0.5 text-[10px] font-medium text-warning">
+                      Fee {rwf(Number(entry.feeAmountRwf))}
+                    </span>
+                  ) : null}
+                </div>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <p className="max-w-[260px] truncate text-sm text-text-secondary">
