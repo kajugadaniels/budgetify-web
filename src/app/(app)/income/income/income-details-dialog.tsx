@@ -14,7 +14,12 @@ interface IncomeDetailsDialogProps {
   detail: IncomeDetailResponse | null;
   entry: IncomeResponse;
   loading: boolean;
+  reversingAllocationId: string | null;
   onClose: () => void;
+  onReverseAllocation: (
+    entry: IncomeResponse,
+    allocation: IncomeDetailResponse["savingAllocations"][number],
+  ) => void;
 }
 
 export function IncomeDetailsDialog({
@@ -22,7 +27,9 @@ export function IncomeDetailsDialog({
   detail,
   entry,
   loading,
+  reversingAllocationId,
   onClose,
+  onReverseAllocation,
 }: IncomeDetailsDialogProps) {
   const source = detail ?? entry;
   const allocated = detail?.allocatedToSavingsRwf ?? 0;
@@ -131,6 +138,19 @@ export function IncomeDetailsDialog({
                         {allocation.note}
                       </p>
                     ) : null}
+
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => onReverseAllocation(entry, allocation)}
+                        disabled={reversingAllocationId === allocation.id}
+                        className="rounded-full border border-danger/25 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {reversingAllocationId === allocation.id
+                          ? "Reversing..."
+                          : "Reverse allocation"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
