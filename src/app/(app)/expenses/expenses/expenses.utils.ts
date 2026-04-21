@@ -2,6 +2,10 @@ import { MONTH_OPTIONS } from "@/constant/months";
 import type {
   ExpenseCategory,
   ExpenseCategoryOptionResponse,
+  ExpenseCurrency,
+  ExpenseMobileMoneyChannel,
+  ExpenseMobileMoneyNetwork,
+  ExpensePaymentMethod,
   ExpenseResponse,
 } from "@/lib/types/expense.types";
 import type {
@@ -17,7 +21,12 @@ export function createEmptyExpenseForm(): ExpenseFormValues {
   return {
     label: "",
     amount: "",
+    currency: "RWF",
     category: "",
+    paymentMethod: "CASH",
+    mobileMoneyChannel: "MERCHANT_CODE",
+    mobileMoneyProvider: "MTN_RWANDA",
+    mobileMoneyNetwork: "ON_NET",
     date: getTodayString(),
     note: "",
   };
@@ -31,7 +40,12 @@ export function createExpenseFormFromCategories(
   return {
     label: "",
     amount: "",
+    currency: "RWF",
     category: categories[0]?.value ?? "",
+    paymentMethod: "CASH",
+    mobileMoneyChannel: "MERCHANT_CODE",
+    mobileMoneyProvider: "MTN_RWANDA",
+    mobileMoneyNetwork: "ON_NET",
     date: getMonthDefaultDate(month, year),
     note: "",
   };
@@ -43,7 +57,12 @@ export function createExpenseFormFromEntry(
   return {
     label: entry.label,
     amount: String(entry.amount),
+    currency: entry.currency,
     category: entry.category,
+    paymentMethod: entry.paymentMethod,
+    mobileMoneyChannel: entry.mobileMoneyChannel ?? "MERCHANT_CODE",
+    mobileMoneyProvider: entry.mobileMoneyProvider ?? "MTN_RWANDA",
+    mobileMoneyNetwork: entry.mobileMoneyNetwork ?? "ON_NET",
     date: entry.date.split("T")[0] ?? getTodayString(),
     note: entry.note ?? "",
   };
@@ -122,6 +141,51 @@ export function formatExpenseNote(note: string | null): string {
   const trimmed = note?.trim();
 
   return trimmed && trimmed.length > 0 ? trimmed : "No note";
+}
+
+export function isMobileMoneyExpense(
+  paymentMethod: ExpensePaymentMethod,
+): boolean {
+  return paymentMethod === "MOBILE_MONEY";
+}
+
+export function requiresMobileMoneyNetwork(
+  channel: ExpenseMobileMoneyChannel,
+): boolean {
+  return channel === "P2P_TRANSFER";
+}
+
+export function resolveExpensePaymentMethodLabel(
+  paymentMethod: ExpensePaymentMethod,
+): string {
+  switch (paymentMethod) {
+    case "CASH":
+      return "Cash";
+    case "BANK":
+      return "Bank";
+    case "MOBILE_MONEY":
+      return "Mobile money";
+    case "CARD":
+      return "Card";
+    default:
+      return "Other";
+  }
+}
+
+export function resolveExpenseMobileMoneyChannelLabel(
+  channel: ExpenseMobileMoneyChannel,
+): string {
+  return channel === "MERCHANT_CODE" ? "Merchant code" : "Normal transfer";
+}
+
+export function resolveExpenseMobileMoneyNetworkLabel(
+  network: ExpenseMobileMoneyNetwork,
+): string {
+  return network === "ON_NET" ? "MTN to MTN" : "Other network";
+}
+
+export function resolveExpenseCurrencyLabel(currency: ExpenseCurrency): string {
+  return currency;
 }
 
 function getMonthDefaultDate(month: number, year: number): string {
