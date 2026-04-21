@@ -24,6 +24,7 @@ import type {
   CreateSavingRequest,
   SavingResponse,
   SavingTransactionResponse,
+  UpdateSavingRequest,
 } from "@/lib/types/saving.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import { SavingDepositDialog } from "./saving/saving-deposit-dialog";
@@ -366,7 +367,7 @@ export default function SavingPage() {
       return;
     }
 
-    const payload: CreateSavingRequest = {
+    const basePayload = {
       label: form.label.trim(),
       date: form.date,
       targetAmount,
@@ -374,18 +375,22 @@ export default function SavingPage() {
       startDate: form.startDate,
       endDate: form.endDate,
       ...(form.note.trim() ? { note: form.note.trim() } : {}),
-      amount: 0,
-      currency: "RWF",
     };
 
     setSaving(true);
 
     try {
       if (formDialog.mode === "edit" && formDialog.entry) {
+        const payload: UpdateSavingRequest = basePayload;
         await updateSaving(token, formDialog.entry.id, payload);
         toast.success("Saving bucket updated.");
         triggerRefresh();
       } else {
+        const payload: CreateSavingRequest = {
+          ...basePayload,
+          amount: 0,
+          currency: "RWF",
+        };
         await createSaving(token, payload);
         toast.success("Saving bucket created.");
 
