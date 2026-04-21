@@ -287,6 +287,13 @@ export default function IncomePage() {
   const pendingIncome = Math.max(totalIncome - receivedIncome, 0);
   const receivedShare =
     totalIncome > 0 ? Math.round((receivedIncome / totalIncome) * 100) : 0;
+  const receivedEntriesCount = summaryIncomeEntries.filter(
+    (entry) => entry.received,
+  ).length;
+  const pendingEntriesCount = Math.max(
+    summaryIncomeEntries.length - receivedEntriesCount,
+    0,
+  );
 
   function triggerRefresh() {
     setRefreshKey((current) => current + 1);
@@ -462,7 +469,7 @@ export default function IncomePage() {
                   <div className="space-y-1.5">
                     <span className="inline-flex items-center gap-2 rounded-full border border-success/15 bg-success/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-success/78">
                       <span className="motion-safe:animate-income-glow h-1.5 w-1.5 rounded-full bg-success" />
-                      Income
+                      Scheduled income
                     </span>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
                       {selectedMonthLabel} {selectedYear}
@@ -481,6 +488,9 @@ export default function IncomePage() {
 
                 <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
                   <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
+                      Total income
+                    </p>
                     <p className="text-[clamp(1.85rem,3.5vw,2.9rem)] font-semibold leading-none tracking-[-0.055em] text-white transition-transform duration-500 ease-out group-hover:translate-x-1">
                       {rwfCompact(totalIncome)}
                     </p>
@@ -494,10 +504,10 @@ export default function IncomePage() {
 
                   <div className="flex flex-wrap gap-2">
                     <span className="rounded-full border border-success/14 bg-success/8 px-2.5 py-1 text-[11px] font-medium text-success/82">
-                      {rwfCompact(receivedIncome)} received
+                      {rwfCompact(receivedIncome)} received cash
                     </span>
                     <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
-                      {rwfCompact(pendingIncome)} pending
+                      {rwfCompact(pendingIncome)} pending to receive
                     </span>
                   </div>
                 </div>
@@ -505,9 +515,9 @@ export default function IncomePage() {
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                 <IncomeSummaryCard
-                  eyebrow="Total income"
-                  value={rwfCompact(totalIncome)}
-                  detail={`${rwfCompact(receivedIncome)} received and ${rwfCompact(pendingIncome)} still pending in this period.`}
+                  eyebrow="Received cash"
+                  value={rwfCompact(receivedIncome)}
+                  detail={`${receivedEntriesCount} received ${receivedEntriesCount === 1 ? "entry" : "entries"} recorded as cash in hand. ${pendingEntriesCount} ${pendingEntriesCount === 1 ? "entry is" : "entries are"} still pending.`}
                 />
 
                 <IncomeSummaryCard
@@ -529,6 +539,9 @@ export default function IncomePage() {
               <h2 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
                 {selectedMonthLabel} {selectedYear} income
               </h2>
+              <p className="mt-2 text-sm text-text-secondary">
+                Scheduled income stays here until it is marked received. Only received cash is counted as money you already have.
+              </p>
             </div>
 
             <span className="rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs font-medium text-text-secondary">
