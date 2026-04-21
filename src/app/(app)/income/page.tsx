@@ -666,6 +666,7 @@ export default function IncomePage() {
       {formDialog ? (
         <IncomeFormDialog
           categories={categories}
+          entry={formDialog.mode === "edit" ? formDialog.entry : undefined}
           form={form}
           mode={formDialog.mode}
           saving={saving}
