@@ -363,29 +363,28 @@ export default function SavingPage() {
       return;
     }
 
-    const targetAmount = Number(form.targetAmount);
-    if (Number.isNaN(targetAmount) || targetAmount <= 0) {
-      toast.error("Enter a target amount greater than zero.");
-      return;
-    }
+    if (form.hasTarget) {
+      const targetAmount = Number(form.targetAmount);
 
-    if (!form.startDate || !form.endDate) {
-      toast.error("Select both the start date and end date.");
-      return;
-    }
+      if (Number.isNaN(targetAmount) || targetAmount <= 0) {
+        toast.error("Enter a target amount greater than zero.");
+        return;
+      }
 
-    if (new Date(form.endDate).getTime() < new Date(form.startDate).getTime()) {
-      toast.error("End date must be the same as or later than start date.");
-      return;
+      if (!form.endDate) {
+        toast.error("Select the target end date.");
+        return;
+      }
+
+      if (new Date(form.endDate).getTime() < new Date(form.date).getTime()) {
+        toast.error("End date must be the same as or later than bucket date.");
+        return;
+      }
     }
 
     const basePayload = {
       label: form.label.trim(),
       date: form.date,
-      targetAmount,
-      targetCurrency: form.targetCurrency,
-      startDate: form.startDate,
-      endDate: form.endDate,
       ...(form.note.trim() ? { note: form.note.trim() } : {}),
     };
 
@@ -393,13 +392,35 @@ export default function SavingPage() {
 
     try {
       if (formDialog.mode === "edit" && formDialog.entry) {
-        const payload: UpdateSavingRequest = basePayload;
+        const payload: UpdateSavingRequest = form.hasTarget
+          ? {
+              ...basePayload,
+              targetAmount: Number(form.targetAmount),
+              targetCurrency: form.targetCurrency,
+              startDate: form.date,
+              endDate: form.endDate,
+            }
+          : {
+              ...basePayload,
+              targetAmount: null,
+              targetCurrency: null,
+              startDate: null,
+              endDate: null,
+            };
         await updateSaving(token, formDialog.entry.id, payload);
         toast.success("Saving bucket updated.");
         triggerRefresh();
       } else {
         const payload: CreateSavingRequest = {
           ...basePayload,
+          ...(form.hasTarget
+            ? {
+                targetAmount: Number(form.targetAmount),
+                targetCurrency: form.targetCurrency,
+                startDate: form.date,
+                endDate: form.endDate,
+              }
+            : {}),
           amount: 0,
           currency: "RWF",
         };
