@@ -11,7 +11,7 @@ export function IncomeHeader({ canCreate, onCreate }: IncomeHeaderProps) {
           Income
         </h1>
         <p className="mt-2 text-sm text-text-secondary">
-          Track what is scheduled, what has actually been received, and how much money is still free after expenses and savings.
+          Track planned income, confirm when cash is actually received, and see what is still free after expenses and savings allocations.
         </p>
       </div>
 
