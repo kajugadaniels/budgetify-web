@@ -30,6 +30,7 @@ import { IncomeDetailsDialog } from "./income/income-details-dialog";
 import { IncomeHeader } from "./income/income-header";
 import { IncomeLedgerFilters } from "./income/income-ledger-filters";
 import type {
+  IncomeLedgerAllocationFilter,
   IncomeDetailsDialogState,
   IncomeFormDialogState,
   IncomeFormValues,
@@ -77,6 +78,8 @@ export default function IncomePage() {
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedCategory, setSelectedCategory] =
     useState<IncomeLedgerCategoryFilter>("ALL");
+  const [selectedAllocation, setSelectedAllocation] =
+    useState<IncomeLedgerAllocationFilter>("ALL");
   const [selectedReceived, setSelectedReceived] =
     useState<IncomeLedgerReceivedFilter>("ALL");
   const [searchInput, setSearchInput] = useState("");
@@ -182,6 +185,8 @@ export default function IncomePage() {
           year: hasExplicitDateFilter ? undefined : selectedYear,
           category:
             selectedCategory === "ALL" ? undefined : selectedCategory,
+          allocationStatus:
+            selectedAllocation === "ALL" ? undefined : selectedAllocation,
           received:
             selectedReceived === "ALL"
               ? undefined
@@ -239,6 +244,7 @@ export default function IncomePage() {
     refreshKey,
     selectedDateFrom,
     selectedDateTo,
+    selectedAllocation,
     selectedCategory,
     selectedMonth,
     selectedReceived,
@@ -259,6 +265,7 @@ export default function IncomePage() {
   );
   const hasActiveLedgerFilters =
     selectedMonth !== defaultMonth ||
+    selectedAllocation !== "ALL" ||
     selectedCategory !== "ALL" ||
     selectedReceived !== "ALL" ||
     appliedSearch !== undefined ||
@@ -547,6 +554,7 @@ export default function IncomePage() {
           </div>
 
           <IncomeLedgerFilters
+            allocation={selectedAllocation}
             category={selectedCategory}
             categoryOptions={ledgerCategoryOptions}
             dateFrom={selectedDateFrom}
@@ -555,12 +563,17 @@ export default function IncomePage() {
             month={selectedMonth}
             received={selectedReceived}
             search={searchInput}
+            onAllocationChange={(value) => {
+              setSelectedAllocation(value);
+              setCurrentPage(1);
+            }}
             onCategoryChange={(value) => {
               setSelectedCategory(value);
               setCurrentPage(1);
             }}
             onClear={() => {
               setSelectedMonth(defaultMonth);
+              setSelectedAllocation("ALL");
               setSelectedCategory("ALL");
               setSelectedReceived("ALL");
               setSearchInput("");
@@ -614,6 +627,7 @@ export default function IncomePage() {
                   label: "Clear filters",
                   onClick: () => {
                     setSelectedMonth(defaultMonth);
+                    setSelectedAllocation("ALL");
                     setSelectedCategory("ALL");
                     setSelectedReceived("ALL");
                     setSearchInput("");
