@@ -43,10 +43,10 @@ export function createEmptySavingForm(
 
   return {
     label: "",
+    hasTarget: false,
     date: defaultDate,
     targetAmount: "",
     targetCurrency: "RWF",
-    startDate: defaultDate,
     endDate: defaultDate,
     note: "",
   };
@@ -57,11 +57,13 @@ export function createSavingFormFromEntry(
 ): SavingFormValues {
   return {
     label: entry.label,
+    hasTarget:
+      entry.targetAmount !== null &&
+      entry.endDate !== null,
     date: entry.date.split("T")[0] ?? getTodayString(),
     targetAmount:
       entry.targetAmount === null ? "" : String(entry.targetAmount),
     targetCurrency: entry.targetCurrency ?? "RWF",
-    startDate: entry.startDate ?? (entry.date.split("T")[0] ?? getTodayString()),
     endDate: entry.endDate ?? (entry.date.split("T")[0] ?? getTodayString()),
     note: entry.note ?? "",
   };
