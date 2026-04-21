@@ -28,6 +28,18 @@ export interface IncomeResponse {
   updatedAt: string;
 }
 
+export interface IncomeSummaryResponse {
+  totalIncomeRwf: number;
+  receivedIncomeRwf: number;
+  pendingIncomeRwf: number;
+  totalExpensesRwf: number;
+  totalSavingsBalanceRwf: number;
+  availableMoneyNowRwf: number;
+  totalIncomeCount: number;
+  receivedIncomeCount: number;
+  pendingIncomeCount: number;
+}
+
 export interface CreateIncomeRequest {
   label: string;
   amount: number;
