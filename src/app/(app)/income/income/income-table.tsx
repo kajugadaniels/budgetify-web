@@ -35,7 +35,7 @@ export function IncomeTable({
       <table className="w-full min-w-[980px] border-separate border-spacing-0">
         <thead>
           <tr className="text-left">
-            {["Source", "Category", "Date", "Received", "Amount", "Actions"].map((label) => (
+            {["Source", "Category", "Date", "Cash State", "Amount", "Actions"].map((label) => (
               <th
                 key={label}
                 className="px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/55 md:px-6"
@@ -83,12 +83,12 @@ export function IncomeTable({
                     ? "Updating..."
                     : entry.received
                       ? "Received"
-                      : "Pending"}
+                      : "Scheduled"}
                 </button>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <p className="text-sm font-semibold tabular-nums text-success">
-                  {rwf(Number(entry.amount))}
+                  {rwf(entry.amountRwf)}
                 </p>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
