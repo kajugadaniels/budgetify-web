@@ -3,7 +3,6 @@
 import { Dialog } from "@/components/ui/dialog";
 import type { IncomeDetailResponse, IncomeResponse } from "@/lib/types/income.types";
 import { rwf } from "@/lib/utils/currency";
-import { isReversalNote } from "../../saving/saving/saving.utils";
 import {
   formatIncomeDate,
   resolveIncomeCategoryLabel,
@@ -121,7 +120,7 @@ export function IncomeDetailsDialog({
                     key={allocation.id}
                     className="rounded-[18px] border border-white/8 bg-surface-elevated/60 px-4 py-3"
                   >
-                    {isReversalNote(allocation.note) ? (
+                    {allocation.isReversed ? (
                       <div className="mb-3 flex justify-start">
                         <span className="rounded-full border border-warning/25 bg-warning/10 px-2.5 py-1 text-[11px] font-medium text-warning">
                           Reversed allocation
