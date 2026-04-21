@@ -34,6 +34,7 @@ export const INCOME_ROUTES = {
     year?: number;
     category?: string;
     received?: boolean;
+    allocationStatus?: string;
     search?: string;
     dateFrom?: string;
     dateTo?: string;
@@ -56,6 +57,10 @@ export const INCOME_ROUTES = {
 
     if (params?.received !== undefined) {
       searchParams.set("received", String(params.received));
+    }
+
+    if (params?.allocationStatus !== undefined) {
+      searchParams.set("allocationStatus", params.allocationStatus);
     }
 
     if (params?.search !== undefined) {
