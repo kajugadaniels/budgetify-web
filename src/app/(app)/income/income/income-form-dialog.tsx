@@ -154,6 +154,9 @@ export function IncomeFormDialog({
               );
             })}
           </div>
+          <p className="mt-2 text-xs leading-5 text-text-secondary">
+            Use <span className="font-medium text-text-primary">Pending</span> for planned income that is not in your hands yet. Use <span className="font-medium text-text-primary">Received</span> only after the money is actually available.
+          </p>
         </Field>
 
         <div className="flex gap-3 pt-2">
