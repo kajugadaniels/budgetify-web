@@ -135,7 +135,13 @@ export function IncomeTable({
                   <button
                     type="button"
                     onClick={() => onDelete(entry)}
-                    className="rounded-full border border-danger/25 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16"
+                    disabled={entry.allocationStatus !== "UNALLOCATED"}
+                    title={
+                      entry.allocationStatus !== "UNALLOCATED"
+                        ? "This income already funds a saving bucket."
+                        : undefined
+                    }
+                    className="rounded-full border border-danger/25 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Delete
                   </button>
