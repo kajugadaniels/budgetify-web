@@ -14,6 +14,7 @@ import {
   listExpenseCategories,
   listExpenses,
   listExpensesPage,
+  quoteMobileMoneyExpense,
   updateExpense,
 } from "@/lib/api/expenses/expenses.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
@@ -29,6 +30,7 @@ import { ExpensesHeader } from "./expenses/expenses-header";
 import type {
   ExpenseFormDialogState,
   ExpenseFormValues,
+  ExpenseQuoteState,
   ExpenseLedgerCategoryFilter,
 } from "./expenses/expenses-page.types";
 import { ExpensesTable } from "./expenses/expenses-table";
@@ -41,6 +43,7 @@ import {
   formatExpenseDate,
   getCurrentMonthIndex,
   getCurrentYear,
+  isMobileMoneyExpense,
   resolveExpenseMonthLabel,
   resolveExpenseCategoryLabel,
   sortExpenseEntries,
@@ -69,6 +72,11 @@ export default function ExpensesPage() {
   const [form, setForm] = useState<ExpenseFormValues>(() =>
     createEmptyExpenseForm(),
   );
+  const [quote, setQuote] = useState<ExpenseQuoteState>({
+    loading: false,
+    error: null,
+    data: null,
+  });
   const defaultMonth = resolveExpenseMonthSearchParam(searchParams.get("month"));
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedCategory, setSelectedCategory] =
@@ -96,6 +104,65 @@ export default function ExpensesPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [appliedSearch, selectedDateFrom, selectedDateTo]);
+
+  useEffect(() => {
+    if (!token || !formDialog || !isMobileMoneyExpense(form.paymentMethod)) {
+      setQuote({ loading: false, error: null, data: null });
+      return;
+    }
+
+    const amount = Number(form.amount);
+    if (Number.isNaN(amount) || amount <= 0) {
+      setQuote({ loading: false, error: null, data: null });
+      return;
+    }
+
+    let ignore = false;
+    setQuote((current) => ({ ...current, loading: true, error: null }));
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await quoteMobileMoneyExpense(token, {
+          amount,
+          currency: form.currency,
+          mobileMoneyProvider: form.mobileMoneyProvider,
+          mobileMoneyChannel: form.mobileMoneyChannel,
+          ...(form.mobileMoneyChannel === "P2P_TRANSFER"
+            ? { mobileMoneyNetwork: form.mobileMoneyNetwork }
+            : {}),
+        });
+
+        if (!ignore) {
+          setQuote({ loading: false, error: null, data: response });
+        }
+      } catch (quoteError) {
+        if (!ignore) {
+          setQuote({
+            loading: false,
+            error:
+              quoteError instanceof ApiError
+                ? quoteError.message
+                : "Could not calculate mobile money charges right now.",
+            data: null,
+          });
+        }
+      }
+    }, 250);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    form.amount,
+    form.currency,
+    form.mobileMoneyChannel,
+    form.mobileMoneyNetwork,
+    form.mobileMoneyProvider,
+    form.paymentMethod,
+    formDialog,
+    token,
+  ]);
 
   useEffect(() => {
     if (!token) return;
@@ -205,7 +272,10 @@ export default function ExpensesPage() {
     token,
   ]);
 
-  const totalSpent = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+  const totalSpent = entries.reduce(
+    (sum, entry) => sum + Number(entry.totalAmountRwf),
+    0,
+  );
   const selectedMonthLabel = resolveExpenseMonthLabel(selectedMonth);
   const ledgerCategoryOptions = buildExpenseLedgerCategoryOptions(
     categories,
@@ -218,13 +288,14 @@ export default function ExpensesPage() {
     hasExplicitDateFilter;
   const mostRecentEntry = entries[0];
   const largestExpense = [...entries].sort(
-    (left, right) => Number(right.amount) - Number(left.amount),
+    (left, right) =>
+      Number(right.totalAmountRwf) - Number(left.totalAmountRwf),
   )[0];
   const canManageCategories = categories.length > 0;
   const averageExpense = entries.length > 0 ? totalSpent / entries.length : 0;
   const largestExpenseShare =
     totalSpent > 0 && largestExpense
-      ? Math.round((Number(largestExpense.amount) / totalSpent) * 100)
+      ? Math.round((Number(largestExpense.totalAmountRwf) / totalSpent) * 100)
       : 0;
 
   function triggerRefresh() {
@@ -254,10 +325,25 @@ export default function ExpensesPage() {
   function closeFormDialog() {
     setFormDialog(null);
     setForm(createEmptyExpenseForm());
+    setQuote({ loading: false, error: null, data: null });
   }
 
   function updateForm(next: Partial<ExpenseFormValues>) {
-    setForm((current) => ({ ...current, ...next }));
+    setForm((current) => {
+      const merged = { ...current, ...next };
+
+      if (next.paymentMethod && next.paymentMethod !== "MOBILE_MONEY") {
+        merged.mobileMoneyChannel = "MERCHANT_CODE";
+        merged.mobileMoneyProvider = "MTN_RWANDA";
+        merged.mobileMoneyNetwork = "ON_NET";
+      }
+
+      if (next.mobileMoneyChannel === "MERCHANT_CODE") {
+        merged.mobileMoneyNetwork = "ON_NET";
+      }
+
+      return merged;
+    });
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -279,7 +365,18 @@ export default function ExpensesPage() {
     const payload: CreateExpenseRequest = {
       label: form.label.trim(),
       amount,
+      currency: form.currency,
       category: form.category,
+      paymentMethod: form.paymentMethod,
+      ...(form.paymentMethod === "MOBILE_MONEY"
+        ? {
+            mobileMoneyChannel: form.mobileMoneyChannel,
+            mobileMoneyProvider: form.mobileMoneyProvider,
+            ...(form.mobileMoneyChannel === "P2P_TRANSFER"
+              ? { mobileMoneyNetwork: form.mobileMoneyNetwork }
+              : {}),
+          }
+        : {}),
       date: form.date,
       ...(form.note.trim() ? { note: form.note.trim() } : {}),
     };
@@ -440,7 +537,7 @@ export default function ExpensesPage() {
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {largestExpense
-                      ? `${largestExpense.label} · ${rwf(Number(largestExpense.amount))}`
+                      ? `${largestExpense.label} · ${rwf(Number(largestExpense.totalAmountRwf))}`
                       : "Add expenses to reveal the biggest category."}
                   </p>
                 </div>
@@ -563,6 +660,9 @@ export default function ExpensesPage() {
           categories={categories}
           form={form}
           mode={formDialog.mode}
+          quote={quote.data}
+          quoteError={quote.error}
+          quoteLoading={quote.loading}
           saving={saving}
           onClose={closeFormDialog}
           onSubmit={handleSubmit}
