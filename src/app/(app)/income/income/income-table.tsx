@@ -15,6 +15,7 @@ interface IncomeTableProps {
   canEdit: boolean;
   entries: IncomeResponse[];
   onDelete: (entry: IncomeResponse) => void;
+  onDetails: (entry: IncomeResponse) => void;
   onEdit: (entry: IncomeResponse) => void;
   onRecordNextMonth: (entry: IncomeResponse) => void;
   onToggleReceived: (entry: IncomeResponse) => void;
@@ -26,6 +27,7 @@ export function IncomeTable({
   canEdit,
   entries,
   onDelete,
+  onDetails,
   onEdit,
   onRecordNextMonth,
   onToggleReceived,
@@ -93,6 +95,13 @@ export function IncomeTable({
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onDetails(entry)}
+                    className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    Details
+                  </button>
                   <button
                     type="button"
                     onClick={() => onEdit(entry)}
