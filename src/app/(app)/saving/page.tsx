@@ -11,6 +11,7 @@ import { listIncome } from "@/lib/api/income/income.api";
 import {
   createSaving,
   createSavingDeposit,
+  reverseSavingDeposit,
   createSavingWithdrawal,
   deleteSaving,
   listSavingTransactions,
@@ -76,6 +77,7 @@ export default function SavingPage() {
   const [depositSaving, setDepositSaving] = useState(false);
   const [withdrawalSaving, setWithdrawalSaving] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [reversingTransactionId, setReversingTransactionId] = useState<string | null>(null);
   const [historyTransactions, setHistoryTransactions] = useState<
     SavingTransactionResponse[]
   >([]);
@@ -330,6 +332,7 @@ export default function SavingPage() {
   function closeHistoryDialog() {
     setHistoryDialog(null);
     setHistoryTransactions([]);
+    setReversingTransactionId(null);
   }
 
   function updateForm(next: Partial<SavingFormValues>) {
@@ -571,6 +574,41 @@ export default function SavingPage() {
       );
     } finally {
       setWithdrawalSaving(false);
+    }
+  }
+
+  async function handleReverseDeposit(
+    entry: SavingResponse,
+    transaction: SavingTransactionResponse,
+  ) {
+    if (!token) return;
+
+    setReversingTransactionId(transaction.id);
+
+    try {
+      const updatedSaving = await reverseSavingDeposit(
+        token,
+        entry.id,
+        transaction.id,
+      );
+      const updatedTransactions = await listSavingTransactions(token, entry.id);
+
+      setHistoryTransactions(updatedTransactions);
+      setHistoryDialog({
+        entry: updatedSaving,
+        transactions: updatedTransactions,
+        loading: false,
+      });
+      triggerRefresh();
+      toast.success("Saving deposit reversed.");
+    } catch (reverseError) {
+      toast.error(
+        reverseError instanceof ApiError
+          ? reverseError.message
+          : "Saving deposit could not be reversed right now.",
+      );
+    } finally {
+      setReversingTransactionId(null);
     }
   }
 
@@ -838,8 +876,10 @@ export default function SavingPage() {
         <SavingHistoryDialog
           entry={historyDialog.entry}
           loading={historyLoading || historyDialog.loading}
+          reversingTransactionId={reversingTransactionId}
           transactions={historyTransactions}
           onClose={closeHistoryDialog}
+          onReverseDeposit={handleReverseDeposit}
         />
       ) : null}
 
