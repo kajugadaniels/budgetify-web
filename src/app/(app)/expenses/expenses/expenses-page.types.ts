@@ -1,5 +1,6 @@
 import type {
   ExpenseCategory,
+  ExpenseAuditResponse,
   ExpenseCurrency,
   ExpenseMobileMoneyChannel,
   ExpenseMobileMoneyNetwork,
@@ -35,6 +36,12 @@ export interface ExpenseSummaryState {
   loading: boolean;
   error: string | null;
   data: ExpenseSummaryResponse | null;
+}
+
+export interface ExpenseAuditState {
+  loading: boolean;
+  error: string | null;
+  data: ExpenseAuditResponse | null;
 }
 
 export type ExpenseFormDialogState =
