@@ -9,6 +9,11 @@ export type IncomeCategory =
   | "SIDE_HUSTLE"
   | "OTHER";
 
+export type IncomeAllocationStatus =
+  | "UNALLOCATED"
+  | "PARTIALLY_ALLOCATED"
+  | "FULLY_ALLOCATED";
+
 export interface IncomeCategoryOptionResponse {
   value: IncomeCategory;
   label: string;
@@ -23,6 +28,9 @@ export interface IncomeResponse {
   category: IncomeCategory;
   date: string;
   received: boolean;
+  allocatedToSavingsRwf: number;
+  remainingAvailableRwf: number;
+  allocationStatus: IncomeAllocationStatus;
   createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
@@ -82,6 +90,7 @@ export interface ListIncomeParams {
   year?: number;
   category?: IncomeCategory;
   received?: boolean;
+  allocationStatus?: IncomeAllocationStatus;
   search?: string;
   dateFrom?: string;
   dateTo?: string;
