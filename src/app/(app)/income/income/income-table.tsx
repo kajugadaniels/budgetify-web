@@ -5,6 +5,7 @@ import type {
 import { rwf } from "@/lib/utils/currency";
 import { CreatedByPill } from "@/components/ui/created-by-pill";
 import {
+  resolveIncomeAllocationLabel,
   formatIncomeDate,
   resolveIncomeCategoryLabel,
 } from "./income.utils";
@@ -89,9 +90,22 @@ export function IncomeTable({
                 </button>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
-                <p className="text-sm font-semibold tabular-nums text-success">
-                  {rwf(entry.amountRwf)}
-                </p>
+                <div className="space-y-1.5">
+                  <p className="text-sm font-semibold tabular-nums text-success">
+                    {rwf(entry.amountRwf)}
+                  </p>
+                  <span
+                    className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                      entry.allocationStatus === "FULLY_ALLOCATED"
+                        ? "border-primary/20 bg-primary/10 text-primary"
+                        : entry.allocationStatus === "PARTIALLY_ALLOCATED"
+                          ? "border-warning/20 bg-warning/10 text-warning"
+                          : "border-white/10 bg-white/[0.04] text-text-secondary"
+                    }`}
+                  >
+                    {resolveIncomeAllocationLabel(entry.allocationStatus)}
+                  </span>
+                </div>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <div className="flex flex-wrap items-center gap-2">
