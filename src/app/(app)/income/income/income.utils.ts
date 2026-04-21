@@ -201,3 +201,31 @@ export function resolveIncomeAllocationLabel(
       return "Unallocated";
   }
 }
+
+export function resolveIncomeCashStateLabel(received: boolean): string {
+  return received ? "Received cash" : "Scheduled only";
+}
+
+export function resolveIncomeCashStateHint(received: boolean): string {
+  return received
+    ? "This money is already in hand and can still be spent or moved into savings."
+    : "This money is planned, but it should not count as cash you already have until it is marked received.";
+}
+
+export function resolveIncomeAvailabilityLabel(
+  received: boolean,
+  allocationStatus: IncomeAllocationStatus,
+): string {
+  if (!received) {
+    return "Not in hand yet";
+  }
+
+  switch (allocationStatus) {
+    case "FULLY_ALLOCATED":
+      return "Fully parked in savings";
+    case "PARTIALLY_ALLOCATED":
+      return "Partly free to use";
+    default:
+      return "Fully free to use";
+  }
+}
