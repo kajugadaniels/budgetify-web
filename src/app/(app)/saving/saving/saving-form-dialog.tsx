@@ -1,6 +1,13 @@
 "use client";
 
 import { Dialog } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { rwf } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 import type { SavingFormValues } from "./saving-page.types";
@@ -86,18 +93,27 @@ export function SavingFormDialog({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Target currency">
-            <select
+            <Select
               value={form.targetCurrency}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 onChange({
-                  targetCurrency: event.target.value as "RWF" | "USD",
+                  targetCurrency: value as "RWF" | "USD",
                 })
               }
-              className={INPUT_CLASS}
             >
-              <option value="RWF">RWF</option>
-              <option value="USD">USD</option>
-            </select>
+              <SelectTrigger
+                className={cn(
+                  INPUT_CLASS,
+                  "h-[50px] px-4 py-3 focus-visible:border-primary/60 focus-visible:ring-primary/20",
+                )}
+              >
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="RWF">RWF</SelectItem>
+                <SelectItem value="USD">USD</SelectItem>
+              </SelectContent>
+            </Select>
           </Field>
 
           <Field label="Target preview">
