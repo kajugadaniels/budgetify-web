@@ -102,6 +102,16 @@ export interface MobileMoneyQuoteResponse {
   mobileMoneyNetwork: ExpenseMobileMoneyNetwork | null;
 }
 
+export interface ExpenseSummaryResponse {
+  totalExpensesRwf: number;
+  totalFeesRwf: number;
+  totalChargedExpensesRwf: number;
+  averageExpenseRwf: number;
+  largestExpenseRwf: number;
+  availableMoneyNowRwf: number;
+  expenseCount: number;
+}
+
 export interface ListExpensesParams {
   month?: number;
   year?: number;
