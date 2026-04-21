@@ -73,77 +73,89 @@ export function SavingFormDialog({
               required
             />
           </Field>
-
-          <Field label="Target amount">
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min={0.01}
-              value={form.targetAmount}
-              onChange={(event) =>
-                onChange({ targetAmount: event.target.value })
-              }
-              placeholder="1000000"
-              className={INPUT_CLASS}
-              required
-            />
-          </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Target currency">
-            <Select
-              value={form.targetCurrency}
-              onValueChange={(value) =>
-                onChange({
-                  targetCurrency: value as "RWF" | "USD",
-                })
-              }
-            >
-              <SelectTrigger
-                className={cn(
-                  INPUT_CLASS,
-                  "h-[50px] px-4 py-3 focus-visible:border-primary/60 focus-visible:ring-primary/20",
-                )}
-              >
-                <SelectValue placeholder="Select currency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="RWF">RWF</SelectItem>
-                <SelectItem value="USD">USD</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
+        <label className="flex items-start gap-3 rounded-2xl border border-white/8 bg-surface-elevated/60 px-4 py-3">
+          <input
+            type="checkbox"
+            checked={form.hasTarget}
+            onChange={(event) => onChange({ hasTarget: event.target.checked })}
+            className="mt-1 h-4 w-4 rounded border-border bg-surface-elevated text-primary focus:ring-primary/30"
+          />
+          <div>
+            <span className="block text-sm font-medium text-text-primary">
+              This saving bucket has a target
+            </span>
+            <span className="mt-1 block text-xs leading-5 text-text-secondary">
+              Turn this on to require a target amount and an end date for the
+              bucket.
+            </span>
+          </div>
+        </label>
 
-          <Field label="Target preview">
-            <div className="rounded-2xl border border-white/8 bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
-              {targetPreview}
+        {form.hasTarget ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Target amount">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min={0.01}
+                  value={form.targetAmount}
+                  onChange={(event) =>
+                    onChange({ targetAmount: event.target.value })
+                  }
+                  placeholder="1000000"
+                  className={INPUT_CLASS}
+                  required={form.hasTarget}
+                />
+              </Field>
+
+              <Field label="End date">
+                <input
+                  type="date"
+                  value={form.endDate}
+                  onChange={(event) => onChange({ endDate: event.target.value })}
+                  className={INPUT_CLASS}
+                  required={form.hasTarget}
+                />
+              </Field>
             </div>
-          </Field>
-        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Start date">
-            <input
-              type="date"
-              value={form.startDate}
-              onChange={(event) => onChange({ startDate: event.target.value })}
-              className={INPUT_CLASS}
-              required
-            />
-          </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Target currency">
+                <Select
+                  value={form.targetCurrency}
+                  onValueChange={(value) =>
+                    onChange({
+                      targetCurrency: value as "RWF" | "USD",
+                    })
+                  }
+                >
+                  <SelectTrigger
+                    className={cn(
+                      INPUT_CLASS,
+                      "h-[50px] px-4 py-3 focus-visible:border-primary/60 focus-visible:ring-primary/20",
+                    )}
+                  >
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RWF">RWF</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
 
-          <Field label="End date">
-            <input
-              type="date"
-              value={form.endDate}
-              onChange={(event) => onChange({ endDate: event.target.value })}
-              className={INPUT_CLASS}
-              required
-            />
-          </Field>
-        </div>
+              <Field label="Target preview">
+                <div className="rounded-2xl border border-white/8 bg-surface-elevated px-4 py-3 text-sm text-text-secondary">
+                  {targetPreview}
+                </div>
+              </Field>
+            </div>
+          </>
+        ) : null}
 
         <Field label="Note">
           <textarea
