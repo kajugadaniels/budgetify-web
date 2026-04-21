@@ -1,5 +1,6 @@
 import { MONTH_OPTIONS } from "@/constant/months";
 import type {
+  IncomeAllocationStatus,
   IncomeCategory,
   IncomeCategoryOptionResponse,
   IncomeResponse,
@@ -186,4 +187,17 @@ export function buildIncomeLedgerCategoryOptions(
 
     return result;
   }, []);
+}
+
+export function resolveIncomeAllocationLabel(
+  value: IncomeAllocationStatus,
+): string {
+  switch (value) {
+    case "FULLY_ALLOCATED":
+      return "Fully allocated";
+    case "PARTIALLY_ALLOCATED":
+      return "Partially allocated";
+    default:
+      return "Unallocated";
+  }
 }
