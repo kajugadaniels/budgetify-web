@@ -40,6 +40,25 @@ export interface IncomeSummaryResponse {
   pendingIncomeCount: number;
 }
 
+export interface IncomeSavingAllocationResponse {
+  id: string;
+  savingId: string;
+  savingLabel: string;
+  transactionId: string;
+  transactionDate: string;
+  amount: number;
+  currency: Currency;
+  amountRwf: number;
+  note: string | null;
+}
+
+export interface IncomeDetailResponse extends IncomeResponse {
+  allocatedToSavingsRwf: number;
+  remainingAvailableRwf: number;
+  allocationCount: number;
+  savingAllocations: IncomeSavingAllocationResponse[];
+}
+
 export interface CreateIncomeRequest {
   label: string;
   amount: number;
