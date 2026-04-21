@@ -30,6 +30,33 @@ export const EXPENSES_ROUTES = {
     const query = searchParams.toString();
     return query.length > 0 ? `${BASE}/summary?${query}` : `${BASE}/summary`;
   },
+  audit: (params?: {
+    month?: number;
+    year?: number;
+    dateFrom?: string;
+    dateTo?: string;
+  }) => {
+    const searchParams = new URLSearchParams();
+
+    if (params?.month !== undefined) {
+      searchParams.set("month", String(params.month));
+    }
+
+    if (params?.year !== undefined) {
+      searchParams.set("year", String(params.year));
+    }
+
+    if (params?.dateFrom !== undefined) {
+      searchParams.set("dateFrom", params.dateFrom);
+    }
+
+    if (params?.dateTo !== undefined) {
+      searchParams.set("dateTo", params.dateTo);
+    }
+
+    const query = searchParams.toString();
+    return query.length > 0 ? `${BASE}/audit?${query}` : `${BASE}/audit`;
+  },
   list:   (params?: {
     month?: number;
     year?: number;
