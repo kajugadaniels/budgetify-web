@@ -3,6 +3,7 @@ import { collectPaginatedItems } from "../pagination";
 import { INCOME_ROUTES } from "./income.routes";
 import type {
   CreateIncomeRequest,
+  IncomeDetailResponse,
   IncomeCategoryOptionResponse,
   ListIncomeParams,
   IncomeResponse,
@@ -42,6 +43,15 @@ export async function getIncomeSummary(
   params?: Pick<ListIncomeParams, "month" | "year" | "dateFrom" | "dateTo">,
 ): Promise<IncomeSummaryResponse> {
   return apiFetch<IncomeSummaryResponse>(INCOME_ROUTES.summary(params), {
+    token,
+  });
+}
+
+export async function getIncomeById(
+  token: string,
+  id: string,
+): Promise<IncomeDetailResponse> {
+  return apiFetch<IncomeDetailResponse>(INCOME_ROUTES.byId(id), {
     token,
   });
 }
