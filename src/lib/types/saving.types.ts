@@ -30,10 +30,10 @@ export interface CreateSavingRequest {
   label: string;
   amount?: number;
   currency?: Currency;
-  targetAmount: number;
+  targetAmount?: number;
   targetCurrency?: Currency;
-  startDate: string;
-  endDate: string;
+  startDate?: string;
+  endDate?: string;
   date: string;
   note?: string;
   stillHave?: boolean;
@@ -43,10 +43,10 @@ export interface UpdateSavingRequest {
   label?: string;
   amount?: number;
   currency?: Currency;
-  targetAmount?: number;
-  targetCurrency?: Currency;
-  startDate?: string;
-  endDate?: string;
+  targetAmount?: number | null;
+  targetCurrency?: Currency | null;
+  startDate?: string | null;
+  endDate?: string | null;
   date?: string;
   note?: string;
   stillHave?: boolean;
@@ -93,6 +93,10 @@ export interface SavingTransactionResponse {
   amountRwf: number;
   date: string;
   note: string | null;
+  isReversal: boolean;
+  isReversed: boolean;
+  reversalOfTransactionId: string | null;
+  reversedByTransactionId: string | null;
   incomeSources: SavingTransactionIncomeSourceResponse[];
   createdAt: string;
 }
