@@ -2,6 +2,33 @@ const BASE = "/api/v1/income";
 
 export const INCOME_ROUTES = {
   categories: `${BASE}/categories`,
+  summary: (params?: {
+    month?: number;
+    year?: number;
+    dateFrom?: string;
+    dateTo?: string;
+  }) => {
+    const searchParams = new URLSearchParams();
+
+    if (params?.month !== undefined) {
+      searchParams.set("month", String(params.month));
+    }
+
+    if (params?.year !== undefined) {
+      searchParams.set("year", String(params.year));
+    }
+
+    if (params?.dateFrom !== undefined) {
+      searchParams.set("dateFrom", params.dateFrom);
+    }
+
+    if (params?.dateTo !== undefined) {
+      searchParams.set("dateTo", params.dateTo);
+    }
+
+    const query = searchParams.toString();
+    return query.length > 0 ? `${BASE}/summary?${query}` : `${BASE}/summary`;
+  },
   list:   (params?: {
     month?: number;
     year?: number;
