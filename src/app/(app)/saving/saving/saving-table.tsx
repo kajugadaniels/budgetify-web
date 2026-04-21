@@ -1,15 +1,12 @@
 import type { SavingResponse } from "@/lib/types/saving.types";
 import { rwf } from "@/lib/utils/currency";
 import { CreatedByPill } from "@/components/ui/created-by-pill";
-import {
-  formatSavingDate,
-  formatSavingNote,
-  formatSavingTimeframe,
-} from "./saving.utils";
+import { formatSavingDate } from "./saving.utils";
 
 interface SavingTableProps {
   entries: SavingResponse[];
   onDelete: (entry: SavingResponse) => void;
+  onDetails: (entry: SavingResponse) => void;
   onEdit: (entry: SavingResponse) => void;
   onDeposit: (entry: SavingResponse) => void;
   onWithdraw: (entry: SavingResponse) => void;
@@ -19,6 +16,7 @@ interface SavingTableProps {
 export function SavingTable({
   entries,
   onDelete,
+  onDetails,
   onEdit,
   onDeposit,
   onWithdraw,
@@ -26,10 +24,10 @@ export function SavingTable({
 }: SavingTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1080px] border-separate border-spacing-0">
+      <table className="w-full min-w-[880px] border-separate border-spacing-0">
         <thead>
           <tr className="text-left">
-            {["Label", "Plan", "Balance", "Flows", "Note", "Actions"].map((label) => (
+            {["Label", "Date", "Balance", "Actions"].map((label) => (
               <th
                 key={label}
                 className="px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/55 md:px-6"
@@ -54,25 +52,7 @@ export function SavingTable({
                 </div>
               </td>
               <td className="border-t border-white/6 px-5 py-4 text-sm text-text-secondary md:px-6">
-                <p className="font-medium text-text-primary">
-                  {entry.targetAmountRwf ? rwf(entry.targetAmountRwf) : "No target"}
-                </p>
-                <p className="mt-1 text-xs text-text-secondary/70">
-                  {formatSavingTimeframe(entry)}
-                  {entry.startDate && entry.endDate
-                    ? ` · ${formatSavingDate(entry.startDate)} to ${formatSavingDate(entry.endDate)}`
-                    : ""}
-                </p>
-                <p className="mt-1 text-xs text-text-secondary/70">
-                  {entry.targetProgressPercentage !== null
-                    ? `${Math.round(entry.targetProgressPercentage)}% target`
-                    : "No progress target"}
-                </p>
-                <p className="mt-1 text-xs text-text-secondary/70">
-                  {entry.timeframeProgressPercentage !== null
-                    ? `${Math.round(entry.timeframeProgressPercentage)}% of timeframe elapsed`
-                    : "No timeframe progress"}
-                </p>
+                {formatSavingDate(entry.date)}
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <p
@@ -87,20 +67,14 @@ export function SavingTable({
                 </p>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
-                <p className="text-sm font-semibold text-text-primary">
-                  +{rwf(entry.totalDepositedRwf)}
-                </p>
-                <p className="mt-1 text-xs text-text-secondary/70">
-                  -{rwf(entry.totalWithdrawnRwf)}
-                </p>
-              </td>
-              <td className="border-t border-white/6 px-5 py-4 md:px-6">
-                <p className="max-w-[260px] truncate text-sm text-text-secondary">
-                  {formatSavingNote(entry.note)}
-                </p>
-              </td>
-              <td className="border-t border-white/6 px-5 py-4 md:px-6">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onDetails(entry)}
+                    className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    Details
+                  </button>
                   <button
                     type="button"
                     onClick={() => onDeposit(entry)}
