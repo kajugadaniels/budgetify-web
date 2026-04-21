@@ -270,6 +270,26 @@ export default function SavingPage() {
     setDetailsDialog(null);
   }
 
+  function openDepositFromDetails(entry: SavingResponse) {
+    closeDetailsDialog();
+    openDepositDialog(entry);
+  }
+
+  function openWithdrawalFromDetails(entry: SavingResponse) {
+    closeDetailsDialog();
+    openWithdrawalDialog(entry);
+  }
+
+  function openHistoryFromDetails(entry: SavingResponse) {
+    closeDetailsDialog();
+    void openHistoryDialog(entry);
+  }
+
+  function openEditFromDetails(entry: SavingResponse) {
+    closeDetailsDialog();
+    openEditDialog(entry);
+  }
+
   function closeDepositDialog() {
     setDepositDialog(null);
     setDepositForm(createEmptySavingDepositForm());
@@ -796,6 +816,10 @@ export default function SavingPage() {
         <SavingDetailsDialog
           entry={detailsDialog.entry}
           onClose={closeDetailsDialog}
+          onDeposit={openDepositFromDetails}
+          onEdit={openEditFromDetails}
+          onViewHistory={openHistoryFromDetails}
+          onWithdraw={openWithdrawalFromDetails}
         />
       ) : null}
 
