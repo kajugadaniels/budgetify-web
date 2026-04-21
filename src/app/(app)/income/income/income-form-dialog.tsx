@@ -16,6 +16,7 @@ interface IncomeFormDialogProps {
   entry?: IncomeResponse;
   form: IncomeFormValues;
   mode: "create" | "edit";
+  onOpenRecovery?: (entry: IncomeResponse) => void;
   saving: boolean;
   onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -27,6 +28,7 @@ export function IncomeFormDialog({
   entry,
   form,
   mode,
+  onOpenRecovery,
   saving,
   onClose,
   onSubmit,
@@ -170,11 +172,22 @@ export function IncomeFormDialog({
             Use <span className="font-medium text-text-primary">Pending</span> for planned income that is not in your hands yet. Use <span className="font-medium text-text-primary">Received</span> only after the money is actually available.
           </p>
           {hasSavingAllocations ? (
-            <p className="mt-2 text-xs leading-5 text-warning">
-              This income already funds savings. You can update labels and dates,
-              but you cannot mark it pending or reduce it below the allocated
-              amount.
-            </p>
+            <div className="mt-2 rounded-2xl border border-warning/20 bg-warning/8 px-3 py-3">
+              <p className="text-xs leading-5 text-warning">
+                This income already funds savings. You can still update labels and
+                dates, but you cannot mark it pending or reduce it below the
+                allocated amount until those saving allocations are reversed.
+              </p>
+              {entry && onOpenRecovery ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenRecovery(entry)}
+                  className="mt-3 rounded-full border border-warning/25 bg-warning/10 px-3 py-1.5 text-xs font-medium text-warning transition-colors hover:bg-warning/16"
+                >
+                  Review linked saving allocations
+                </button>
+              ) : null}
+            </div>
           ) : null}
         </Field>
 
