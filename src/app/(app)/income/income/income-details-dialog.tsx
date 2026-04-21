@@ -13,6 +13,7 @@ interface IncomeDetailsDialogProps {
   categories: IncomeCategoryOptionResponse[];
   detail: IncomeDetailResponse | null;
   entry: IncomeResponse;
+  highlightAllocationId?: string | null;
   loading: boolean;
   reversingAllocationId: string | null;
   onClose: () => void;
@@ -26,6 +27,7 @@ export function IncomeDetailsDialog({
   categories,
   detail,
   entry,
+  highlightAllocationId,
   loading,
   reversingAllocationId,
   onClose,
@@ -118,8 +120,19 @@ export function IncomeDetailsDialog({
                 {detail.savingAllocations.map((allocation) => (
                   <div
                     key={allocation.id}
-                    className="rounded-[18px] border border-white/8 bg-surface-elevated/60 px-4 py-3"
+                    className={`rounded-[18px] border px-4 py-3 ${
+                      highlightAllocationId === allocation.id
+                        ? "border-primary/35 bg-primary/8"
+                        : "border-white/8 bg-surface-elevated/60"
+                    }`}
                   >
+                    {highlightAllocationId === allocation.id ? (
+                      <div className="mb-3 flex justify-start">
+                        <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                          Reverse this allocation to unblock the income
+                        </span>
+                      </div>
+                    ) : null}
                     {allocation.isReversed ? (
                       <div className="mb-3 flex justify-start">
                         <span className="rounded-full border border-warning/25 bg-warning/10 px-2.5 py-1 text-[11px] font-medium text-warning">
@@ -150,10 +163,15 @@ export function IncomeDetailsDialog({
                       <button
                         type="button"
                         onClick={() => onReverseAllocation(entry, allocation)}
-                        disabled={reversingAllocationId === allocation.id}
+                        disabled={
+                          reversingAllocationId === allocation.id ||
+                          allocation.isReversed
+                        }
                         className="rounded-full border border-danger/25 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        {reversingAllocationId === allocation.id
+                        {allocation.isReversed
+                          ? "Already reversed"
+                          : reversingAllocationId === allocation.id
                           ? "Reversing..."
                           : "Reverse allocation"}
                       </button>
