@@ -19,6 +19,7 @@ interface IncomeTableProps {
   onDetails: (entry: IncomeResponse) => void;
   onEdit: (entry: IncomeResponse) => void;
   onRecordNextMonth: (entry: IncomeResponse) => void;
+  onRecover: (entry: IncomeResponse, action: "edit" | "delete") => void;
   onToggleReceived: (entry: IncomeResponse) => void;
 }
 
@@ -31,6 +32,7 @@ export function IncomeTable({
   onDetails,
   onEdit,
   onRecordNextMonth,
+  onRecover,
   onToggleReceived,
 }: IncomeTableProps) {
   return (
@@ -118,7 +120,11 @@ export function IncomeTable({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onEdit(entry)}
+                    onClick={() =>
+                      entry.allocationStatus === "UNALLOCATED"
+                        ? onEdit(entry)
+                        : onRecover(entry, "edit")
+                    }
                     disabled={!canEdit}
                     className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
                   >
@@ -134,12 +140,10 @@ export function IncomeTable({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onDelete(entry)}
-                    disabled={entry.allocationStatus !== "UNALLOCATED"}
-                    title={
-                      entry.allocationStatus !== "UNALLOCATED"
-                        ? "This income already funds a saving bucket."
-                        : undefined
+                    onClick={() =>
+                      entry.allocationStatus === "UNALLOCATED"
+                        ? onDelete(entry)
+                        : onRecover(entry, "delete")
                     }
                     className="rounded-full border border-danger/25 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16 disabled:cursor-not-allowed disabled:opacity-40"
                   >
