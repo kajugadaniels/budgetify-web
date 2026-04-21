@@ -3,7 +3,7 @@
 import { Dialog } from "@/components/ui/dialog";
 import type { SavingResponse, SavingTransactionResponse } from "@/lib/types/saving.types";
 import { rwf } from "@/lib/utils/currency";
-import { formatSavingDate } from "./saving.utils";
+import { formatSavingDate, resolveSavingAuditLabel } from "./saving.utils";
 
 interface SavingHistoryDialogProps {
   entry: SavingResponse;
@@ -54,6 +54,20 @@ export function SavingHistoryDialog({
               key={transaction.id}
               className="rounded-[22px] border border-white/8 bg-surface-elevated/60 p-4"
             >
+              {(() => {
+                const auditLabel = resolveSavingAuditLabel(
+                  transaction.type,
+                  transaction.note,
+                );
+
+                return auditLabel ? (
+                  <div className="mb-3 flex justify-start">
+                    <span className="rounded-full border border-warning/25 bg-warning/10 px-2.5 py-1 text-[11px] font-medium text-warning">
+                      {auditLabel}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-text-primary">
