@@ -2,11 +2,13 @@ import { MonthStepper } from "@/components/ui/month-stepper";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { IncomeCategoryOptionResponse } from "@/lib/types/income.types";
 import type {
+  IncomeLedgerAllocationFilter,
   IncomeLedgerCategoryFilter,
   IncomeLedgerReceivedFilter,
 } from "./income-page.types";
 
 interface IncomeLedgerFiltersProps {
+  allocation: IncomeLedgerAllocationFilter;
   category: IncomeLedgerCategoryFilter;
   categoryOptions: IncomeCategoryOptionResponse[];
   dateFrom: string;
@@ -15,6 +17,7 @@ interface IncomeLedgerFiltersProps {
   month: number;
   received: IncomeLedgerReceivedFilter;
   search: string;
+  onAllocationChange: (value: IncomeLedgerAllocationFilter) => void;
   onCategoryChange: (value: IncomeLedgerCategoryFilter) => void;
   onClear: () => void;
   onDateFromChange: (value: string) => void;
@@ -25,6 +28,7 @@ interface IncomeLedgerFiltersProps {
 }
 
 export function IncomeLedgerFilters({
+  allocation,
   category,
   categoryOptions,
   dateFrom,
@@ -33,6 +37,7 @@ export function IncomeLedgerFilters({
   month,
   received,
   search,
+  onAllocationChange,
   onCategoryChange,
   onClear,
   onDateFromChange,
@@ -74,6 +79,25 @@ export function IncomeLedgerFilters({
             />
 
             <MonthStepper month={month} onChange={onMonthChange} />
+
+            <Select
+              value={allocation}
+              onValueChange={(value) =>
+                onAllocationChange(value as IncomeLedgerAllocationFilter)
+              }
+            >
+              <SelectTrigger className="h-11 min-w-[188px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
+                <SelectValue placeholder="Allocation" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
+                <SelectItem value="ALL">All allocations</SelectItem>
+                <SelectItem value="UNALLOCATED">Unallocated</SelectItem>
+                <SelectItem value="PARTIALLY_ALLOCATED">
+                  Partially allocated
+                </SelectItem>
+                <SelectItem value="FULLY_ALLOCATED">Fully allocated</SelectItem>
+              </SelectContent>
+            </Select>
 
             <Select
               value={category}
