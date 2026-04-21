@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,10 +18,12 @@ import {
   listIncomeCategories,
   updateIncome,
 } from "@/lib/api/income/income.api";
+import { reverseSavingDeposit } from "@/lib/api/savings/savings.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
 import type {
   CreateIncomeRequest,
   IncomeCategoryOptionResponse,
+  IncomeSavingAllocationResponse,
   IncomeResponse,
   IncomeSummaryResponse,
 } from "@/lib/types/income.types";
@@ -73,6 +76,11 @@ export default function IncomePage() {
   const [formDialog, setFormDialog] = useState<IncomeFormDialogState>(null);
   const [detailsDialog, setDetailsDialog] =
     useState<IncomeDetailsDialogState>(null);
+  const [pendingAllocationReversal, setPendingAllocationReversal] = useState<{
+    allocation: IncomeSavingAllocationResponse;
+    entry: IncomeResponse;
+  } | null>(null);
+  const [reversingAllocationId, setReversingAllocationId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IncomeResponse | null>(null);
   const [form, setForm] = useState<IncomeFormValues>(() => createEmptyIncomeForm());
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
@@ -335,6 +343,55 @@ export default function IncomePage() {
 
   function closeDetailsDialog() {
     setDetailsDialog(null);
+    setReversingAllocationId(null);
+    setPendingAllocationReversal(null);
+  }
+
+  function requestReverseAllocation(
+    entry: IncomeResponse,
+    allocation: IncomeSavingAllocationResponse,
+  ) {
+    setPendingAllocationReversal({ entry, allocation });
+  }
+
+  async function handleReverseAllocation() {
+    if (!pendingAllocationReversal || !token) {
+      return;
+    }
+
+    const { entry, allocation } = pendingAllocationReversal;
+    setPendingAllocationReversal(null);
+
+    if (!token) {
+      return;
+    }
+
+    setReversingAllocationId(allocation.id);
+
+    try {
+      await reverseSavingDeposit(
+        token,
+        allocation.savingId,
+        allocation.transactionId,
+      );
+
+      const updatedDetail = await getIncomeById(token, entry.id);
+      setDetailsDialog({
+        entry: updatedDetail,
+        detail: updatedDetail,
+        loading: false,
+      });
+      triggerRefresh();
+      toast.success("Income allocation reversed.");
+    } catch (reverseError) {
+      toast.error(
+        reverseError instanceof ApiError
+          ? reverseError.message
+          : "Income allocation could not be reversed right now.",
+      );
+    } finally {
+      setReversingAllocationId(null);
+    }
   }
 
   function updateForm(next: Partial<IncomeFormValues>) {
@@ -682,7 +739,22 @@ export default function IncomePage() {
           detail={detailsDialog.detail}
           entry={detailsDialog.entry}
           loading={detailsDialog.loading}
+          reversingAllocationId={reversingAllocationId}
           onClose={closeDetailsDialog}
+          onReverseAllocation={requestReverseAllocation}
+        />
+      ) : null}
+
+      {pendingAllocationReversal ? (
+        <ConfirmActionDialog
+          title="Reverse saving allocation"
+          description={`This will remove ${rwfCompact(
+            pendingAllocationReversal.allocation.amountRwf,
+          )} from ${pendingAllocationReversal.allocation.savingLabel}, create a matching saving withdrawal, and make that income available again.`}
+          actionLabel="Reverse"
+          confirmLabel="Reverse allocation"
+          onCancel={() => setPendingAllocationReversal(null)}
+          onConfirm={handleReverseAllocation}
         />
       ) : null}
 
