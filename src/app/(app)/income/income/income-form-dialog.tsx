@@ -1,7 +1,10 @@
 "use client";
 
 import { Dialog } from "@/components/ui/dialog";
-import type { IncomeCategoryOptionResponse } from "@/lib/types/income.types";
+import type {
+  IncomeCategoryOptionResponse,
+  IncomeResponse,
+} from "@/lib/types/income.types";
 import { cn } from "@/lib/utils/cn";
 import type { IncomeFormValues } from "./income-page.types";
 
@@ -10,6 +13,7 @@ const INPUT_CLASS =
 
 interface IncomeFormDialogProps {
   categories: IncomeCategoryOptionResponse[];
+  entry?: IncomeResponse;
   form: IncomeFormValues;
   mode: "create" | "edit";
   saving: boolean;
@@ -20,6 +24,7 @@ interface IncomeFormDialogProps {
 
 export function IncomeFormDialog({
   categories,
+  entry,
   form,
   mode,
   saving,
@@ -27,6 +32,9 @@ export function IncomeFormDialog({
   onSubmit,
   onChange,
 }: IncomeFormDialogProps) {
+  const hasSavingAllocations =
+    mode === "edit" && (entry?.allocatedToSavingsRwf ?? 0) > 0;
+
   return (
     <Dialog onClose={onClose} className="sm:max-w-xl">
       <div className="mb-6">
@@ -131,12 +139,16 @@ export function IncomeFormDialog({
                   key={option.label}
                   type="button"
                   aria-pressed={selected}
+                  disabled={hasSavingAllocations && option.value === false}
                   onClick={() => onChange({ received: option.value })}
                   className={cn(
                     "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
                     selected
                       ? option.selectedClass
                       : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+                    hasSavingAllocations && option.value === false
+                      ? "cursor-not-allowed opacity-40"
+                      : "",
                   )}
                 >
                   <span
@@ -157,6 +169,13 @@ export function IncomeFormDialog({
           <p className="mt-2 text-xs leading-5 text-text-secondary">
             Use <span className="font-medium text-text-primary">Pending</span> for planned income that is not in your hands yet. Use <span className="font-medium text-text-primary">Received</span> only after the money is actually available.
           </p>
+          {hasSavingAllocations ? (
+            <p className="mt-2 text-xs leading-5 text-warning">
+              This income already funds savings. You can update labels and dates,
+              but you cannot mark it pending or reduce it below the allocated
+              amount.
+            </p>
+          ) : null}
         </Field>
 
         <div className="flex gap-3 pt-2">
