@@ -47,6 +47,10 @@ export type SavingWithdrawalDialogState =
   | { entry: SavingResponse }
   | null;
 
+export type SavingDetailsDialogState =
+  | { entry: SavingResponse }
+  | null;
+
 export type SavingHistoryDialogState =
   | {
       entry: SavingResponse;
