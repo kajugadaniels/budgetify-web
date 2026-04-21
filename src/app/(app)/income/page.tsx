@@ -616,13 +616,15 @@ export default function IncomePage() {
                 <IncomeSummaryCard
                   eyebrow="Received cash"
                   value={rwfCompact(receivedIncome)}
-                  detail={`${receivedEntriesCount} received ${receivedEntriesCount === 1 ? "entry" : "entries"} recorded as cash in hand. ${pendingEntriesCount} ${pendingEntriesCount === 1 ? "entry is" : "entries are"} still pending.`}
+                  tone="success"
+                  detail={`${receivedEntriesCount} ${receivedEntriesCount === 1 ? "entry is" : "entries are"} already in hand. ${pendingEntriesCount} ${pendingEntriesCount === 1 ? "entry is" : "entries are"} still scheduled and not yet counted as cash you have.`}
                 />
 
                 <IncomeSummaryCard
                   eyebrow="Available money now"
                   value={rwfCompact(availableMoneyNow)}
-                  detail={`${rwfCompact(receivedIncome)} received minus ${rwfCompact(totalExpenses)} expenses and ${rwfCompact(totalSavingsBalance)} parked in savings.`}
+                  tone="primary"
+                  detail={`${rwfCompact(receivedIncome)} received, minus ${rwfCompact(totalExpenses)} spent and ${rwfCompact(totalSavingsBalance)} currently parked in savings.`}
                 />
               </div>
             </div>
@@ -639,7 +641,7 @@ export default function IncomePage() {
                 {selectedMonthLabel} {selectedYear} income
               </h2>
               <p className="mt-2 text-sm text-text-secondary">
-                Scheduled income stays here until it is marked received. Only received cash is counted as money you already have.
+                Planned income stays here until it is marked received. Only received cash counts as money you already have, and saving allocations show how much is still free.
               </p>
             </div>
 
