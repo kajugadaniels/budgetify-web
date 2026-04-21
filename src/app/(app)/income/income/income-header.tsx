@@ -11,7 +11,7 @@ export function IncomeHeader({ canCreate, onCreate }: IncomeHeaderProps) {
           Income
         </h1>
         <p className="mt-2 text-sm text-text-secondary">
-          Review income by the month it is actually scheduled, not when it was created.
+          Track what is scheduled, what has actually been received, and how much money is still free after expenses and savings.
         </p>
       </div>
 
