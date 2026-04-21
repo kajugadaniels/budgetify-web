@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/client";
 import {
   createExpense,
   deleteExpense,
+  getExpenseAudit,
   getExpenseSummary,
   listExpenseCategories,
   listExpenses,
@@ -27,11 +28,13 @@ import type {
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import { ExpenseDetailsDialog } from "./expenses/expense-details-dialog";
 import { ExpenseFormDialog } from "./expenses/expense-form-dialog";
+import { ExpensesAuditPanel } from "./expenses/expenses-audit-panel";
 import { ExpensesLedgerFilters } from "./expenses/expenses-ledger-filters";
 import { ExpensesHeader } from "./expenses/expenses-header";
 import { ExpensesSummaryCard } from "./expenses/expenses-summary-card";
 import type {
   ExpenseDetailsDialogState,
+  ExpenseAuditState,
   ExpenseFormDialogState,
   ExpenseFormValues,
   ExpenseLedgerCategoryFilter,
@@ -85,6 +88,11 @@ export default function ExpensesPage() {
     data: null,
   });
   const [summary, setSummary] = useState<ExpenseSummaryState>({
+    loading: true,
+    error: null,
+    data: null,
+  });
+  const [audit, setAudit] = useState<ExpenseAuditState>({
     loading: true,
     error: null,
     data: null,
@@ -336,6 +344,58 @@ export default function ExpensesPage() {
     token,
   ]);
 
+  useEffect(() => {
+    if (!token) return;
+    const sessionToken = token;
+    let ignore = false;
+
+    async function loadExpenseAudit() {
+      setAudit((current) => ({ ...current, loading: true, error: null }));
+
+      try {
+        const response = await getExpenseAudit(sessionToken, {
+          month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
+          year: hasExplicitDateFilter ? undefined : selectedYear,
+          dateFrom: selectedDateFrom || undefined,
+          dateTo: selectedDateTo || undefined,
+        });
+
+        if (!ignore) {
+          setAudit({
+            loading: false,
+            error: null,
+            data: response,
+          });
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          setAudit({
+            loading: false,
+            error:
+              loadError instanceof ApiError
+                ? loadError.message
+                : "Expense audit could not be loaded right now.",
+            data: null,
+          });
+        }
+      }
+    }
+
+    void loadExpenseAudit();
+
+    return () => {
+      ignore = true;
+    };
+  }, [
+    hasExplicitDateFilter,
+    refreshKey,
+    selectedDateFrom,
+    selectedDateTo,
+    selectedMonth,
+    selectedYear,
+    token,
+  ]);
+
   const totalSpent = summary.data?.totalChargedExpensesRwf ?? 0;
   const selectedMonthLabel = resolveExpenseMonthLabel(selectedMonth);
   const ledgerCategoryOptions = buildExpenseLedgerCategoryOptions(
@@ -542,6 +602,12 @@ export default function ExpensesPage() {
             }
           />
         </section>
+
+        <ExpensesAuditPanel
+          audit={audit.data}
+          error={audit.error}
+          loading={audit.loading}
+        />
 
         <section className="animate-dashboard-rise">
           <div className="group relative overflow-hidden rounded-[28px] border border-danger/12 bg-[linear-gradient(145deg,rgba(28,18,20,0.94)_0%,rgba(16,11,14,0.98)_100%)] px-4 py-4 shadow-[0_18px_56px_rgba(28,8,12,0.26)] md:px-5">
