@@ -3,6 +3,7 @@ import { collectPaginatedItems } from "../pagination";
 import { EXPENSES_ROUTES } from "./expenses.routes";
 import type {
   CreateExpenseRequest,
+  ExpenseAuditResponse,
   ExpenseCategoryOptionResponse,
   ExpenseSummaryResponse,
   ListExpensesParams,
@@ -31,6 +32,20 @@ export async function getExpenseSummary(
   },
 ): Promise<ExpenseSummaryResponse> {
   return apiFetch<ExpenseSummaryResponse>(EXPENSES_ROUTES.summary(params), {
+    token,
+  });
+}
+
+export async function getExpenseAudit(
+  token: string,
+  params?: {
+    month?: number;
+    year?: number;
+    dateFrom?: string;
+    dateTo?: string;
+  },
+): Promise<ExpenseAuditResponse> {
+  return apiFetch<ExpenseAuditResponse>(EXPENSES_ROUTES.audit(params), {
     token,
   });
 }
