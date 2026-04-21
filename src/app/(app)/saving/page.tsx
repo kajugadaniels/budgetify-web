@@ -27,6 +27,7 @@ import type {
   UpdateSavingRequest,
 } from "@/lib/types/saving.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
+import { SavingDetailsDialog } from "./saving/saving-details-dialog";
 import { SavingDepositDialog } from "./saving/saving-deposit-dialog";
 import { SavingExpenseDialog } from "./saving/saving-expense-dialog";
 import { SavingFormDialog } from "./saving/saving-form-dialog";
@@ -35,6 +36,7 @@ import { SavingHistoryDialog } from "./saving/saving-history-dialog";
 import { SavingLedgerFilters } from "./saving/saving-ledger-filters";
 import type {
   SavingDepositDialogState,
+  SavingDetailsDialogState,
   SavingDepositFormValues,
   SavingFormDialogState,
   SavingFormValues,
@@ -89,6 +91,8 @@ export default function SavingPage() {
   const [formDialog, setFormDialog] = useState<SavingFormDialogState>(null);
   const [depositDialog, setDepositDialog] =
     useState<SavingDepositDialogState>(null);
+  const [detailsDialog, setDetailsDialog] =
+    useState<SavingDetailsDialogState>(null);
   const [withdrawalDialog, setWithdrawalDialog] =
     useState<SavingWithdrawalDialogState>(null);
   const [historyDialog, setHistoryDialog] =
@@ -256,6 +260,14 @@ export default function SavingPage() {
   function openDepositDialog(entry: SavingResponse) {
     setDepositForm(createSavingDepositFormFromEntry(entry));
     setDepositDialog({ entry });
+  }
+
+  function openDetailsDialog(entry: SavingResponse) {
+    setDetailsDialog({ entry });
+  }
+
+  function closeDetailsDialog() {
+    setDetailsDialog(null);
   }
 
   function closeDepositDialog() {
@@ -714,6 +726,7 @@ export default function SavingPage() {
             <SavingTable
               entries={pageEntries}
               onDelete={setDeleteTarget}
+              onDetails={openDetailsDialog}
               onEdit={openEditDialog}
               onDeposit={openDepositDialog}
               onWithdraw={openWithdrawalDialog}
@@ -755,6 +768,13 @@ export default function SavingPage() {
           onRemoveSource={removeDepositSource}
           onClose={closeDepositDialog}
           onSubmit={handleDeposit}
+        />
+      ) : null}
+
+      {detailsDialog ? (
+        <SavingDetailsDialog
+          entry={detailsDialog.entry}
+          onClose={closeDetailsDialog}
         />
       ) : null}
 
