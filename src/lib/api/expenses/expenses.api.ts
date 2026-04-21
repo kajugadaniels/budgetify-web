@@ -5,6 +5,8 @@ import type {
   CreateExpenseRequest,
   ExpenseCategoryOptionResponse,
   ListExpensesParams,
+  MobileMoneyQuoteRequest,
+  MobileMoneyQuoteResponse,
   ExpenseResponse,
   UpdateExpenseRequest,
 } from "../../types/expense.types";
@@ -41,6 +43,17 @@ export async function createExpense(
   body: CreateExpenseRequest,
 ): Promise<ExpenseResponse> {
   return apiFetch<ExpenseResponse>(EXPENSES_ROUTES.create, {
+    method: "POST",
+    token,
+    body,
+  });
+}
+
+export async function quoteMobileMoneyExpense(
+  token: string,
+  body: MobileMoneyQuoteRequest,
+): Promise<MobileMoneyQuoteResponse> {
+  return apiFetch<MobileMoneyQuoteResponse>(EXPENSES_ROUTES.mobileMoneyQuote, {
     method: "POST",
     token,
     body,
