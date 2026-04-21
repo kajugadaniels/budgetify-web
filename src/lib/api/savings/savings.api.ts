@@ -89,6 +89,20 @@ export async function createSavingWithdrawal(
   });
 }
 
+export async function reverseSavingDeposit(
+  token: string,
+  savingId: string,
+  transactionId: string,
+): Promise<SavingResponse> {
+  return apiFetch<SavingResponse>(
+    SAVINGS_ROUTES.reverseDeposit(savingId, transactionId),
+    {
+      method: "POST",
+      token,
+    },
+  );
+}
+
 export async function deleteSaving(token: string, id: string): Promise<void> {
   return apiFetch<void>(SAVINGS_ROUTES.byId(id), {
     method: "DELETE",
