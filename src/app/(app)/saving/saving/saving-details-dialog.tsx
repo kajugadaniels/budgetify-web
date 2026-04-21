@@ -141,14 +141,14 @@ export function SavingDetailsDialog({
               <button
                 type="button"
                 onClick={() => onDeposit(entry)}
-                className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/16"
+                className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/16"
               >
                 Add money
               </button>
               <button
                 type="button"
                 onClick={() => onWithdraw(entry)}
-                className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
+                className="rounded-full border border-danger/20 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16"
               >
                 Withdraw
               </button>
@@ -167,17 +167,17 @@ export function SavingDetailsDialog({
                 Edit
               </button>
             </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 sm:min-w-[140px]"
-              >
-                Close
-              </button>
-            </div>
           </section>
+
+          <div className="flex justify-end pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 sm:min-w-[140px]"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </Dialog>
