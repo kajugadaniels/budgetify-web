@@ -5,6 +5,7 @@ import type {
   ExpenseMobileMoneyNetwork,
   ExpenseMobileMoneyProvider,
   ExpensePaymentMethod,
+  ExpenseSummaryResponse,
   MobileMoneyQuoteResponse,
   ExpenseResponse,
 } from "@/lib/types/expense.types";
@@ -30,7 +31,17 @@ export interface ExpenseQuoteState {
   data: MobileMoneyQuoteResponse | null;
 }
 
+export interface ExpenseSummaryState {
+  loading: boolean;
+  error: string | null;
+  data: ExpenseSummaryResponse | null;
+}
+
 export type ExpenseFormDialogState =
   | { mode: "create" }
   | { mode: "edit"; entry: ExpenseResponse }
+  | null;
+
+export type ExpenseDetailsDialogState =
+  | { entry: ExpenseResponse }
   | null;
