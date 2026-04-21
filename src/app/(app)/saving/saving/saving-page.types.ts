@@ -6,10 +6,10 @@ import type {
 
 export interface SavingFormValues {
   label: string;
+  hasTarget: boolean;
   date: string;
   targetAmount: string;
   targetCurrency: Currency;
-  startDate: string;
   endDate: string;
   note: string;
 }
