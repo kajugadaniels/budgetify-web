@@ -10,6 +10,7 @@ import { ApiError } from "@/lib/api/client";
 import {
   createIncome,
   deleteIncome,
+  getIncomeById,
   getIncomeSummary,
   listIncome,
   listIncomePage,
@@ -25,9 +26,11 @@ import type {
 } from "@/lib/types/income.types";
 import { rwfCompact } from "@/lib/utils/currency";
 import { IncomeFormDialog } from "./income/income-form-dialog";
+import { IncomeDetailsDialog } from "./income/income-details-dialog";
 import { IncomeHeader } from "./income/income-header";
 import { IncomeLedgerFilters } from "./income/income-ledger-filters";
 import type {
+  IncomeDetailsDialogState,
   IncomeFormDialogState,
   IncomeFormValues,
   IncomeLedgerCategoryFilter,
@@ -67,6 +70,8 @@ export default function IncomePage() {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [formDialog, setFormDialog] = useState<IncomeFormDialogState>(null);
+  const [detailsDialog, setDetailsDialog] =
+    useState<IncomeDetailsDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<IncomeResponse | null>(null);
   const [form, setForm] = useState<IncomeFormValues>(() => createEmptyIncomeForm());
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
@@ -301,6 +306,28 @@ export default function IncomePage() {
   function closeFormDialog() {
     setFormDialog(null);
     setForm(createEmptyIncomeForm());
+  }
+
+  async function openDetailsDialog(entry: IncomeResponse) {
+    if (!token) return;
+
+    setDetailsDialog({ entry, detail: null, loading: true });
+
+    try {
+      const detail = await getIncomeById(token, entry.id);
+      setDetailsDialog({ entry, detail, loading: false });
+    } catch (detailError) {
+      toast.error(
+        detailError instanceof ApiError
+          ? detailError.message
+          : "Income details could not be loaded right now.",
+      );
+      setDetailsDialog(null);
+    }
+  }
+
+  function closeDetailsDialog() {
+    setDetailsDialog(null);
   }
 
   function updateForm(next: Partial<IncomeFormValues>) {
@@ -604,6 +631,7 @@ export default function IncomePage() {
               categories={categories}
               entries={pageEntries}
               onDelete={setDeleteTarget}
+              onDetails={openDetailsDialog}
               onEdit={openEditDialog}
               onRecordNextMonth={openRecordNextMonthDialog}
               onToggleReceived={handleToggleReceived}
@@ -630,6 +658,16 @@ export default function IncomePage() {
           onChange={updateForm}
           onClose={closeFormDialog}
           onSubmit={handleSubmit}
+        />
+      ) : null}
+
+      {detailsDialog ? (
+        <IncomeDetailsDialog
+          categories={categories}
+          detail={detailsDialog.detail}
+          entry={detailsDialog.entry}
+          loading={detailsDialog.loading}
+          onClose={closeDetailsDialog}
         />
       ) : null}
 
