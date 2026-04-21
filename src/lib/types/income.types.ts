@@ -58,6 +58,9 @@ export interface IncomeSavingAllocationResponse {
   currency: Currency;
   amountRwf: number;
   note: string | null;
+  isReversed: boolean;
+  isReversal: boolean;
+  reversedByTransactionId: string | null;
 }
 
 export interface IncomeDetailResponse extends IncomeResponse {
