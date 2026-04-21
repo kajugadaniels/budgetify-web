@@ -8,15 +8,22 @@ import { formatSavingDate } from "./saving.utils";
 interface SavingHistoryDialogProps {
   entry: SavingResponse;
   loading: boolean;
+  reversingTransactionId: string | null;
   transactions: SavingTransactionResponse[];
   onClose: () => void;
+  onReverseDeposit: (
+    entry: SavingResponse,
+    transaction: SavingTransactionResponse,
+  ) => void;
 }
 
 export function SavingHistoryDialog({
   entry,
   loading,
+  reversingTransactionId,
   transactions,
   onClose,
+  onReverseDeposit,
 }: SavingHistoryDialogProps) {
   return (
     <Dialog onClose={onClose} className="sm:max-w-4xl">
@@ -69,6 +76,22 @@ export function SavingHistoryDialog({
                 <p className="mt-3 text-sm text-text-secondary">
                   {transaction.note}
                 </p>
+              ) : null}
+
+              {transaction.type === "DEPOSIT" &&
+              transaction.incomeSources.length > 0 ? (
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onReverseDeposit(entry, transaction)}
+                    disabled={reversingTransactionId === transaction.id}
+                    className="rounded-full border border-danger/25 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/16 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {reversingTransactionId === transaction.id
+                      ? "Reversing..."
+                      : "Reverse allocation"}
+                  </button>
+                </div>
               ) : null}
 
               {transaction.incomeSources.length > 0 ? (
