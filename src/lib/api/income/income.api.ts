@@ -6,6 +6,7 @@ import type {
   IncomeCategoryOptionResponse,
   ListIncomeParams,
   IncomeResponse,
+  IncomeSummaryResponse,
   UpdateIncomeRequest,
 } from "../../types/income.types";
 import type { PaginatedResponse } from "../../types/pagination.types";
@@ -34,6 +35,15 @@ export async function listIncome(
   return collectPaginatedItems((pagination) =>
     listIncomePage(token, { ...params, ...pagination }),
   );
+}
+
+export async function getIncomeSummary(
+  token: string,
+  params?: Pick<ListIncomeParams, "month" | "year" | "dateFrom" | "dateTo">,
+): Promise<IncomeSummaryResponse> {
+  return apiFetch<IncomeSummaryResponse>(INCOME_ROUTES.summary(params), {
+    token,
+  });
 }
 
 export async function createIncome(
