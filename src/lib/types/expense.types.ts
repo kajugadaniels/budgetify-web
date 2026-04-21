@@ -112,6 +112,21 @@ export interface ExpenseSummaryResponse {
   expenseCount: number;
 }
 
+export interface ExpenseAuditResponse {
+  periodStartDate: string | null;
+  periodEndDate: string | null;
+  totalBaseExpensesRwf: number;
+  totalPaymentFeesRwf: number;
+  totalChargedExpensesRwf: number;
+  expenseCount: number;
+  feeBearingExpenseCount: number;
+  availableMoneyBeforeExpensesRwf: number;
+  availableMoneyAfterExpensesRwf: number;
+  recomputedAvailableMoneyAfterExpensesRwf: number;
+  reconciliationDifferenceRwf: number;
+  isBalanced: boolean;
+}
+
 export interface ListExpensesParams {
   month?: number;
   year?: number;
