@@ -3,6 +3,7 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useAuth } from "@/hooks/use-auth";
@@ -78,6 +79,10 @@ export default function IncomePage() {
     useState<IncomeDetailsDialogState>(null);
   const [pendingAllocationReversal, setPendingAllocationReversal] = useState<{
     allocation: IncomeSavingAllocationResponse;
+    entry: IncomeResponse;
+  } | null>(null);
+  const [blockedIncomeAction, setBlockedIncomeAction] = useState<{
+    action: "edit" | "delete";
     entry: IncomeResponse;
   } | null>(null);
   const [reversingAllocationId, setReversingAllocationId] = useState<string | null>(null);
@@ -323,14 +328,31 @@ export default function IncomePage() {
     setForm(createEmptyIncomeForm());
   }
 
-  async function openDetailsDialog(entry: IncomeResponse) {
+  async function openDetailsDialog(
+    entry: IncomeResponse,
+    options?: { highlightFirstActiveAllocation?: boolean },
+  ) {
     if (!token) return;
 
-    setDetailsDialog({ entry, detail: null, loading: true });
+    setDetailsDialog({
+      entry,
+      detail: null,
+      highlightAllocationId: null,
+      loading: true,
+    });
 
     try {
       const detail = await getIncomeById(token, entry.id);
-      setDetailsDialog({ entry, detail, loading: false });
+      const highlightAllocationId = options?.highlightFirstActiveAllocation
+        ? detail.savingAllocations.find((allocation) => !allocation.isReversed)
+            ?.id ?? null
+        : null;
+      setDetailsDialog({
+        entry: detail,
+        detail,
+        highlightAllocationId,
+        loading: false,
+      });
     } catch (detailError) {
       toast.error(
         detailError instanceof ApiError
@@ -345,6 +367,23 @@ export default function IncomePage() {
     setDetailsDialog(null);
     setReversingAllocationId(null);
     setPendingAllocationReversal(null);
+  }
+
+  function openBlockedIncomeRecovery(
+    entry: IncomeResponse,
+    action: "edit" | "delete",
+  ) {
+    setBlockedIncomeAction({ action, entry });
+  }
+
+  async function handleOpenRecoveryDetails() {
+    if (!blockedIncomeAction) {
+      return;
+    }
+
+    const { entry } = blockedIncomeAction;
+    setBlockedIncomeAction(null);
+    await openDetailsDialog(entry, { highlightFirstActiveAllocation: true });
   }
 
   function requestReverseAllocation(
@@ -705,6 +744,7 @@ export default function IncomePage() {
               onDetails={openDetailsDialog}
               onEdit={openEditDialog}
               onRecordNextMonth={openRecordNextMonthDialog}
+              onRecover={openBlockedIncomeRecovery}
               onToggleReceived={handleToggleReceived}
             />
           )}
@@ -726,6 +766,12 @@ export default function IncomePage() {
           entry={formDialog.mode === "edit" ? formDialog.entry : undefined}
           form={form}
           mode={formDialog.mode}
+          onOpenRecovery={async (entry) => {
+            closeFormDialog();
+            await openDetailsDialog(entry, {
+              highlightFirstActiveAllocation: true,
+            });
+          }}
           saving={saving}
           onChange={updateForm}
           onClose={closeFormDialog}
@@ -738,11 +784,54 @@ export default function IncomePage() {
           categories={categories}
           detail={detailsDialog.detail}
           entry={detailsDialog.entry}
+          highlightAllocationId={detailsDialog.highlightAllocationId}
           loading={detailsDialog.loading}
           reversingAllocationId={reversingAllocationId}
           onClose={closeDetailsDialog}
           onReverseAllocation={requestReverseAllocation}
         />
+      ) : null}
+
+      {blockedIncomeAction ? (
+        <Dialog onClose={() => setBlockedIncomeAction(null)} className="sm:max-w-lg">
+          <h2 className="mb-2 text-lg font-semibold tracking-heading-sm text-text-primary">
+            {blockedIncomeAction.action === "delete"
+              ? "This income cannot be deleted yet"
+              : "Some income changes are blocked"}
+          </h2>
+          <p className="text-sm leading-6 text-text-secondary">
+            {blockedIncomeAction.entry.label} already funds one or more saving
+            buckets. To {blockedIncomeAction.action}, first reverse the linked
+            saving allocation so this income becomes free again.
+          </p>
+          <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/56">
+              Allocated now
+            </p>
+            <p className="mt-2 text-sm font-semibold text-text-primary">
+              {rwfCompact(blockedIncomeAction.entry.allocatedToSavingsRwf)} moved to savings
+            </p>
+            <p className="mt-1 text-sm text-text-secondary">
+              {rwfCompact(blockedIncomeAction.entry.remainingAvailableRwf)} still free
+            </p>
+          </div>
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setBlockedIncomeAction(null)}
+              className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleOpenRecoveryDetails()}
+              className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+            >
+              Review allocations
+            </button>
+          </div>
+        </Dialog>
       ) : null}
 
       {pendingAllocationReversal ? (
