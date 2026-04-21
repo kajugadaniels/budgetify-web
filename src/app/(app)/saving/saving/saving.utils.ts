@@ -163,39 +163,6 @@ export function formatSavingTimeframe(entry: SavingResponse): string {
   return parts.length > 0 ? parts.join(" ") : `${entry.timeframeDays}d`;
 }
 
-export function isReversalNote(note: string | null): boolean {
-  const normalized = note?.toLowerCase().trim();
-
-  if (!normalized) {
-    return false;
-  }
-
-  return (
-    normalized.includes("reversal of deposit") ||
-    normalized.includes("deposit reversed on") ||
-    normalized.includes("[reversal recorded")
-  );
-}
-
-export function resolveSavingAuditLabel(
-  type: "DEPOSIT" | "WITHDRAWAL" | "ADJUSTMENT",
-  note: string | null,
-): string | null {
-  if (!isReversalNote(note)) {
-    return null;
-  }
-
-  if (type === "WITHDRAWAL") {
-    return "Reversal withdrawal";
-  }
-
-  if (type === "DEPOSIT") {
-    return "Reversed deposit";
-  }
-
-  return "Reversal";
-}
-
 function getMonthDefaultDate(month: number, year: number): string {
   const currentMonth = getCurrentMonthIndex();
   const currentYear = getCurrentYear();
