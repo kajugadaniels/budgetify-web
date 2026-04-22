@@ -137,6 +137,26 @@ export default function ExpensesPage() {
       return;
     }
 
+    if (!form.mobileMoneyProvider || !form.mobileMoneyChannel) {
+      setQuote({ loading: false, error: null, data: null });
+      return;
+    }
+
+    const mobileMoneyProvider = form.mobileMoneyProvider;
+    const mobileMoneyChannel = form.mobileMoneyChannel;
+    if (
+      mobileMoneyChannel === "P2P_TRANSFER" &&
+      !form.mobileMoneyNetwork
+    ) {
+      setQuote({ loading: false, error: null, data: null });
+      return;
+    }
+
+    const mobileMoneyNetwork =
+      mobileMoneyChannel === "P2P_TRANSFER"
+        ? form.mobileMoneyNetwork || undefined
+        : undefined;
+
     let ignore = false;
     setQuote((current) => ({ ...current, loading: true, error: null }));
 
@@ -145,10 +165,10 @@ export default function ExpensesPage() {
         const response = await quoteMobileMoneyExpense(token, {
           amount,
           currency: form.currency,
-          mobileMoneyProvider: form.mobileMoneyProvider,
-          mobileMoneyChannel: form.mobileMoneyChannel,
-          ...(form.mobileMoneyChannel === "P2P_TRANSFER"
-            ? { mobileMoneyNetwork: form.mobileMoneyNetwork }
+          mobileMoneyProvider,
+          mobileMoneyChannel,
+          ...(mobileMoneyChannel === "P2P_TRANSFER"
+            ? { mobileMoneyNetwork }
             : {}),
         });
 
@@ -505,6 +525,20 @@ export default function ExpensesPage() {
       return;
     }
 
+    const mobileMoneyChannel =
+      form.paymentMethod === "MOBILE_MONEY"
+        ? form.mobileMoneyChannel || undefined
+        : undefined;
+    const mobileMoneyProvider =
+      form.paymentMethod === "MOBILE_MONEY"
+        ? form.mobileMoneyProvider || undefined
+        : undefined;
+    const mobileMoneyNetwork =
+      form.paymentMethod === "MOBILE_MONEY" &&
+      form.mobileMoneyChannel === "P2P_TRANSFER"
+        ? form.mobileMoneyNetwork || undefined
+        : undefined;
+
     const payload: CreateExpenseRequest = {
       label: form.label.trim(),
       amount,
@@ -513,10 +547,10 @@ export default function ExpensesPage() {
       paymentMethod: form.paymentMethod,
       ...(form.paymentMethod === "MOBILE_MONEY"
         ? {
-            mobileMoneyChannel: form.mobileMoneyChannel,
-            mobileMoneyProvider: form.mobileMoneyProvider,
-            ...(form.mobileMoneyChannel === "P2P_TRANSFER"
-              ? { mobileMoneyNetwork: form.mobileMoneyNetwork }
+            mobileMoneyChannel,
+            mobileMoneyProvider,
+            ...(mobileMoneyChannel === "P2P_TRANSFER"
+              ? { mobileMoneyNetwork }
               : {}),
           }
         : {}),
