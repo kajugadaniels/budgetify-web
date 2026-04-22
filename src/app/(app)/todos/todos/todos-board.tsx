@@ -7,6 +7,7 @@ interface TodosBoardProps {
   entries: TodoResponse[];
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
+  onOpenExpense: (expenseId: string) => void;
   onOpenGallery: (todoId: string, index: number) => void;
   onRecordExpense: (entry: TodoResponse) => void;
   onToggleDone: (entry: TodoResponse) => void;
@@ -18,6 +19,7 @@ export function TodosBoard({
   entries,
   onDelete,
   onEdit,
+  onOpenExpense,
   onOpenGallery,
   onRecordExpense,
   onToggleDone,
@@ -44,6 +46,7 @@ export function TodosBoard({
         entries={entries}
         onDelete={onDelete}
         onEdit={onEdit}
+        onOpenExpense={onOpenExpense}
         onOpenGallery={onOpenGallery}
         onRecordExpense={onRecordExpense}
         onToggleDone={onToggleDone}
