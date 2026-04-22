@@ -54,9 +54,17 @@ export interface ExpenseResponse {
   category: ExpenseCategory;
   date: string;
   note: string | null;
+  linkedTodo: ExpenseLinkedTodoSummary | null;
   createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ExpenseLinkedTodoSummary {
+  todoId: string;
+  todoName: string;
+  recordingId: string;
+  occurrenceDate: string;
 }
 
 export interface CreateExpenseRequest {
