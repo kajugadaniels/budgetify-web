@@ -6,9 +6,10 @@ import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
 import type {
   TodoFrequency,
   TodoResponse,
+  TodoStatus,
 } from "@/lib/types/todo.types";
 import type {
-  TodoBoardDoneFilter,
+  TodoBoardStatusFilter,
   TodoBoardPriorityFilter,
   TodoExpenseFormValues,
   TodoFormValues,
@@ -33,7 +34,7 @@ export function createEmptyTodoForm(): TodoFormValues {
     name: "",
     price: "",
     priority: "TOP_PRIORITY",
-    done: false,
+    status: "ACTIVE",
     frequency: "ONCE",
     startDate,
     endDate: computeTodoEndDate(startDate, "ONCE"),
@@ -53,7 +54,7 @@ export function createTodoFormFromEntry(entry: TodoResponse): TodoFormValues {
     name: entry.name,
     price: String(entry.price),
     priority: entry.priority,
-    done: entry.done,
+    status: entry.status,
     frequency: entry.frequency,
     startDate,
     endDate,
@@ -173,18 +174,16 @@ export function filterTodos(
   entries: TodoResponse[],
   filters: {
     priority: TodoBoardPriorityFilter;
-    done: TodoBoardDoneFilter;
+    status: TodoBoardStatusFilter;
   },
 ): TodoResponse[] {
   return entries.filter((entry) => {
     const priorityMatches =
       filters.priority === "ALL" || entry.priority === filters.priority;
-    const doneMatches =
-      filters.done === "ALL" ||
-      (filters.done === "DONE" && entry.done) ||
-      (filters.done === "NOT_DONE" && !entry.done);
+    const statusMatches =
+      filters.status === "ALL" || entry.status === filters.status;
 
-    return priorityMatches && doneMatches;
+    return priorityMatches && statusMatches;
   });
 }
 
@@ -291,15 +290,19 @@ export function getSuggestedTodoExpenseAmount(
 export function canRecordTodoExpense(
   entry: Pick<
     TodoResponse,
-    "done" | "frequency" | "remainingAmount" | "occurrenceDates" | "recordedOccurrenceDates"
+    "status" | "frequency" | "remainingAmount" | "occurrenceDates" | "recordedOccurrenceDates"
   >,
 ): boolean {
-  if (entry.done) {
+  if (
+    entry.status === "COMPLETED" ||
+    entry.status === "SKIPPED" ||
+    entry.status === "ARCHIVED"
+  ) {
     return false;
   }
 
   if (!isRecurringTodo(entry)) {
-    return true;
+    return entry.status !== "RECORDED";
   }
 
   return (
@@ -334,6 +337,30 @@ export function formatTodoScheduleSummary(entry: Pick<
 
   const remainingCount = getRemainingOccurrenceDates(entry).length;
   return `${entry.occurrenceDates.length} planned · ${remainingCount} left`;
+}
+
+export function resolveTodoStatusLabel(status: TodoStatus): string {
+  switch (status) {
+    case "RECORDED":
+      return "Recorded";
+    case "COMPLETED":
+      return "Completed";
+    case "SKIPPED":
+      return "Skipped";
+    case "ARCHIVED":
+      return "Archived";
+    case "ACTIVE":
+    default:
+      return "Active";
+  }
+}
+
+export function isClosedTodoStatus(status: TodoStatus): boolean {
+  return (
+    status === "COMPLETED" ||
+    status === "SKIPPED" ||
+    status === "ARCHIVED"
+  );
 }
 
 export function getTodayDateValue(): string {
