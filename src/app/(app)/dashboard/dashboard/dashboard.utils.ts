@@ -8,7 +8,11 @@ import type { IncomeResponse } from "@/lib/types/income.types";
 import type { LoanResponse } from "@/lib/types/loan.types";
 import type { PartnershipResponse } from "@/lib/types/partnership.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
-import type { TodoResponse } from "@/lib/types/todo.types";
+import type {
+  TodoResponse,
+  TodoSummaryResponse,
+  TodoUpcomingResponse,
+} from "@/lib/types/todo.types";
 import type { UserProfileResponse } from "@/lib/types/user.types";
 
 export const CURRENT_YEAR = new Date().getFullYear();
@@ -252,12 +256,21 @@ export function sumTodoAmounts(
   options?: { pendingOnly?: boolean },
 ): number {
   return entries.reduce((sum, entry) => {
-    if (options?.pendingOnly && entry.done) {
+    if (
+      options?.pendingOnly &&
+      (entry.status === "COMPLETED" ||
+        entry.status === "SKIPPED" ||
+        entry.status === "ARCHIVED")
+    ) {
       return sum;
     }
 
     return sum + Number(entry.price);
   }, 0);
+}
+
+export function getOpenTodoPlannedTotal(summary: TodoSummaryResponse | null): number {
+  return summary?.openPlannedTotal ?? 0;
 }
 
 export function buildDashboardTodoAdviserSummary(
@@ -328,7 +341,12 @@ export function buildUpcomingTodoSchedule(
   );
 
   entries
-    .filter((entry) => !entry.done)
+    .filter(
+      (entry) =>
+        entry.status !== "COMPLETED" &&
+        entry.status !== "SKIPPED" &&
+        entry.status !== "ARCHIVED",
+    )
     .forEach((entry) => {
       const remainingDates = entry.occurrenceDates
         .filter((date) => !entry.recordedOccurrenceDates.includes(date))
@@ -381,6 +399,69 @@ export function buildUpcomingTodoSchedule(
     totalAmount: roundDashboardCurrency(
       days.reduce((sum, day) => sum + day.totalAmount, 0),
     ),
+  };
+}
+
+export function buildDashboardTodoAdviserSummaryFromUpcoming(
+  upcoming: TodoUpcomingResponse | null,
+): DashboardTodoAdviserSummary {
+  if (!upcoming) {
+    return {
+      items: [],
+      targetAmount: 0,
+      usedAmount: 0,
+      remainingAmount: 0,
+    };
+  }
+
+  const items: DashboardTodoAdviserItem[] = upcoming.reserveSummary.items
+    .filter(
+      (item) => item.frequency === "WEEKLY" || item.frequency === "MONTHLY",
+    )
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      frequency: item.frequency as "WEEKLY" | "MONTHLY",
+      remainingOccurrenceCount: item.remainingOccurrenceCount,
+      targetAmount: item.targetAmount,
+      usedAmount: item.usedAmount,
+      remainingAmount: item.remainingAmount,
+    }));
+
+  return {
+    items,
+    targetAmount: upcoming.reserveSummary.targetAmount,
+    usedAmount: upcoming.reserveSummary.usedAmount,
+    remainingAmount: upcoming.reserveSummary.remainingAmount,
+  };
+}
+
+export function buildUpcomingTodoScheduleFromUpcoming(
+  upcoming: TodoUpcomingResponse | null,
+): DashboardUpcomingTodoScheduleSummary {
+  if (!upcoming) {
+    return {
+      days: [],
+      daysWithPlans: 0,
+      occurrenceCount: 0,
+      totalAmount: 0,
+    };
+  }
+
+  return {
+    days: upcoming.days.map((day) => ({
+      date: day.date,
+      totalAmount: roundDashboardCurrency(day.totalAmount),
+      items: day.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        frequency: item.frequency,
+        amount: roundDashboardCurrency(item.amount),
+      })),
+    })),
+    daysWithPlans: upcoming.daysWithPlans,
+    occurrenceCount: upcoming.occurrenceCount,
+    totalAmount: roundDashboardCurrency(upcoming.totalScheduledAmount),
   };
 }
 
@@ -571,7 +652,9 @@ function isRecurringAdviserTodo(
   entry: TodoResponse,
 ): entry is TodoResponse & { frequency: "WEEKLY" | "MONTHLY" } {
   return (
-    !entry.done &&
+    entry.status !== "COMPLETED" &&
+    entry.status !== "SKIPPED" &&
+    entry.status !== "ARCHIVED" &&
     (entry.frequency === "WEEKLY" || entry.frequency === "MONTHLY")
   );
 }
