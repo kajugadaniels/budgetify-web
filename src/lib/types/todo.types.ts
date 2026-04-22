@@ -1,5 +1,6 @@
 import type { CreatedBySummary } from "./created-by.types";
 import type {
+  CreateExpenseRequest,
   ExpenseCategory,
   ExpenseMobileMoneyChannel,
   ExpenseMobileMoneyNetwork,
@@ -56,9 +57,11 @@ export interface TodoRecordingResponse {
   todoId: string;
   expenseId: string | null;
   occurrenceDate: string;
+  plannedAmount: number;
   baseAmount: number;
   feeAmount: number;
   totalChargedAmount: number;
+  varianceAmount: number;
   paymentMethod: ExpensePaymentMethod;
   mobileMoneyChannel: ExpenseMobileMoneyChannel | null;
   mobileMoneyNetwork: ExpenseMobileMoneyNetwork | null;
@@ -146,6 +149,10 @@ export interface TodoUpcomingResponse {
 export interface CreateTodoRecordingRequest {
   expenseId: string;
   occurrenceDate: string;
+}
+
+export interface CreateTodoExpenseRequest extends CreateExpenseRequest {
+  occurrenceDate?: string;
 }
 
 export interface CreateTodoRequest {
