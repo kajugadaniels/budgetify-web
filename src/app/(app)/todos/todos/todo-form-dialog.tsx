@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PRIORITY_META } from "@/constant/todos/priority-meta";
-import type { TodoResponse } from "@/lib/types/todo.types";
+import type { TodoResponse, TodoStatus } from "@/lib/types/todo.types";
 import { cn } from "@/lib/utils/cn";
 import { TodoImageCarousel } from "./todo-image-carousel";
 import { TodoImageDropzone } from "./todo-image-dropzone";
@@ -20,9 +20,12 @@ const FREQUENCY_OPTIONS = [
   { value: "YEARLY", label: "Yearly" },
 ] as const;
 
-const DONE_STATE_OPTIONS = [
-  { value: false, label: "Not done" },
-  { value: true, label: "Done" },
+const STATUS_OPTIONS: Array<{ value: TodoStatus; label: string }> = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "RECORDED", label: "Recorded" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "SKIPPED", label: "Skipped" },
+  { value: "ARCHIVED", label: "Archived" },
 ] as const;
 
 const STEP_META = [
@@ -30,7 +33,7 @@ const STEP_META = [
     step: 0 as const,
     eyebrow: "Step 1",
     title: "Core",
-    description: "Name, amount, and state.",
+    description: "Name, amount, and status.",
   },
   {
     step: 1 as const,
@@ -251,23 +254,25 @@ export function TodoFormWizard({
                   </div>
                 </Field>
 
-                <Field label="Progress" className="mt-3">
+                <Field label="Status" className="mt-3">
                   <div className="grid grid-cols-2 gap-2">
-                    {DONE_STATE_OPTIONS.map((option) => {
-                      const selected = form.done === option.value;
+                    {STATUS_OPTIONS.map((option) => {
+                      const selected = form.status === option.value;
 
                       return (
                         <button
                           key={option.label}
                           type="button"
                           aria-pressed={selected}
-                          onClick={() => onChange({ done: option.value })}
+                          onClick={() => onChange({ status: option.value })}
                           className={cn(
                             "inline-flex items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
                             selected
-                              ? option.value
+                              ? option.value === "COMPLETED"
                                 ? "border-success bg-success text-background"
-                                : "border-danger bg-danger text-background"
+                                : option.value === "ACTIVE"
+                                  ? "border-primary bg-primary text-background"
+                                  : "border-warning bg-warning text-background"
                               : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
                           )}
                         >
