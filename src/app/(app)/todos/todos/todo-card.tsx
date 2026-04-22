@@ -34,6 +34,7 @@ export function TodoCard({
   const meta = PRIORITY_META[entry.priority];
   const recurring = isRecurringTodo(entry);
   const canRecord = canRecordTodoExpense(entry);
+  const latestRecording = entry.recordings[0] ?? null;
   const remainingShare =
     recurring && entry.remainingAmount !== null && entry.price > 0
       ? Math.max(
@@ -80,6 +81,11 @@ export function TodoCard({
               >
                 {busyDone ? "Updating..." : entry.done ? "Done" : "Not done"}
               </button>
+              {entry.recordingCount > 0 ? (
+                <span className="inline-flex rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary">
+                  {entry.recordingCount} recorded
+                </span>
+              ) : null}
             </div>
             <p className="mt-3 truncate text-lg font-semibold tracking-heading-sm text-text-primary">
               {entry.name}
@@ -115,6 +121,30 @@ export function TodoCard({
                 className="h-full rounded-full bg-[linear-gradient(90deg,rgba(199,191,167,0.42),rgba(199,191,167,1),rgba(228,192,99,0.64))]"
                 style={{ width: `${remainingShare}%` }}
               />
+            </div>
+          </div>
+        ) : null}
+
+        {latestRecording ? (
+          <div className="mt-4 rounded-[18px] border border-primary/12 bg-primary/6 px-3.5 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary/70">
+                  Latest recording
+                </p>
+                <p className="mt-1 text-sm font-semibold text-text-primary">
+                  {rwf(latestRecording.totalChargedAmount)} charged on{" "}
+                  {latestRecording.occurrenceDate}
+                </p>
+              </div>
+              <div className="text-right text-xs text-text-secondary">
+                <p>{latestRecording.paymentMethod.replaceAll("_", " ")}</p>
+                <p>
+                  {latestRecording.feeAmount > 0
+                    ? `Fee ${rwf(latestRecording.feeAmount)}`
+                    : "No fee"}
+                </p>
+              </div>
             </div>
           </div>
         ) : null}
