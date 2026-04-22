@@ -14,6 +14,7 @@ import {
   quoteMobileMoneyExpense,
 } from "@/lib/api/expenses/expenses.api";
 import {
+  createTodoRecording,
   deleteTodo,
   listTodos,
   listTodosPage,
@@ -248,6 +249,12 @@ export default function TodosPage() {
       return;
     }
 
+    const mobileMoneyChannel = expenseForm.mobileMoneyChannel;
+    const mobileMoneyNetwork =
+      mobileMoneyChannel === "P2P_TRANSFER"
+        ? expenseForm.mobileMoneyNetwork || undefined
+        : undefined;
+
     let ignore = false;
     setExpenseQuote((current) => ({ ...current, loading: true, error: null }));
 
@@ -256,9 +263,9 @@ export default function TodosPage() {
         const response = await quoteMobileMoneyExpense(token, {
           amount,
           mobileMoneyProvider: "MTN_RWANDA",
-          mobileMoneyChannel: expenseForm.mobileMoneyChannel,
-          ...(expenseForm.mobileMoneyChannel === "P2P_TRANSFER"
-            ? { mobileMoneyNetwork: expenseForm.mobileMoneyNetwork }
+          mobileMoneyChannel,
+          ...(mobileMoneyChannel === "P2P_TRANSFER"
+            ? { mobileMoneyNetwork }
             : {}),
         });
 
@@ -505,7 +512,17 @@ export default function TodosPage() {
     let expenseCreated = false;
 
     try {
-      await createExpense(token, {
+      const mobileMoneyChannel =
+        expenseForm.paymentMethod === "MOBILE_MONEY"
+          ? expenseForm.mobileMoneyChannel || undefined
+          : undefined;
+      const mobileMoneyNetwork =
+        expenseForm.paymentMethod === "MOBILE_MONEY" &&
+        expenseForm.mobileMoneyChannel === "P2P_TRANSFER"
+          ? expenseForm.mobileMoneyNetwork || undefined
+          : undefined;
+
+      const createdExpense = await createExpense(token, {
         label: expenseDialog.entry.name.trim(),
         amount,
         category: expenseForm.category,
@@ -513,9 +530,9 @@ export default function TodosPage() {
         ...(expenseForm.paymentMethod === "MOBILE_MONEY"
           ? {
               mobileMoneyProvider: "MTN_RWANDA" as const,
-              mobileMoneyChannel: expenseForm.mobileMoneyChannel,
-              ...(expenseForm.mobileMoneyChannel === "P2P_TRANSFER"
-                ? { mobileMoneyNetwork: expenseForm.mobileMoneyNetwork }
+              mobileMoneyChannel,
+              ...(mobileMoneyChannel === "P2P_TRANSFER"
+                ? { mobileMoneyNetwork }
                 : {}),
             }
           : {}),
@@ -523,16 +540,10 @@ export default function TodosPage() {
       });
       expenseCreated = true;
 
-      if (expenseDialog.entry.frequency === "ONCE") {
-        await updateTodo(token, expenseDialog.entry.id, {
-          done: true,
-        });
-      } else {
-        await updateTodo(token, expenseDialog.entry.id, {
-          deductAmount: chargedAmount,
-          recordedOccurrenceDate: expenseForm.date,
-        });
-      }
+      await createTodoRecording(token, expenseDialog.entry.id, {
+        expenseId: createdExpense.id,
+        occurrenceDate: expenseForm.date,
+      });
       triggerRefresh();
       closeExpenseDialog();
       toast.success(
