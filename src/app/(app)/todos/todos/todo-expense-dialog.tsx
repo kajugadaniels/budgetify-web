@@ -3,7 +3,10 @@
 import { useRef, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { PRIORITY_META } from "@/constant/todos/priority-meta";
-import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
+import type {
+  ExpenseCategoryOptionResponse,
+  MobileMoneyQuoteResponse,
+} from "@/lib/types/expense.types";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { cn } from "@/lib/utils/cn";
 import { rwf } from "@/lib/utils/currency";
@@ -58,6 +61,9 @@ interface TodoExpenseDialogProps {
   categories: ExpenseCategoryOptionResponse[];
   entry: TodoResponse;
   form: TodoExpenseFormValues;
+  quote: MobileMoneyQuoteResponse | null;
+  quoteError: string | null;
+  quoteLoading: boolean;
   saving: boolean;
   onChange: (next: Partial<TodoExpenseFormValues>) => void;
   onClose: () => void;
@@ -68,6 +74,9 @@ export function TodoExpenseDialog({
   categories,
   entry,
   form,
+  quote,
+  quoteError,
+  quoteLoading,
   saving,
   onChange,
   onClose,
@@ -378,6 +387,37 @@ export function TodoExpenseDialog({
                   label="Amount"
                   value={form.amount.trim() ? rwf(Number(form.amount)) : "—"}
                 />
+                <MiniStat
+                  label="Fee"
+                  value={
+                    mobileMoney
+                      ? quoteLoading
+                        ? "Calculating..."
+                        : quote
+                          ? rwf(quote.feeAmount)
+                          : (quoteError ?? "—")
+                      : rwf(0)
+                  }
+                  valueClassName={mobileMoney ? "text-primary" : undefined}
+                />
+                <MiniStat
+                  label="Total charged"
+                  value={
+                    mobileMoney
+                      ? quoteLoading
+                        ? "Calculating..."
+                        : quote
+                          ? rwf(quote.totalAmountRwf)
+                          : (quoteError ?? "—")
+                      : form.amount.trim()
+                        ? rwf(Number(form.amount))
+                        : "—"
+                  }
+                  valueClassName="text-primary"
+                />
+              </section>
+
+              <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-3")}>
                 <MiniStat
                   label="Category"
                   value={
