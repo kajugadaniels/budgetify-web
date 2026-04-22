@@ -280,7 +280,25 @@ export default function TodosPage() {
   }
 
   function updateExpenseForm(next: Partial<TodoExpenseFormValues>) {
-    setExpenseForm((current) => ({ ...current, ...next }));
+    setExpenseForm((current) => {
+      const merged = { ...current, ...next };
+
+      if (next.paymentMethod === "MOBILE_MONEY") {
+        merged.mobileMoneyChannel = current.mobileMoneyChannel || "P2P_TRANSFER";
+        merged.mobileMoneyNetwork = current.mobileMoneyNetwork || "ON_NET";
+      }
+
+      if (next.paymentMethod && next.paymentMethod !== "MOBILE_MONEY") {
+        merged.mobileMoneyChannel = "";
+        merged.mobileMoneyNetwork = "";
+      }
+
+      if (next.mobileMoneyChannel === "MERCHANT_CODE") {
+        merged.mobileMoneyNetwork = "ON_NET";
+      }
+
+      return merged;
+    });
   }
 
   function openGallery(todoId: string, index: number) {
@@ -354,11 +372,29 @@ export default function TodosPage() {
 
     if (
       expenseForm.category === "" ||
+      expenseForm.paymentMethod === "" ||
       Number.isNaN(amount) ||
       amount <= 0 ||
       !expenseForm.date
     ) {
-      toast.error("Choose a category, amount, and date before recording.");
+      toast.error("Choose a category, payment method, amount, and date before recording.");
+      return;
+    }
+
+    if (
+      expenseForm.paymentMethod === "MOBILE_MONEY" &&
+      expenseForm.mobileMoneyChannel === ""
+    ) {
+      toast.error("Choose a mobile money transfer type before recording.");
+      return;
+    }
+
+    if (
+      expenseForm.paymentMethod === "MOBILE_MONEY" &&
+      expenseForm.mobileMoneyChannel === "P2P_TRANSFER" &&
+      expenseForm.mobileMoneyNetwork === ""
+    ) {
+      toast.error("Choose a mobile money network before recording.");
       return;
     }
 
@@ -381,6 +417,16 @@ export default function TodosPage() {
         label: expenseDialog.entry.name.trim(),
         amount,
         category: expenseForm.category,
+        paymentMethod: expenseForm.paymentMethod,
+        ...(expenseForm.paymentMethod === "MOBILE_MONEY"
+          ? {
+              mobileMoneyProvider: "MTN_RWANDA" as const,
+              mobileMoneyChannel: expenseForm.mobileMoneyChannel,
+              ...(expenseForm.mobileMoneyChannel === "P2P_TRANSFER"
+                ? { mobileMoneyNetwork: expenseForm.mobileMoneyNetwork }
+                : {}),
+            }
+          : {}),
         date: expenseForm.date,
       });
       expenseCreated = true;
