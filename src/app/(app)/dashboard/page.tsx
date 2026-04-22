@@ -13,7 +13,7 @@ import { listIncome } from "@/lib/api/income/income.api";
 import { listLoans } from "@/lib/api/loans/loans.api";
 import { getMyPartnership } from "@/lib/api/partnerships/partnerships.api";
 import { listSavings } from "@/lib/api/savings/savings.api";
-import { listTodos } from "@/lib/api/todos/todos.api";
+import { getTodoSummary, getTodoUpcoming } from "@/lib/api/todos/todos.api";
 import type {
   ExpenseCategoryOptionResponse,
   ExpenseResponse,
@@ -22,7 +22,7 @@ import type { IncomeResponse } from "@/lib/types/income.types";
 import type { LoanResponse } from "@/lib/types/loan.types";
 import type { PartnershipResponse } from "@/lib/types/partnership.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
-import type { TodoResponse } from "@/lib/types/todo.types";
+import type { TodoSummaryResponse, TodoUpcomingResponse } from "@/lib/types/todo.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardExpenseCategoriesChart } from "./dashboard/dashboard-expense-categories-chart";
@@ -39,18 +39,18 @@ import { DashboardUpcomingTodoSchedule } from "./dashboard/dashboard-upcoming-to
 import {
   buildDashboardMonthComparisonSummary,
   buildDashboardPartnerActivitySummary,
-  buildDashboardTodoAdviserSummary,
+  buildDashboardTodoAdviserSummaryFromUpcoming,
   buildDailyExpenseCategoryData,
   buildTopSpendingCategoriesSummary,
-  buildUpcomingTodoSchedule,
+  buildUpcomingTodoScheduleFromUpcoming,
   buildMonthlyBarChartData,
   CURRENT_YEAR,
   filterEntriesByMonth,
   formatDashboardMonthLabel,
+  getOpenTodoPlannedTotal,
   sumExpenseAmounts,
   sumIncomeAmounts,
   sumSavingAmounts,
-  sumTodoAmounts,
 } from "./dashboard/dashboard.utils";
 
 const CURRENT_MONTH = new Date().getMonth();
@@ -67,7 +67,8 @@ export default function DashboardPage() {
   const [allIncome, setAllIncome] = useState<IncomeResponse[]>([]);
   const [allExpenses, setAllExpenses] = useState<ExpenseResponse[]>([]);
   const [allSavings, setAllSavings] = useState<SavingResponse[]>([]);
-  const [allTodos, setAllTodos] = useState<TodoResponse[]>([]);
+  const [todoSummary, setTodoSummary] = useState<TodoSummaryResponse | null>(null);
+  const [todoUpcoming, setTodoUpcoming] = useState<TodoUpcomingResponse | null>(null);
   const [partnership, setPartnership] = useState<PartnershipResponse | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [loading, setLoading] = useState(true);
@@ -89,7 +90,8 @@ export default function DashboardPage() {
           allExpenseResponse,
           allSavingResponse,
           expenseCategoryResponse,
-          allTodoResponse,
+          todoSummaryResponse,
+          todoUpcomingResponse,
           partnershipResponse,
           incomeResponse,
           expenseResponse,
@@ -99,7 +101,8 @@ export default function DashboardPage() {
           listExpenses(sessionToken),
           listSavings(sessionToken),
           listExpenseCategories(sessionToken).catch(() => []),
-          listTodos(sessionToken),
+          getTodoSummary(sessionToken),
+          getTodoUpcoming(sessionToken, { days: 7 }),
           getMyPartnership(sessionToken).catch(() => null),
           listIncome(sessionToken, {
             month: selectedMonth + 1,
@@ -120,7 +123,8 @@ export default function DashboardPage() {
           setAllExpenses(allExpenseResponse);
           setAllSavings(allSavingResponse);
           setExpenseCategories(expenseCategoryResponse);
-          setAllTodos(allTodoResponse);
+          setTodoSummary(todoSummaryResponse);
+          setTodoUpcoming(todoUpcomingResponse);
           setPartnership(partnershipResponse);
           setIncome(incomeResponse);
           setExpenses(expenseResponse);
@@ -173,12 +177,12 @@ export default function DashboardPage() {
     [expenseCategories, expenses, selectedMonth],
   );
   const todoAdviserSummary = useMemo(
-    () => buildDashboardTodoAdviserSummary(allTodos),
-    [allTodos],
+    () => buildDashboardTodoAdviserSummaryFromUpcoming(todoUpcoming),
+    [todoUpcoming],
   );
   const upcomingTodoSchedule = useMemo(
-    () => buildUpcomingTodoSchedule(allTodos),
-    [allTodos],
+    () => buildUpcomingTodoScheduleFromUpcoming(todoUpcoming),
+    [todoUpcoming],
   );
   const monthlySavings = useMemo(
     () => filterEntriesByMonth(allSavings, selectedMonth, CURRENT_YEAR),
@@ -219,9 +223,7 @@ export default function DashboardPage() {
   });
   const moneyStillHave =
     sumIncomeAmounts(allIncome) - sumExpenseAmounts(allExpenses) - totalActiveSavings;
-  const totalPendingTodoAmount = sumTodoAmounts(allTodos, {
-    pendingOnly: true,
-  });
+  const totalPendingTodoAmount = getOpenTodoPlannedTotal(todoSummary);
 
   if (loading) {
     return (
@@ -345,7 +347,7 @@ export default function DashboardPage() {
             tone="todo"
             compactValue={rwfCompact(totalPendingTodoAmount)}
             fullValue={rwf(totalPendingTodoAmount)}
-            description="All todo prices that are still marked as not done"
+            description="All todo prices that are still open"
           />
         </section>
 
