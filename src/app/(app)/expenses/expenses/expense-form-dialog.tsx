@@ -526,8 +526,8 @@ function StepThree({
       : "—";
 
   const paymentLabel =
-    PAYMENT_METHOD_OPTIONS.find((o) => o.value === form.paymentMethod)?.label ??
-    form.paymentMethod ||
+    (PAYMENT_METHOD_OPTIONS.find((o) => o.value === form.paymentMethod)?.label ??
+      form.paymentMethod) ||
     "—";
 
   return (
