@@ -99,10 +99,11 @@ export function ExpenseFormDialog({
     form.date.trim().length > 0;
 
   const canContinueFromStep2 = mobileMoney
-    ? form.mobileMoneyProvider.length > 0 &&
+    ? form.paymentMethod.length > 0 &&
+      form.mobileMoneyProvider.length > 0 &&
       form.mobileMoneyChannel.length > 0 &&
       (!needsNetwork || form.mobileMoneyNetwork.length > 0)
-    : true;
+    : form.paymentMethod.length > 0;
 
   const amountDisplay = useMemo(() => {
     if (!hasAmount) return "Enter amount";
@@ -526,7 +527,8 @@ function StepThree({
 
   const paymentLabel =
     PAYMENT_METHOD_OPTIONS.find((o) => o.value === form.paymentMethod)?.label ??
-    form.paymentMethod;
+    form.paymentMethod ||
+    "—";
 
   return (
     <>
