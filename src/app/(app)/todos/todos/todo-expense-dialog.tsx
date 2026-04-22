@@ -244,8 +244,20 @@ export function TodoExpenseDialog({
                           </p>
                         </div>
                         <div className="text-right text-xs text-text-secondary">
+                          <p>Plan {rwf(recording.plannedAmount)}</p>
                           <p>Base {rwf(recording.baseAmount)}</p>
                           <p>Fee {rwf(recording.feeAmount)}</p>
+                          <p
+                            className={
+                              recording.varianceAmount > 0
+                                ? "text-danger"
+                                : recording.varianceAmount < 0
+                                  ? "text-success"
+                                  : undefined
+                            }
+                          >
+                            Variance {rwf(recording.varianceAmount)}
+                          </p>
                           {recording.expense ? (
                             <button
                               type="button"
