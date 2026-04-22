@@ -100,6 +100,9 @@ export function createEmptyTodoExpenseForm(): TodoExpenseFormValues {
   return {
     amount: "",
     category: "",
+    paymentMethod: "",
+    mobileMoneyChannel: "",
+    mobileMoneyNetwork: "",
     date: getTodayDateValue(),
   };
 }
@@ -116,6 +119,9 @@ export function createTodoExpenseFormFromEntry(
   return {
     amount: String(getSuggestedTodoExpenseAmount(entry)),
     category: resolveDefaultTodoExpenseCategory(categories),
+    paymentMethod: "",
+    mobileMoneyChannel: "",
+    mobileMoneyNetwork: "",
     date: defaultDate,
   };
 }
