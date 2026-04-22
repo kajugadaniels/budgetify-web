@@ -357,6 +357,12 @@ export default function TodosPage() {
     setExpenseDialog({ entry });
   }
 
+  function openLinkedExpense(expenseId: string) {
+    const params = new URLSearchParams();
+    params.set("expenseId", expenseId);
+    router.push(`/expenses?${params.toString()}`);
+  }
+
   function closeExpenseDialog() {
     setExpenseDialog(null);
     setExpenseForm(createEmptyTodoExpenseForm());
@@ -558,8 +564,8 @@ export default function TodosPage() {
         closeExpenseDialog();
         toast.error(
           recordError instanceof ApiError
-            ? `${recordError.message} The expense was created, but the wishlist item still needs to be marked done manually.`
-            : "Expense recorded, but the wishlist item could not be marked as done. Update it manually.",
+            ? `${recordError.message} The expense was created, but it was not linked back to the todo ledger. Review it from expenses and reconcile the todo manually.`
+            : "Expense created, but the todo ledger could not be linked. Review it from expenses and reconcile the todo manually.",
         );
       } else {
         toast.error(
@@ -768,6 +774,7 @@ export default function TodosPage() {
                 entries={pageEntries}
                 onDelete={setDeleteTarget}
                 onEdit={openEditPage}
+                onOpenExpense={openLinkedExpense}
                 onOpenGallery={openGallery}
                 onRecordExpense={openExpenseDialog}
                 onToggleDone={handleToggleDone}
@@ -788,10 +795,11 @@ export default function TodosPage() {
       </div>
 
       {expenseDialog ? (
-      <TodoExpenseDialog
+        <TodoExpenseDialog
           categories={expenseCategories}
           entry={expenseDialog.entry}
           form={expenseForm}
+          onOpenExpense={openLinkedExpense}
           quote={expenseQuote.data}
           quoteError={expenseQuote.error}
           quoteLoading={expenseQuote.loading}
