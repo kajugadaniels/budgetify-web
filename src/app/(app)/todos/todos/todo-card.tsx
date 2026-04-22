@@ -16,6 +16,7 @@ interface TodoCardProps {
   entry: TodoResponse;
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
+  onOpenExpense: (expenseId: string) => void;
   onOpenGallery: (todoId: string, index: number) => void;
   onRecordExpense: (entry: TodoResponse) => void;
   onToggleDone: (entry: TodoResponse) => void;
@@ -27,6 +28,7 @@ export function TodoCard({
   entry,
   onDelete,
   onEdit,
+  onOpenExpense,
   onOpenGallery,
   onRecordExpense,
   onToggleDone,
@@ -144,6 +146,15 @@ export function TodoCard({
                     ? `Fee ${rwf(latestRecording.feeAmount)}`
                     : "No fee"}
                 </p>
+                {latestRecording.expense ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenExpense(latestRecording.expense!.id)}
+                    className="mt-2 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/16"
+                  >
+                    Open expense
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
