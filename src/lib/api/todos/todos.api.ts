@@ -3,6 +3,7 @@ import { collectPaginatedItems } from "../pagination";
 import { TODOS_ROUTES } from "./todos.routes";
 import type {
   CreateTodoRecordingRequest,
+  CreateTodoExpenseRequest,
   CreateTodoRequest,
   ListTodosParams,
   TodoRecordingResponse,
@@ -154,6 +155,18 @@ export async function createTodoRecording(
   body: CreateTodoRecordingRequest,
 ): Promise<TodoRecordingResponse> {
   return apiFetch<TodoRecordingResponse>(TODOS_ROUTES.recordings(todoId), {
+    method: "POST",
+    token,
+    body,
+  });
+}
+
+export async function recordTodoExpense(
+  token: string,
+  todoId: string,
+  body: CreateTodoExpenseRequest,
+): Promise<TodoRecordingResponse> {
+  return apiFetch<TodoRecordingResponse>(TODOS_ROUTES.recordExpense(todoId), {
     method: "POST",
     token,
     body,
