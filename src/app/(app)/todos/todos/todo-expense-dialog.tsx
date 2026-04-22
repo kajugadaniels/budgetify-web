@@ -1,16 +1,10 @@
 "use client";
 
 import { Dialog } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { PRIORITY_META } from "@/constant/todos/priority-meta";
 import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
 import type { TodoResponse } from "@/lib/types/todo.types";
+import { cn } from "@/lib/utils/cn";
 import { rwf } from "@/lib/utils/currency";
 import type { TodoExpenseFormValues } from "./todos-page.types";
 import {
@@ -24,6 +18,12 @@ import {
 
 const INPUT_CLASS =
   "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 transition-colors focus:border-primary/60 focus:outline-none";
+
+const SECTION_CLASS =
+  "rounded-[22px] border border-white/8 bg-background/36 p-4 sm:p-5";
+
+const EYEBROW_CLASS =
+  "text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/60";
 
 interface TodoExpenseDialogProps {
   categories: ExpenseCategoryOptionResponse[];
@@ -51,11 +51,11 @@ export function TodoExpenseDialog({
   const recordable = canRecordTodoExpense(entry);
 
   return (
-    <Dialog onClose={onClose} className="sm:max-w-xl p-4 sm:p-5">
+    <Dialog onClose={onClose} className="sm:max-w-2xl lg:max-w-3xl p-4 sm:p-5">
       <div className="relative overflow-hidden rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4 sm:p-5">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(199,191,167,0.14),transparent_72%)]" />
 
-        <div className="relative z-10 mb-4 flex items-start justify-between gap-3">
+        <div className="relative z-10 mb-5 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -82,9 +82,9 @@ export function TodoExpenseDialog({
         </div>
 
         <form className="relative z-10 space-y-4" onSubmit={onSubmit}>
-          <section className="grid gap-2.5 rounded-[22px] border border-white/8 bg-background/36 p-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(140px,0.7fr)] sm:p-4">
+          <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-[minmax(0,1.25fr)_minmax(180px,0.75fr)]")}>
             <div className="min-w-0 rounded-[18px] border border-white/8 bg-surface-elevated/70 px-3.5 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/52">
+              <p className={EYEBROW_CLASS}>
                 Todo
               </p>
               <p className="mt-2 truncate text-sm font-semibold text-text-primary">
@@ -120,7 +120,7 @@ export function TodoExpenseDialog({
           </section>
 
           {recurring ? (
-            <section className="grid gap-2.5 rounded-[22px] border border-white/8 bg-background/36 p-3 sm:grid-cols-3 sm:p-4">
+            <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-3")}>
               <MiniStat
                 label="Occurrences left"
                 value={`${remainingOccurrenceDates.length}`}
@@ -140,98 +140,124 @@ export function TodoExpenseDialog({
             </section>
           ) : null}
 
-          <div className="">
-            <Field label="Expense category">
-              <Select
-                value={form.category}
-                onValueChange={(value) =>
-                  onChange({
-                    category: value as TodoExpenseFormValues["category"],
-                  })
-                }
-              >
-                <SelectTrigger className="h-[50px] w-full rounded-2xl border-border bg-surface-elevated text-sm text-text-primary focus-visible:border-primary/60 focus-visible:ring-primary/20">
-                  <SelectValue placeholder="Select expense category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.value} value={category.value}>
-                      {category.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
+          <section className={cn(SECTION_CLASS, "space-y-3")}>
+            <p className={EYEBROW_CLASS}>Category</p>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => {
+                const selected = form.category === category.value;
 
-          {recurring ? (
-            <div className="">
-              <Field label="Occurrence date">
-                <Select
-                  value={form.date}
-                  onValueChange={(value) => onChange({ date: value })}
-                >
-                  <SelectTrigger className="h-[50px] w-full rounded-2xl border-border bg-surface-elevated text-sm text-text-primary focus-visible:border-primary/60 focus-visible:ring-primary/20">
-                    <SelectValue placeholder="Select occurrence date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {remainingOccurrenceDates.map((date) => (
-                      <SelectItem key={date} value={date}>
-                        {formatTodoDate(date)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+                return (
+                  <button
+                    key={category.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() =>
+                      onChange({
+                        category: category.value as TodoExpenseFormValues["category"],
+                      })
+                    }
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-all",
+                      selected
+                        ? "border-primary bg-primary text-background"
+                        : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
+                        selected
+                          ? "border-background/20 bg-background/15 text-background"
+                          : "border-white/10 bg-white/[0.04] text-transparent",
+                      )}
+                    >
+                      ✓
+                    </span>
+                    {category.label}
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <div className="">
-              <Field label="Expense date">
+          </section>
+
+          <section className={cn(SECTION_CLASS, "space-y-4")}>
+            <p className={EYEBROW_CLASS}>Expense details</p>
+
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1.1fr)_minmax(180px,0.9fr)]">
+              <Field label="Amount in RWF">
                 <input
-                  type="date"
-                  value={form.date}
-                  onChange={(event) => onChange({ date: event.target.value })}
-                  className={INPUT_CLASS}
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min={0.01}
+                  value={form.amount}
+                  onChange={(event) => onChange({ amount: event.target.value })}
+                  placeholder="125000"
+                  className={cn(INPUT_CLASS, "text-lg font-semibold tabular-nums")}
                   required
                 />
               </Field>
+
+              <Field label={recurring ? "Occurrence date" : "Expense date"}>
+                {recurring ? (
+                  <select
+                    value={form.date}
+                    onChange={(event) => onChange({ date: event.target.value })}
+                    className={INPUT_CLASS}
+                    required
+                  >
+                    <option value="" disabled>
+                      Select occurrence date
+                    </option>
+                    {remainingOccurrenceDates.map((date) => (
+                      <option key={date} value={date}>
+                        {formatTodoDate(date)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="date"
+                    value={form.date}
+                    onChange={(event) => onChange({ date: event.target.value })}
+                    className={INPUT_CLASS}
+                    required
+                  />
+                )}
+              </Field>
             </div>
-          )}
 
-          <div className="">
-            <Field label="Amount in RWF">
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min={0.01}
-                value={form.amount}
-                onChange={(event) => onChange({ amount: event.target.value })}
-                placeholder="125000"
-                className={INPUT_CLASS}
-                required
-              />
-              {recurring ? (
-                <p className="mt-2 text-xs leading-5 text-text-secondary">
-                  Default is split from the remaining budget across the remaining
-                  occurrence dates. You can override it before saving.
-                </p>
-              ) : null}
-            </Field>
-          </div>
+            {recurring ? (
+              <p className="text-xs leading-5 text-text-secondary">
+                Default amount is split from the remaining budget across the remaining
+                occurrence dates. You can override it before saving.
+              </p>
+            ) : null}
+          </section>
 
-          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+          <section className={SECTION_CLASS}>
+            <div className="rounded-[18px] border border-white/8 bg-surface-elevated/70 px-4 py-3">
+              <p className={EYEBROW_CLASS}>What happens on save</p>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">
+                {recurring
+                  ? "The chosen occurrence is recorded as an expense and deducted from the todo's remaining recurring budget."
+                  : "The todo is recorded as an expense and marked as done immediately after save."}
+              </p>
+            </div>
+          </section>
+
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-border px-4 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:min-w-[120px]"
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-border px-4 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:min-w-[140px]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving || !recordable}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:min-w-[160px]"
+              disabled={saving || !recordable || !form.category || !form.date}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:min-w-[180px]"
             >
               {saving
                 ? "Recording..."
