@@ -2,8 +2,10 @@ import { apiFetch } from "../client";
 import { collectPaginatedItems } from "../pagination";
 import { TODOS_ROUTES } from "./todos.routes";
 import type {
+  CreateTodoRecordingRequest,
   CreateTodoRequest,
   ListTodosParams,
+  TodoRecordingResponse,
   TodoResponse,
   UpdateTodoRequest,
 } from "../../types/todo.types";
@@ -113,6 +115,27 @@ export async function createTodo(
     method: "POST",
     token,
     body: buildTodoMultipartBody(body, images),
+  });
+}
+
+export async function listTodoRecordings(
+  token: string,
+  todoId: string,
+): Promise<TodoRecordingResponse[]> {
+  return apiFetch<TodoRecordingResponse[]>(TODOS_ROUTES.recordings(todoId), {
+    token,
+  });
+}
+
+export async function createTodoRecording(
+  token: string,
+  todoId: string,
+  body: CreateTodoRecordingRequest,
+): Promise<TodoRecordingResponse> {
+  return apiFetch<TodoRecordingResponse>(TODOS_ROUTES.recordings(todoId), {
+    method: "POST",
+    token,
+    body,
   });
 }
 
