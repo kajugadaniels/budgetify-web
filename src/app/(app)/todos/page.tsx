@@ -16,7 +16,7 @@ import {
 import {
   createTodoRecording,
   deleteTodo,
-  listTodos,
+  getTodoSummary,
   listTodosPage,
   updateTodo,
 } from "@/lib/api/todos/todos.api";
@@ -25,7 +25,7 @@ import type {
   ExpenseCategoryOptionResponse,
   MobileMoneyQuoteResponse,
 } from "@/lib/types/expense.types";
-import type { TodoResponse } from "@/lib/types/todo.types";
+import type { TodoResponse, TodoSummaryResponse } from "@/lib/types/todo.types";
 import { rwfCompact } from "@/lib/utils/currency";
 import { TodoExpenseDialog } from "./todos/todo-expense-dialog";
 import { TodoGalleryDialog } from "./todos/todo-gallery-dialog";
@@ -34,9 +34,9 @@ import { TodosBoardFilters } from "./todos/todos-board-filters";
 import { TodosBoardSkeleton } from "./todos/todos-board-skeleton";
 import { TodosHeader } from "./todos/todos-header";
 import type {
-  TodoBoardDoneFilter,
   TodoBoardFrequencyFilter,
   TodoBoardPriorityFilter,
+  TodoBoardStatusFilter,
   TodoExpenseDialogState,
   TodoExpenseFormValues,
   TodoGalleryState,
@@ -46,6 +46,7 @@ import {
   createEmptyTodoExpenseForm,
   createTodoExpenseFormFromEntry,
   formatTodoDate,
+  resolveTodoStatusLabel,
   sortTodos,
 } from "./todos/todos.utils";
 
@@ -66,8 +67,8 @@ export default function TodosPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [entries, setEntries] = useState<TodoResponse[]>([]);
   const [pageEntries, setPageEntries] = useState<TodoResponse[]>([]);
+  const [summary, setSummary] = useState<TodoSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recordingExpense, setRecordingExpense] = useState(false);
@@ -106,8 +107,8 @@ export default function TodosPage() {
     useState<TodoBoardFrequencyFilter>(() =>
       resolveFrequencyFilterFromSearchParam(searchParams.get("frequency")),
     );
-  const [selectedDone, setSelectedDone] =
-    useState<TodoBoardDoneFilter>("ALL");
+  const [selectedStatus, setSelectedStatus] =
+    useState<TodoBoardStatusFilter>("ALL");
   const [searchInput, setSearchInput] = useState("");
   const [selectedDateFrom, setSelectedDateFrom] = useState("");
   const [selectedDateTo, setSelectedDateTo] = useState("");
@@ -137,15 +138,15 @@ export default function TodosPage() {
             selectedFrequency === "ALL" ? undefined : selectedFrequency,
           priority:
             selectedPriority === "ALL" ? undefined : selectedPriority,
-          done:
-            selectedDone === "ALL" ? undefined : selectedDone === "DONE",
+          status:
+            selectedStatus === "ALL" ? undefined : selectedStatus,
           search: appliedSearch,
           dateFrom: selectedDateFrom || undefined,
           dateTo: selectedDateTo || undefined,
         };
 
         const [summaryResponse, pageResponse] = await Promise.all([
-          listTodos(sessionToken, filters),
+          getTodoSummary(sessionToken, filters),
           listTodosPage(sessionToken, {
             ...filters,
             page: currentPage,
@@ -154,7 +155,7 @@ export default function TodosPage() {
         ]);
 
         if (!ignore) {
-          setEntries(sortTodos(summaryResponse));
+          setSummary(summaryResponse);
 
           if (pageResponse.meta.totalPages < currentPage) {
             setCurrentPage(pageResponse.meta.totalPages);
@@ -167,6 +168,7 @@ export default function TodosPage() {
         }
       } catch (loadError) {
         if (!ignore) {
+          setSummary(null);
           setError(
             loadError instanceof ApiError
               ? loadError.message
@@ -191,7 +193,7 @@ export default function TodosPage() {
     refreshKey,
     selectedDateFrom,
     selectedDateTo,
-    selectedDone,
+    selectedStatus,
     selectedFrequency,
     selectedPriority,
     token,
@@ -301,25 +303,22 @@ export default function TodosPage() {
 
   const galleryEntry =
     galleryTarget !== null
-      ? entries.find((entry) => entry.id === galleryTarget.todoId) ?? null
+      ? pageEntries.find((entry) => entry.id === galleryTarget.todoId) ?? null
       : null;
 
-  const plannedTotal = entries.reduce((sum, entry) => sum + Number(entry.price), 0);
-  const topPriorityCount = entries.filter(
-    (entry) => entry.priority === "TOP_PRIORITY",
-  ).length;
-  const withImagesCount = entries.filter((entry) => entry.imageCount > 0).length;
-  const doneCount = entries.filter((entry) => entry.done).length;
-  const openCount = Math.max(entries.length - doneCount, 0);
-  const completionShare =
-    entries.length > 0 ? Math.round((doneCount / entries.length) * 100) : 0;
-  const imageCoverage =
-    entries.length > 0 ? Math.round((withImagesCount / entries.length) * 100) : 0;
-  const latestTodo = entries[0];
+  const totalCount = summary?.totalCount ?? 0;
+  const plannedTotal = summary?.plannedTotal ?? 0;
+  const openCount = summary?.openCount ?? 0;
+  const topPriorityCount = summary?.topPriorityCount ?? 0;
+  const withImagesCount = summary?.withImagesCount ?? 0;
+  const completedCount = summary?.completedCount ?? 0;
+  const completionShare = summary?.completionPercentage ?? 0;
+  const imageCoverage = summary?.imageCoveragePercentage ?? 0;
+  const latestTodo = summary?.latestTodo ?? null;
   const hasActiveBoardFilters =
     selectedFrequency !== "ALL" ||
     selectedPriority !== "ALL" ||
-    selectedDone !== "ALL" ||
+    selectedStatus !== "ALL" ||
     appliedSearch !== undefined ||
     hasExplicitDateFilter;
 
@@ -347,7 +346,7 @@ export default function TodosPage() {
     if (!canRecordTodoExpense(entry)) {
       toast.info(
         entry.frequency === "ONCE"
-          ? "This todo is already complete."
+          ? `This todo is ${resolveTodoStatusLabel(entry.status).toLowerCase()}.`
           : "This recurring todo has no remaining budget or available occurrence left.",
       );
       return;
@@ -426,19 +425,19 @@ export default function TodosPage() {
   async function handleToggleDone(entry: TodoResponse) {
     if (!token) return;
 
-    const nextDone = !entry.done;
+    const nextStatus = entry.status === "COMPLETED" ? "ACTIVE" : "COMPLETED";
     setDoneBusyId(entry.id);
 
     try {
       await updateTodo(token, entry.id, {
-        done: nextDone,
+        status: nextStatus,
       });
 
       triggerRefresh();
       toast.success(
-        nextDone
-          ? "Wishlist item marked as done."
-          : "Wishlist item marked as not done.",
+        nextStatus === "COMPLETED"
+          ? "Wishlist item marked as completed."
+          : "Wishlist item reopened.",
       );
     } catch (updateError) {
       toast.error(
@@ -554,8 +553,8 @@ export default function TodosPage() {
       closeExpenseDialog();
       toast.success(
         expenseDialog.entry.frequency === "ONCE"
-          ? "Expense recorded and wishlist item marked as done."
-          : "Expense recorded and recurring budget updated.",
+          ? "Expense recorded and todo moved to recorded status."
+          : "Expense recorded and recurring todo status updated.",
       );
     } catch (recordError) {
       if (expenseCreated) {
@@ -610,7 +609,7 @@ export default function TodosPage() {
                       Board
                     </p>
                     <p className="mt-1 text-sm font-semibold text-text-primary">
-                      {entries.length} {entries.length === 1 ? "item" : "items"}
+                      {totalCount} {totalCount === 1 ? "item" : "items"}
                     </p>
                   </div>
                 </div>
@@ -647,9 +646,9 @@ export default function TodosPage() {
                     </p>
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   </div>
-                  <p className="mt-2 text-base font-semibold tracking-[-0.04em] text-text-primary">
-                    {latestTodo ? formatTodoDate(latestTodo.createdAt) : "No entries yet"}
-                  </p>
+                    <p className="mt-2 text-base font-semibold tracking-[-0.04em] text-text-primary">
+                      {latestTodo ? formatTodoDate(latestTodo.createdAt) : "No entries yet"}
+                    </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {latestTodo
                       ? latestTodo.name
@@ -669,9 +668,9 @@ export default function TodosPage() {
                   <p className="mt-2 text-base font-semibold leading-tight tracking-[-0.04em] text-text-primary">
                     {withImagesCount} {withImagesCount === 1 ? "item" : "items"} with images
                   </p>
-                  <p className="mt-1.5 text-xs leading-5 text-text-secondary">
-                    {doneCount} {doneCount === 1 ? "item is" : "items are"} already marked done.
-                  </p>
+                    <p className="mt-1.5 text-xs leading-5 text-text-secondary">
+                      {completedCount} {completedCount === 1 ? "item is" : "items are"} already completed.
+                    </p>
                 </div>
               </div>
             </div>
@@ -690,7 +689,7 @@ export default function TodosPage() {
             </div>
             <p className="text-sm text-text-secondary">
               {totalItems}
-              {hasActiveBoardFilters ? ` of ${entries.length}` : ""}{" "}
+              {hasActiveBoardFilters ? ` of ${totalCount}` : ""}{" "}
               {totalItems === 1 ? "item" : "items"}
             </p>
           </div>
@@ -698,24 +697,24 @@ export default function TodosPage() {
           <TodosBoardFilters
             dateFrom={selectedDateFrom}
             dateTo={selectedDateTo}
-            done={selectedDone}
+            status={selectedStatus}
             frequency={selectedFrequency}
             hasActiveFilters={hasActiveBoardFilters}
             priority={selectedPriority}
             search={searchInput}
-            onClear={() => {
-              setSelectedFrequency("ALL");
-              setSelectedPriority("ALL");
-              setSelectedDone("ALL");
-              setSearchInput("");
-              setSelectedDateFrom("");
-              setSelectedDateTo("");
+              onClear={() => {
+                setSelectedFrequency("ALL");
+                setSelectedPriority("ALL");
+                setSelectedStatus("ALL");
+                setSearchInput("");
+                setSelectedDateFrom("");
+                setSelectedDateTo("");
               setCurrentPage(1);
             }}
             onDateFromChange={setSelectedDateFrom}
             onDateToChange={setSelectedDateTo}
-            onDoneChange={(value) => {
-              setSelectedDone(value);
+            onStatusChange={(value) => {
+              setSelectedStatus(value);
               setCurrentPage(1);
             }}
             onFrequencyChange={(value) => {
@@ -741,7 +740,7 @@ export default function TodosPage() {
                   onClick: () => window.location.reload(),
                 }}
               />
-            ) : entries.length === 0 ? (
+            ) : totalCount === 0 ? (
               <EmptyState
                 title="No wishlist items yet"
                 description="Add the products or goals you want to save for, then keep the top lane brutally selective."
@@ -753,13 +752,13 @@ export default function TodosPage() {
             ) : totalItems === 0 ? (
               <EmptyState
                 title="No wishlist matches"
-                description="Try another search, date range, priority, or done state to reveal more wishlist items."
+                description="Try another search, date range, priority, or status filter to reveal more wishlist items."
                 action={{
                   label: "Clear filters",
                   onClick: () => {
                     setSelectedFrequency("ALL");
                     setSelectedPriority("ALL");
-                    setSelectedDone("ALL");
+                    setSelectedStatus("ALL");
                     setSearchInput("");
                     setSelectedDateFrom("");
                     setSelectedDateTo("");
