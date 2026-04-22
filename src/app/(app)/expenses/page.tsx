@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PaginationControls } from "@/components/ui/pagination-controls";
@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/client";
 import {
   createExpense,
   deleteExpense,
+  getExpense,
   getExpenseAudit,
   getExpenseSummary,
   listExpenseCategories,
@@ -60,6 +61,7 @@ import {
 export default function ExpensesPage() {
   const { token } = useAuth();
   const toast = useToast();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [entries, setEntries] = useState<ExpenseResponse[]>([]);
@@ -120,6 +122,48 @@ export default function ExpensesPage() {
     );
     setCurrentPage(1);
   }, [searchParams]);
+
+  useEffect(() => {
+    const targetExpenseId = searchParams.get("expenseId") ?? "";
+
+    if (!token || !targetExpenseId) {
+      return;
+    }
+
+    const sessionToken = token;
+    const expenseId = targetExpenseId;
+
+    const existingEntry = entries.find((entry) => entry.id === expenseId);
+    if (existingEntry) {
+      setDetailsDialog({ entry: existingEntry });
+      return;
+    }
+
+    let ignore = false;
+
+    async function loadLinkedExpense() {
+      try {
+        const entry = await getExpense(sessionToken, expenseId);
+        if (!ignore) {
+          setDetailsDialog({ entry });
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          toast.error(
+            loadError instanceof ApiError
+              ? loadError.message
+              : "Linked expense could not be opened right now.",
+          );
+        }
+      }
+    }
+
+    void loadLinkedExpense();
+
+    return () => {
+      ignore = true;
+    };
+  }, [entries, searchParams, toast, token]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -475,6 +519,13 @@ export default function ExpensesPage() {
 
   function closeDetailsDialog() {
     setDetailsDialog(null);
+
+    if (searchParams.get("expenseId")) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("expenseId");
+      const nextQuery = params.toString();
+      router.replace(nextQuery ? `/expenses?${nextQuery}` : "/expenses");
+    }
   }
 
   function updateForm(next: Partial<ExpenseFormValues>) {
