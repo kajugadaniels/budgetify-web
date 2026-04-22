@@ -187,7 +187,7 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
       name: form.name.trim(),
       price,
       priority: form.priority,
-      done: form.done,
+      status: form.status,
       frequency: form.frequency,
       startDate: form.startDate,
       endDate: form.endDate,
