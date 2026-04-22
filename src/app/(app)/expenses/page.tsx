@@ -461,10 +461,19 @@ export default function ExpensesPage() {
     setForm((current) => {
       const merged = { ...current, ...next };
 
+      if (next.paymentMethod === "MOBILE_MONEY") {
+        merged.mobileMoneyChannel =
+          current.mobileMoneyChannel || "P2P_TRANSFER";
+        merged.mobileMoneyProvider =
+          current.mobileMoneyProvider || "MTN_RWANDA";
+        merged.mobileMoneyNetwork =
+          current.mobileMoneyNetwork || "ON_NET";
+      }
+
       if (next.paymentMethod && next.paymentMethod !== "MOBILE_MONEY") {
-        merged.mobileMoneyChannel = "MERCHANT_CODE";
-        merged.mobileMoneyProvider = "MTN_RWANDA";
-        merged.mobileMoneyNetwork = "ON_NET";
+        merged.mobileMoneyChannel = "";
+        merged.mobileMoneyProvider = "";
+        merged.mobileMoneyNetwork = "";
       }
 
       if (next.mobileMoneyChannel === "MERCHANT_CODE") {
@@ -488,6 +497,11 @@ export default function ExpensesPage() {
 
     if (!form.category) {
       toast.error("Select an expense category.");
+      return;
+    }
+
+    if (!form.paymentMethod) {
+      toast.error("Select a payment method.");
       return;
     }
 
