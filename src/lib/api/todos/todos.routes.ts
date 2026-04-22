@@ -84,6 +84,7 @@ export const TODOS_ROUTES = {
   create:      BASE,
   byId:        (id: string) => `${BASE}/${id}`,
   recordings:  (id: string) => `${BASE}/${id}/recordings`,
+  recordExpense: (id: string) => `${BASE}/${id}/record-expense`,
   images:      (id: string) => `${BASE}/${id}/images`,
   imageById:   (id: string, imageId: string) => `${BASE}/${id}/images/${imageId}`,
 } as const;
