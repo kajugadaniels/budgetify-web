@@ -222,6 +222,34 @@ export function TodoExpenseDialog({
                   />
                 </section>
               ) : null}
+
+              {entry.recordings.length > 0 ? (
+                <section className={SECTION_CLASS}>
+                  <p className={EYEBROW_CLASS}>Recent recordings</p>
+                  <div className="mt-3 grid gap-2">
+                    {entry.recordings.slice(0, 3).map((recording) => (
+                      <div
+                        key={recording.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-white/8 bg-white/[0.03] px-3.5 py-3"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-text-primary">
+                            {rwf(recording.totalChargedAmount)} charged
+                          </p>
+                          <p className="mt-1 text-xs text-text-secondary">
+                            {recording.occurrenceDate} •{" "}
+                            {recording.paymentMethod.replaceAll("_", " ")}
+                          </p>
+                        </div>
+                        <div className="text-right text-xs text-text-secondary">
+                          <p>Base {rwf(recording.baseAmount)}</p>
+                          <p>Fee {rwf(recording.feeAmount)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
             </>
           ) : null}
 
