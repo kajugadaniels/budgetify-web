@@ -40,6 +40,12 @@ export function ExpenseDetailsDialog({
             {resolveExpenseCategoryLabel(categories, entry.category)} · Recorded{" "}
             {formatExpenseDate(entry.date)}
           </p>
+          {entry.linkedTodo ? (
+            <p className="mt-2 text-sm text-text-secondary">
+              Linked todo: {entry.linkedTodo.todoName} · Occurrence{" "}
+              {entry.linkedTodo.occurrenceDate}
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge>{resolveExpensePaymentMethodLabel(entry.paymentMethod)}</Badge>
             {entry.mobileMoneyChannel ? (
@@ -128,6 +134,25 @@ export function ExpenseDetailsDialog({
             ) : null}
           </div>
         </section>
+
+        {entry.linkedTodo ? (
+          <section className="rounded-[24px] border border-primary/12 bg-primary/6 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/70">
+              Todo linkage
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <InlineSummary label="Todo" value={entry.linkedTodo.todoName} />
+              <InlineSummary
+                label="Occurrence"
+                value={entry.linkedTodo.occurrenceDate}
+              />
+              <InlineSummary
+                label="Recording"
+                value={entry.linkedTodo.recordingId}
+              />
+            </div>
+          </section>
+        ) : null}
 
         <section className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/56">
