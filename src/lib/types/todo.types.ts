@@ -1,4 +1,9 @@
 import type { CreatedBySummary } from "./created-by.types";
+import type {
+  ExpenseMobileMoneyChannel,
+  ExpenseMobileMoneyNetwork,
+  ExpensePaymentMethod,
+} from "./expense.types";
 
 export type TodoPriority = "TOP_PRIORITY" | "PRIORITY" | "NOT_PRIORITY";
 export type TodoFrequency = "ONCE" | "WEEKLY" | "MONTHLY" | "YEARLY";
@@ -29,12 +34,34 @@ export interface TodoResponse {
   occurrenceDates: string[];
   recordedOccurrenceDates: string[];
   remainingAmount: number | null;
+  recordingCount: number;
+  recordings: TodoRecordingResponse[];
   coverImageUrl: string | null;
   imageCount: number;
   images: TodoImageResponse[];
   createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TodoRecordingResponse {
+  id: string;
+  todoId: string;
+  expenseId: string | null;
+  occurrenceDate: string;
+  baseAmount: number;
+  feeAmount: number;
+  totalChargedAmount: number;
+  paymentMethod: ExpensePaymentMethod;
+  mobileMoneyChannel: ExpenseMobileMoneyChannel | null;
+  mobileMoneyNetwork: ExpenseMobileMoneyNetwork | null;
+  recordedAt: string;
+  recordedBy: CreatedBySummary;
+}
+
+export interface CreateTodoRecordingRequest {
+  expenseId: string;
+  occurrenceDate: string;
 }
 
 export interface CreateTodoRequest {
