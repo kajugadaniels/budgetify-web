@@ -1,5 +1,6 @@
 import type { CreatedBySummary } from "./created-by.types";
 import type {
+  ExpenseCategory,
   ExpenseMobileMoneyChannel,
   ExpenseMobileMoneyNetwork,
   ExpensePaymentMethod,
@@ -57,6 +58,16 @@ export interface TodoRecordingResponse {
   mobileMoneyNetwork: ExpenseMobileMoneyNetwork | null;
   recordedAt: string;
   recordedBy: CreatedBySummary;
+  expense: TodoRecordingExpenseSummary | null;
+}
+
+export interface TodoRecordingExpenseSummary {
+  id: string;
+  label: string;
+  category: ExpenseCategory;
+  date: string;
+  totalAmountRwf: number;
+  feeAmountRwf: number;
 }
 
 export interface CreateTodoRecordingRequest {
