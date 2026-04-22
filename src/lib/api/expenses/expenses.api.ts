@@ -68,6 +68,15 @@ export async function listExpenses(
   );
 }
 
+export async function getExpense(
+  token: string,
+  id: string,
+): Promise<ExpenseResponse> {
+  return apiFetch<ExpenseResponse>(EXPENSES_ROUTES.byId(id), {
+    token,
+  });
+}
+
 export async function createExpense(
   token: string,
   body: CreateExpenseRequest,
