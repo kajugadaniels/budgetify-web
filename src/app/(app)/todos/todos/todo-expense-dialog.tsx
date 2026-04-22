@@ -61,6 +61,7 @@ interface TodoExpenseDialogProps {
   categories: ExpenseCategoryOptionResponse[];
   entry: TodoResponse;
   form: TodoExpenseFormValues;
+  onOpenExpense: (expenseId: string) => void;
   quote: MobileMoneyQuoteResponse | null;
   quoteError: string | null;
   quoteLoading: boolean;
@@ -74,6 +75,7 @@ export function TodoExpenseDialog({
   categories,
   entry,
   form,
+  onOpenExpense,
   quote,
   quoteError,
   quoteLoading,
@@ -244,6 +246,15 @@ export function TodoExpenseDialog({
                         <div className="text-right text-xs text-text-secondary">
                           <p>Base {rwf(recording.baseAmount)}</p>
                           <p>Fee {rwf(recording.feeAmount)}</p>
+                          {recording.expense ? (
+                            <button
+                              type="button"
+                              onClick={() => onOpenExpense(recording.expense!.id)}
+                              className="mt-2 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/16"
+                            >
+                              Open expense
+                            </button>
+                          ) : null}
                         </div>
                       </div>
                     ))}
