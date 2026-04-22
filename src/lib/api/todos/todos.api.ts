@@ -7,6 +7,9 @@ import type {
   ListTodosParams,
   TodoRecordingResponse,
   TodoResponse,
+  TodoSummaryResponse,
+  TodoUpcomingParams,
+  TodoUpcomingResponse,
   UpdateTodoRequest,
 } from "../../types/todo.types";
 import type { PaginatedResponse } from "../../types/pagination.types";
@@ -29,8 +32,8 @@ function buildTodoMultipartBody(
     formData.append("priority", body.priority);
   }
 
-  if ("done" in body && body.done !== undefined) {
-    formData.append("done", String(body.done));
+  if ("status" in body && body.status !== undefined) {
+    formData.append("status", body.status);
   }
 
   if ("frequency" in body && body.frequency !== undefined) {
@@ -95,6 +98,24 @@ export async function listTodos(
   return collectPaginatedItems((pagination) =>
     listTodosPage(token, { ...params, ...pagination }),
   );
+}
+
+export async function getTodoSummary(
+  token: string,
+  params?: Omit<ListTodosParams, "page" | "limit">,
+): Promise<TodoSummaryResponse> {
+  return apiFetch<TodoSummaryResponse>(TODOS_ROUTES.summary(params), {
+    token,
+  });
+}
+
+export async function getTodoUpcoming(
+  token: string,
+  params?: TodoUpcomingParams,
+): Promise<TodoUpcomingResponse> {
+  return apiFetch<TodoUpcomingResponse>(TODOS_ROUTES.upcoming(params), {
+    token,
+  });
 }
 
 export async function getTodo(
