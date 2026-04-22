@@ -129,7 +129,7 @@ export function TodoExpenseDialog({
               {step === 1
                 ? recurring
                   ? "Review the todo first, then record it as an expense against one recurring occurrence."
-                  : "Review the todo first, then move it into expenses and mark it done."
+                  : "Review the todo first, then move it into expenses and move it to recorded status."
                 : step === 2
                   ? "Choose where this spend belongs in your expense ledger."
                 : step === 3
@@ -497,7 +497,7 @@ export function TodoExpenseDialog({
                   <p className="mt-2 text-sm leading-6 text-text-secondary">
                     {recurring
                       ? "The chosen occurrence is recorded as an expense and deducted from the todo's remaining recurring budget."
-                      : "The todo is recorded as an expense and marked as done immediately after save."}
+                      : "The todo is recorded as an expense and moved to recorded status immediately after save."}
                   </p>
                 </div>
               </section>
