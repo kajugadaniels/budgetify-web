@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/client";
 import {
   createExpense,
   listExpenseCategories,
+  quoteMobileMoneyExpense,
 } from "@/lib/api/expenses/expenses.api";
 import {
   deleteTodo,
@@ -19,7 +20,10 @@ import {
   updateTodo,
 } from "@/lib/api/todos/todos.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
-import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
+import type {
+  ExpenseCategoryOptionResponse,
+  MobileMoneyQuoteResponse,
+} from "@/lib/types/expense.types";
 import type { TodoResponse } from "@/lib/types/todo.types";
 import { rwfCompact } from "@/lib/utils/currency";
 import { TodoExpenseDialog } from "./todos/todo-expense-dialog";
@@ -84,6 +88,15 @@ export default function TodosPage() {
   const [expenseCategories, setExpenseCategories] = useState<
     ExpenseCategoryOptionResponse[]
   >([]);
+  const [expenseQuote, setExpenseQuote] = useState<{
+    loading: boolean;
+    error: string | null;
+    data: MobileMoneyQuoteResponse | null;
+  }>({
+    loading: false,
+    error: null,
+    data: null,
+  });
   const [expenseCategoriesError, setExpenseCategoriesError] =
     useState<string | null>(null);
   const [selectedPriority, setSelectedPriority] =
@@ -216,6 +229,69 @@ export default function TodosPage() {
     };
   }, [token]);
 
+  useEffect(() => {
+    if (!token || !expenseDialog || expenseForm.paymentMethod !== "MOBILE_MONEY") {
+      setExpenseQuote({ loading: false, error: null, data: null });
+      return;
+    }
+
+    const amount = Number(expenseForm.amount);
+
+    if (
+      Number.isNaN(amount) ||
+      amount <= 0 ||
+      expenseForm.mobileMoneyChannel === "" ||
+      (expenseForm.mobileMoneyChannel === "P2P_TRANSFER" &&
+        expenseForm.mobileMoneyNetwork === "")
+    ) {
+      setExpenseQuote({ loading: false, error: null, data: null });
+      return;
+    }
+
+    let ignore = false;
+    setExpenseQuote((current) => ({ ...current, loading: true, error: null }));
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await quoteMobileMoneyExpense(token, {
+          amount,
+          mobileMoneyProvider: "MTN_RWANDA",
+          mobileMoneyChannel: expenseForm.mobileMoneyChannel,
+          ...(expenseForm.mobileMoneyChannel === "P2P_TRANSFER"
+            ? { mobileMoneyNetwork: expenseForm.mobileMoneyNetwork }
+            : {}),
+        });
+
+        if (!ignore) {
+          setExpenseQuote({ loading: false, error: null, data: response });
+        }
+      } catch (quoteError) {
+        if (!ignore) {
+          setExpenseQuote({
+            loading: false,
+            error:
+              quoteError instanceof ApiError
+                ? quoteError.message
+                : "Could not calculate mobile money charges right now.",
+            data: null,
+          });
+        }
+      }
+    }, 250);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    expenseDialog,
+    expenseForm.amount,
+    expenseForm.mobileMoneyChannel,
+    expenseForm.mobileMoneyNetwork,
+    expenseForm.paymentMethod,
+    token,
+  ]);
+
   const galleryEntry =
     galleryTarget !== null
       ? entries.find((entry) => entry.id === galleryTarget.todoId) ?? null
@@ -277,6 +353,7 @@ export default function TodosPage() {
   function closeExpenseDialog() {
     setExpenseDialog(null);
     setExpenseForm(createEmptyTodoExpenseForm());
+    setExpenseQuote({ loading: false, error: null, data: null });
   }
 
   function updateExpenseForm(next: Partial<TodoExpenseFormValues>) {
@@ -399,11 +476,26 @@ export default function TodosPage() {
     }
 
     if (
+      expenseForm.paymentMethod === "MOBILE_MONEY" &&
+      expenseQuote.data === null
+    ) {
+      toast.error(
+        expenseQuote.error ?? "Wait for the mobile money fee calculation before recording.",
+      );
+      return;
+    }
+
+    const chargedAmount =
+      expenseForm.paymentMethod === "MOBILE_MONEY"
+        ? expenseQuote.data?.totalAmountRwf ?? amount
+        : amount;
+
+    if (
       expenseDialog.entry.frequency !== "ONCE" &&
       expenseDialog.entry.remainingAmount !== null &&
-      amount > expenseDialog.entry.remainingAmount
+      chargedAmount > expenseDialog.entry.remainingAmount
     ) {
-      toast.error("Amount cannot exceed the remaining recurring budget.");
+      toast.error("Total charged amount cannot exceed the remaining recurring budget.");
       return;
     }
 
@@ -437,7 +529,7 @@ export default function TodosPage() {
         });
       } else {
         await updateTodo(token, expenseDialog.entry.id, {
-          deductAmount: amount,
+          deductAmount: chargedAmount,
           recordedOccurrenceDate: expenseForm.date,
         });
       }
@@ -685,10 +777,13 @@ export default function TodosPage() {
       </div>
 
       {expenseDialog ? (
-        <TodoExpenseDialog
+      <TodoExpenseDialog
           categories={expenseCategories}
           entry={expenseDialog.entry}
           form={expenseForm}
+          quote={expenseQuote.data}
+          quoteError={expenseQuote.error}
+          quoteLoading={expenseQuote.loading}
           saving={recordingExpense}
           onChange={updateExpenseForm}
           onClose={closeExpenseDialog}
