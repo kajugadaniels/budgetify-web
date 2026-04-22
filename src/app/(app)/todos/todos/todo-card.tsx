@@ -8,6 +8,8 @@ import {
   formatTodoFrequencyLabel,
   formatTodoScheduleSummary,
   isRecurringTodo,
+  isClosedTodoStatus,
+  resolveTodoStatusLabel,
 } from "./todos.utils";
 
 interface TodoCardProps {
@@ -76,13 +78,20 @@ export function TodoCard({
                 className={
                   busyDone
                     ? "inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-text-secondary opacity-70"
-                    : entry.done
+                    : isClosedTodoStatus(entry.status)
                       ? "inline-flex rounded-full border border-success/30 bg-success/16 px-2.5 py-1 text-[11px] font-medium text-success transition-all hover:bg-success/22"
                       : "inline-flex rounded-full border border-danger/28 bg-danger/10 px-2.5 py-1 text-[11px] font-medium text-danger transition-all hover:bg-danger/16"
                 }
               >
-                {busyDone ? "Updating..." : entry.done ? "Done" : "Not done"}
+                {busyDone
+                  ? "Updating..."
+                  : isClosedTodoStatus(entry.status)
+                    ? "Reopen"
+                    : "Mark completed"}
               </button>
+              <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                {resolveTodoStatusLabel(entry.status)}
+              </span>
               {entry.recordingCount > 0 ? (
                 <span className="inline-flex rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary">
                   {entry.recordingCount} recorded
