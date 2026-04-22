@@ -18,10 +18,10 @@ export interface ExpenseFormValues {
   amount: string;
   currency: ExpenseCurrency;
   category: ExpenseCategory | "";
-  paymentMethod: ExpensePaymentMethod;
-  mobileMoneyChannel: ExpenseMobileMoneyChannel;
-  mobileMoneyProvider: ExpenseMobileMoneyProvider;
-  mobileMoneyNetwork: ExpenseMobileMoneyNetwork;
+  paymentMethod: ExpensePaymentMethod | "";
+  mobileMoneyChannel: ExpenseMobileMoneyChannel | "";
+  mobileMoneyProvider: ExpenseMobileMoneyProvider | "";
+  mobileMoneyNetwork: ExpenseMobileMoneyNetwork | "";
   date: string;
   note: string;
 }
