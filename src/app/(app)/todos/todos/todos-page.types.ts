@@ -8,17 +8,18 @@ import type {
   TodoFrequency,
   TodoPriority,
   TodoResponse,
+  TodoStatus,
 } from "@/lib/types/todo.types";
 
 export type TodoBoardPriorityFilter = TodoPriority | "ALL";
 export type TodoBoardFrequencyFilter = TodoFrequency | "ALL";
-export type TodoBoardDoneFilter = "ALL" | "DONE" | "NOT_DONE";
+export type TodoBoardStatusFilter = TodoStatus | "ALL";
 
 export interface TodoFormValues {
   name: string;
   price: string;
   priority: TodoPriority;
-  done: boolean;
+  status: TodoStatus;
   frequency: TodoFrequency;
   startDate: string;
   endDate: string;
