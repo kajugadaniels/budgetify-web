@@ -23,10 +23,10 @@ export function createEmptyExpenseForm(): ExpenseFormValues {
     amount: "",
     currency: "RWF",
     category: "",
-    paymentMethod: "MOBILE_MONEY",
-    mobileMoneyChannel: "P2P_TRANSFER",
-    mobileMoneyProvider: "MTN_RWANDA",
-    mobileMoneyNetwork: "ON_NET",
+    paymentMethod: "",
+    mobileMoneyChannel: "",
+    mobileMoneyProvider: "",
+    mobileMoneyNetwork: "",
     date: getTodayString(),
     note: "",
   };
@@ -42,10 +42,10 @@ export function createExpenseFormFromCategories(
     amount: "",
     currency: "RWF",
     category: categories[0]?.value ?? "",
-    paymentMethod: "MOBILE_MONEY",
-    mobileMoneyChannel: "P2P_TRANSFER",
-    mobileMoneyProvider: "MTN_RWANDA",
-    mobileMoneyNetwork: "ON_NET",
+    paymentMethod: "",
+    mobileMoneyChannel: "",
+    mobileMoneyProvider: "",
+    mobileMoneyNetwork: "",
     date: getMonthDefaultDate(month, year),
     note: "",
   };
@@ -144,13 +144,13 @@ export function formatExpenseNote(note: string | null): string {
 }
 
 export function isMobileMoneyExpense(
-  paymentMethod: ExpensePaymentMethod,
+  paymentMethod: ExpensePaymentMethod | "",
 ): boolean {
   return paymentMethod === "MOBILE_MONEY";
 }
 
 export function requiresMobileMoneyNetwork(
-  channel: ExpenseMobileMoneyChannel,
+  channel: ExpenseMobileMoneyChannel | "",
 ): boolean {
   return channel === "P2P_TRANSFER";
 }
