@@ -8,6 +8,7 @@ interface TodoPriorityLaneProps {
   entries: TodoResponse[];
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
+  onOpenExpense: (expenseId: string) => void;
   onOpenGallery: (todoId: string, index: number) => void;
   onRecordExpense: (entry: TodoResponse) => void;
   onToggleDone: (entry: TodoResponse) => void;
@@ -19,6 +20,7 @@ export function TodoPriorityLane({
   entries,
   onDelete,
   onEdit,
+  onOpenExpense,
   onOpenGallery,
   onRecordExpense,
   onToggleDone,
@@ -35,6 +37,7 @@ export function TodoPriorityLane({
               entry={entry}
               onDelete={onDelete}
               onEdit={onEdit}
+              onOpenExpense={onOpenExpense}
               onOpenGallery={onOpenGallery}
               onRecordExpense={onRecordExpense}
               onToggleDone={onToggleDone}
