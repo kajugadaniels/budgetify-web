@@ -1,4 +1,9 @@
-import type { ExpenseCategory } from "@/lib/types/expense.types";
+import type {
+  ExpenseCategory,
+  ExpenseMobileMoneyChannel,
+  ExpenseMobileMoneyNetwork,
+  ExpensePaymentMethod,
+} from "@/lib/types/expense.types";
 import type {
   TodoFrequency,
   TodoPriority,
@@ -24,6 +29,9 @@ export interface TodoFormValues {
 export interface TodoExpenseFormValues {
   amount: string;
   category: ExpenseCategory | "";
+  paymentMethod: ExpensePaymentMethod | "";
+  mobileMoneyChannel: ExpenseMobileMoneyChannel | "";
+  mobileMoneyNetwork: ExpenseMobileMoneyNetwork | "";
   date: string;
 }
 
