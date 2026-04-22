@@ -8,9 +8,9 @@ import {
 } from "@/components/ui/select";
 import { PRIORITY_META } from "@/constant/todos/priority-meta";
 import type {
-  TodoBoardDoneFilter,
   TodoBoardFrequencyFilter,
   TodoBoardPriorityFilter,
+  TodoBoardStatusFilter,
 } from "./todos-page.types";
 
 const TODO_FREQUENCY_OPTIONS: Array<{
@@ -26,7 +26,7 @@ const TODO_FREQUENCY_OPTIONS: Array<{
 interface TodosBoardFiltersProps {
   dateFrom: string;
   dateTo: string;
-  done: TodoBoardDoneFilter;
+  status: TodoBoardStatusFilter;
   frequency: TodoBoardFrequencyFilter;
   hasActiveFilters: boolean;
   priority: TodoBoardPriorityFilter;
@@ -34,7 +34,7 @@ interface TodosBoardFiltersProps {
   onClear: () => void;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
-  onDoneChange: (value: TodoBoardDoneFilter) => void;
+  onStatusChange: (value: TodoBoardStatusFilter) => void;
   onFrequencyChange: (value: TodoBoardFrequencyFilter) => void;
   onPriorityChange: (value: TodoBoardPriorityFilter) => void;
   onSearchChange: (value: string) => void;
@@ -43,7 +43,7 @@ interface TodosBoardFiltersProps {
 export function TodosBoardFilters({
   dateFrom,
   dateTo,
-  done,
+  status,
   frequency,
   hasActiveFilters,
   priority,
@@ -51,7 +51,7 @@ export function TodosBoardFilters({
   onClear,
   onDateFromChange,
   onDateToChange,
-  onDoneChange,
+  onStatusChange,
   onFrequencyChange,
   onPriorityChange,
   onSearchChange,
@@ -127,16 +127,19 @@ export function TodosBoardFilters({
             </Select>
 
             <Select
-              value={done}
-              onValueChange={(value) => onDoneChange(value as TodoBoardDoneFilter)}
+              value={status}
+              onValueChange={(value) => onStatusChange(value as TodoBoardStatusFilter)}
             >
               <SelectTrigger className="h-11 min-w-[162px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
-                <SelectValue placeholder="Done" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
                 <SelectItem value="ALL">All states</SelectItem>
-                <SelectItem value="DONE">Done</SelectItem>
-                <SelectItem value="NOT_DONE">Not done</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="RECORDED">Recorded</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="SKIPPED">Skipped</SelectItem>
+                <SelectItem value="ARCHIVED">Archived</SelectItem>
               </SelectContent>
             </Select>
 
