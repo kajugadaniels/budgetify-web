@@ -8,6 +8,12 @@ import type {
 
 export type TodoPriority = "TOP_PRIORITY" | "PRIORITY" | "NOT_PRIORITY";
 export type TodoFrequency = "ONCE" | "WEEKLY" | "MONTHLY" | "YEARLY";
+export type TodoStatus =
+  | "ACTIVE"
+  | "RECORDED"
+  | "COMPLETED"
+  | "SKIPPED"
+  | "ARCHIVED";
 
 export interface TodoImageResponse {
   id: string;
@@ -27,7 +33,7 @@ export interface TodoResponse {
   name: string;
   price: number;
   priority: TodoPriority;
-  done: boolean;
+  status: TodoStatus;
   frequency: TodoFrequency;
   startDate: string | null;
   endDate: string | null;
@@ -70,6 +76,73 @@ export interface TodoRecordingExpenseSummary {
   feeAmountRwf: number;
 }
 
+export interface TodoSummaryLatestTodo {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface TodoSummaryResponse {
+  totalCount: number;
+  openCount: number;
+  completedCount: number;
+  recurringCount: number;
+  topPriorityCount: number;
+  withImagesCount: number;
+  completionPercentage: number;
+  imageCoveragePercentage: number;
+  plannedTotal: number;
+  openPlannedTotal: number;
+  remainingRecurringBudgetTotal: number;
+  recordedCount: number;
+  recordedTotalAmount: number;
+  overdueCount: number;
+  next7DaysScheduledAmount: number;
+  next30DaysScheduledAmount: number;
+  latestTodo: TodoSummaryLatestTodo | null;
+}
+
+export interface TodoUpcomingItem {
+  id: string;
+  name: string;
+  frequency: TodoFrequency;
+  amount: number;
+}
+
+export interface TodoUpcomingDay {
+  date: string;
+  itemCount: number;
+  totalAmount: number;
+  items: TodoUpcomingItem[];
+}
+
+export interface TodoReserveItem {
+  id: string;
+  name: string;
+  frequency: TodoFrequency;
+  targetAmount: number;
+  usedAmount: number;
+  remainingAmount: number;
+  remainingOccurrenceCount: number;
+}
+
+export interface TodoReserveSummary {
+  targetAmount: number;
+  usedAmount: number;
+  remainingAmount: number;
+  items: TodoReserveItem[];
+}
+
+export interface TodoUpcomingResponse {
+  windowDays: number;
+  daysWithPlans: number;
+  occurrenceCount: number;
+  totalScheduledAmount: number;
+  overdueCount: number;
+  reserveSummary: TodoReserveSummary;
+  days: TodoUpcomingDay[];
+}
+
 export interface CreateTodoRecordingRequest {
   expenseId: string;
   occurrenceDate: string;
@@ -79,7 +152,7 @@ export interface CreateTodoRequest {
   name: string;
   price: number;
   priority: TodoPriority;
-  done: boolean;
+  status: TodoStatus;
   frequency: TodoFrequency;
   startDate: string;
   endDate?: string;
@@ -91,7 +164,7 @@ export interface UpdateTodoRequest {
   name?: string;
   price?: number;
   priority?: TodoPriority;
-  done?: boolean;
+  status?: TodoStatus;
   frequency?: TodoFrequency;
   startDate?: string;
   endDate?: string;
@@ -105,10 +178,15 @@ export interface UpdateTodoRequest {
 export interface ListTodosParams {
   frequency?: TodoFrequency;
   priority?: TodoPriority;
-  done?: boolean;
+  status?: TodoStatus;
   search?: string;
   dateFrom?: string;
   dateTo?: string;
   page?: number;
   limit?: number;
+}
+
+export interface TodoUpcomingParams
+  extends Omit<ListTodosParams, "page" | "limit"> {
+  days?: number;
 }
