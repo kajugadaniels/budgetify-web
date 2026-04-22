@@ -9,15 +9,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
 import {
-  createExpense,
   listExpenseCategories,
   quoteMobileMoneyExpense,
 } from "@/lib/api/expenses/expenses.api";
 import {
-  createTodoRecording,
   deleteTodo,
   getTodoSummary,
   listTodosPage,
+  recordTodoExpense,
   updateTodo,
 } from "@/lib/api/todos/todos.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
@@ -514,8 +513,6 @@ export default function TodosPage() {
     setRecordingExpense(true);
     setRecordExpenseBusyId(expenseDialog.entry.id);
 
-    let expenseCreated = false;
-
     try {
       const mobileMoneyChannel =
         expenseForm.paymentMethod === "MOBILE_MONEY"
@@ -527,7 +524,7 @@ export default function TodosPage() {
           ? expenseForm.mobileMoneyNetwork || undefined
           : undefined;
 
-      const createdExpense = await createExpense(token, {
+      await recordTodoExpense(token, expenseDialog.entry.id, {
         label: expenseDialog.entry.name.trim(),
         amount,
         category: expenseForm.category,
@@ -542,11 +539,6 @@ export default function TodosPage() {
             }
           : {}),
         date: expenseForm.date,
-      });
-      expenseCreated = true;
-
-      await createTodoRecording(token, expenseDialog.entry.id, {
-        expenseId: createdExpense.id,
         occurrenceDate: expenseForm.date,
       });
       triggerRefresh();
@@ -557,22 +549,11 @@ export default function TodosPage() {
           : "Expense recorded and recurring todo status updated.",
       );
     } catch (recordError) {
-      if (expenseCreated) {
-        triggerRefresh();
-
-        closeExpenseDialog();
-        toast.error(
-          recordError instanceof ApiError
-            ? `${recordError.message} The expense was created, but it was not linked back to the todo ledger. Review it from expenses and reconcile the todo manually.`
-            : "Expense created, but the todo ledger could not be linked. Review it from expenses and reconcile the todo manually.",
-        );
-      } else {
-        toast.error(
-          recordError instanceof ApiError
-            ? recordError.message
-            : "Expense could not be recorded right now.",
-        );
-      }
+      toast.error(
+        recordError instanceof ApiError
+          ? recordError.message
+          : "Expense could not be recorded right now.",
+      );
     } finally {
       setRecordingExpense(false);
       setRecordExpenseBusyId(null);
