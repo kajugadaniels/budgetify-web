@@ -26,14 +26,33 @@ const SECTION_CLASS =
 const EYEBROW_CLASS =
   "text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/60";
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 const STEP_LABELS: Record<Step, string> = {
   1: "Todo",
   2: "Category",
-  3: "Amount & date",
-  4: "Review",
+  3: "Payment",
+  4: "Amount & date",
+  5: "Review",
 };
+
+const PAYMENT_METHOD_OPTIONS = [
+  { value: "MOBILE_MONEY", label: "Mobile money", icon: "📱" },
+  { value: "CASH", label: "Cash", icon: "💵" },
+  { value: "BANK", label: "Bank", icon: "🏦" },
+  { value: "CARD", label: "Card", icon: "💳" },
+  { value: "OTHER", label: "Other", icon: "•" },
+] as const;
+
+const MOBILE_MONEY_CHANNEL_OPTIONS = [
+  { value: "P2P_TRANSFER", label: "Normal transfer" },
+  { value: "MERCHANT_CODE", label: "Merchant code" },
+] as const;
+
+const MOBILE_MONEY_NETWORK_OPTIONS = [
+  { value: "ON_NET", label: "MTN → MTN" },
+  { value: "OFF_NET", label: "Other network" },
+] as const;
 
 interface TodoExpenseDialogProps {
   categories: ExpenseCategoryOptionResponse[];
@@ -62,11 +81,18 @@ export function TodoExpenseDialog({
   const suggestedAmount = getSuggestedTodoExpenseAmount(entry);
   const recordable = canRecordTodoExpense(entry);
   const canContinueFromStep2 = form.category.length > 0;
-  const canContinueFromStep3 =
+  const mobileMoney = form.paymentMethod === "MOBILE_MONEY";
+  const needsNetwork = form.mobileMoneyChannel === "P2P_TRANSFER";
+  const canContinueFromStep3 = mobileMoney
+    ? form.paymentMethod.length > 0 &&
+      form.mobileMoneyChannel.length > 0 &&
+      (!needsNetwork || form.mobileMoneyNetwork.length > 0)
+    : form.paymentMethod.length > 0;
+  const canContinueFromStep4 =
     form.amount.trim().length > 0 && form.date.trim().length > 0;
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    if (step < 4) {
+    if (step < 5) {
       event.preventDefault();
       return;
     }
@@ -95,7 +121,9 @@ export function TodoExpenseDialog({
                   : "Review the todo first, then move it into expenses and mark it done."
                 : step === 2
                   ? "Choose where this spend belongs in your expense ledger."
-                  : step === 3
+                : step === 3
+                  ? "Choose how this expense was paid and the transfer type when needed."
+                  : step === 4
                     ? recurring
                       ? "Set the amount and pick the specific occurrence date to charge."
                       : "Set the amount and confirm the expense date."
@@ -233,6 +261,58 @@ export function TodoExpenseDialog({
 
           {step === 3 ? (
             <section className={cn(SECTION_CLASS, "space-y-4")}>
+              <p className={EYEBROW_CLASS}>Payment</p>
+
+              <div className="space-y-3">
+                <Field label="Payment method">
+                  <CheckboxGroup
+                    options={PAYMENT_METHOD_OPTIONS}
+                    value={form.paymentMethod}
+                    onChange={(value) =>
+                      onChange({
+                        paymentMethod: value as TodoExpenseFormValues["paymentMethod"],
+                      })
+                    }
+                  />
+                </Field>
+
+                {mobileMoney ? (
+                  <>
+                    <Field label="Payment type">
+                      <CheckboxGroup
+                        options={MOBILE_MONEY_CHANNEL_OPTIONS}
+                        value={form.mobileMoneyChannel}
+                        onChange={(value) =>
+                          onChange({
+                            mobileMoneyChannel:
+                              value as TodoExpenseFormValues["mobileMoneyChannel"],
+                          })
+                        }
+                      />
+                    </Field>
+
+                    {needsNetwork ? (
+                      <Field label="Network">
+                        <CheckboxGroup
+                          options={MOBILE_MONEY_NETWORK_OPTIONS}
+                          value={form.mobileMoneyNetwork}
+                          onChange={(value) =>
+                            onChange({
+                              mobileMoneyNetwork:
+                                value as TodoExpenseFormValues["mobileMoneyNetwork"],
+                            })
+                          }
+                        />
+                      </Field>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+
+          {step === 4 ? (
+            <section className={cn(SECTION_CLASS, "space-y-4")}>
               <p className={EYEBROW_CLASS}>Amount & date</p>
 
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1.1fr)_minmax(220px,0.9fr)]">
@@ -291,7 +371,7 @@ export function TodoExpenseDialog({
             </section>
           ) : null}
 
-          {step === 4 ? (
+          {step === 5 ? (
             <>
               <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-3")}>
                 <MiniStat
@@ -303,6 +383,27 @@ export function TodoExpenseDialog({
                   value={
                     categories.find((category) => category.value === form.category)
                       ?.label ?? "—"
+                  }
+                />
+                <MiniStat
+                  label="Payment"
+                  value={
+                    PAYMENT_METHOD_OPTIONS.find(
+                      (option) => option.value === form.paymentMethod,
+                    )?.label ?? "—"
+                  }
+                />
+              </section>
+
+              <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-2")}>
+                <MiniStat
+                  label="Transfer type"
+                  value={
+                    form.paymentMethod === "MOBILE_MONEY"
+                      ? MOBILE_MONEY_CHANNEL_OPTIONS.find(
+                          (option) => option.value === form.mobileMoneyChannel,
+                        )?.label ?? "—"
+                      : "Not applicable"
                   }
                 />
                 <MiniStat
@@ -334,7 +435,9 @@ export function TodoExpenseDialog({
                 : step === 2
                   ? canContinueFromStep2
                   : step === 3
-                    ? canContinueFromStep3
+                  ? canContinueFromStep3
+                  : step === 4
+                    ? canContinueFromStep4
                     : true
             }
             onClose={onClose}
@@ -358,10 +461,12 @@ function StepProgress({ step }: { step: Step }) {
         <StepBar complete={step > 2} />
         <StepDot index={3} active={step === 3} complete={step > 3} />
         <StepBar complete={step > 3} />
-        <StepDot index={4} active={step === 4} complete={false} />
+        <StepDot index={4} active={step === 4} complete={step > 4} />
+        <StepBar complete={step > 4} />
+        <StepDot index={5} active={step === 5} complete={false} />
       </div>
       <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary/70">
-        Step {step} of 4 · {STEP_LABELS[step]}
+        Step {step} of 5 · {STEP_LABELS[step]}
       </p>
     </div>
   );
@@ -445,7 +550,7 @@ function DialogFooter({
         </button>
       )}
 
-      {step < 4 ? (
+      {step < 5 ? (
         <button
           type="button"
           onClick={(event) => {
@@ -513,6 +618,52 @@ function MiniStat({
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+function CheckboxGroup<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: readonly { readonly value: T; readonly label: string; readonly icon?: string }[];
+  value: T | "";
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const selected = value === option.value;
+
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-sm font-medium transition-all",
+              selected
+                ? "border-primary/70 bg-primary/14 text-text-primary shadow-[inset_0_0_0_1px_rgba(199,191,167,0.35)]"
+                : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+            )}
+          >
+            <span
+              className={cn(
+                "flex h-4 w-4 items-center justify-center rounded-[6px] border text-[10px] transition-colors",
+                selected
+                  ? "border-primary bg-primary text-background"
+                  : "border-white/15 bg-white/[0.04] text-transparent",
+              )}
+            >
+              ✓
+            </span>
+            {option.icon ? <span aria-hidden="true">{option.icon}</span> : null}
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
