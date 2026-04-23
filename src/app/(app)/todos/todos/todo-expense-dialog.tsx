@@ -15,9 +15,13 @@ import {
   canRecordTodoExpense,
   formatTodoDate,
   formatTodoFrequencyLabel,
-  getRemainingOccurrenceDates,
+  getOverdueTodoOccurrences,
+  getRecordedTodoOccurrences,
   getSuggestedTodoExpenseAmount,
+  getTrackedTodoOccurrences,
   isRecurringTodo,
+  isOpenTodoOccurrenceStatus,
+  resolveTodoOccurrenceStatusLabel,
 } from "./todos.utils";
 
 const INPUT_CLASS =
@@ -88,7 +92,14 @@ export function TodoExpenseDialog({
   const formRef = useRef<HTMLFormElement>(null);
   const priorityMeta = PRIORITY_META[entry.priority];
   const recurring = isRecurringTodo(entry);
-  const remainingOccurrenceDates = getRemainingOccurrenceDates(entry);
+  const remainingOccurrences = getTrackedTodoOccurrences(entry).filter(
+    (occurrence) => isOpenTodoOccurrenceStatus(occurrence.status),
+  );
+  const remainingOccurrenceDates = remainingOccurrences.map(
+    (occurrence) => occurrence.occurrenceDate,
+  );
+  const overdueOccurrences = getOverdueTodoOccurrences(entry);
+  const recordedOccurrences = getRecordedTodoOccurrences(entry);
   const suggestedAmount = getSuggestedTodoExpenseAmount(entry);
   const recordable = canRecordTodoExpense(entry);
   const canContinueFromStep2 = form.category.length > 0;
@@ -209,12 +220,31 @@ export function TodoExpenseDialog({
               {recurring ? (
                 <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-3")}>
                   <MiniStat
-                    label="Occurrences left"
+                    label="Open occurrences"
                     value={`${remainingOccurrenceDates.length}`}
+                  />
+                  <MiniStat
+                    label="Overdue"
+                    value={`${overdueOccurrences.length}`}
+                    valueClassName={
+                      overdueOccurrences.length > 0 ? "text-danger" : undefined
+                    }
                   />
                   <MiniStat
                     label="Suggested amount"
                     value={rwf(suggestedAmount)}
+                  />
+                </section>
+              ) : null}
+
+              {recurring ? (
+                <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-2")}>
+                  <MiniStat
+                    label="Recorded occurrences"
+                    value={`${recordedOccurrences.length}`}
+                    valueClassName={
+                      recordedOccurrences.length > 0 ? "text-primary" : undefined
+                    }
                   />
                   <MiniStat
                     label="Window"
@@ -406,9 +436,15 @@ export function TodoExpenseDialog({
                       <option value="" disabled>
                         Select occurrence date
                       </option>
-                      {remainingOccurrenceDates.map((date) => (
-                        <option key={date} value={date}>
-                          {formatTodoDate(date)}
+                      {remainingOccurrences.map((occurrence) => (
+                        <option
+                          key={occurrence.id}
+                          value={occurrence.occurrenceDate}
+                        >
+                          {formatTodoDate(occurrence.occurrenceDate)}{" "}
+                          {occurrence.status === "OVERDUE"
+                            ? `· ${resolveTodoOccurrenceStatusLabel(occurrence.status)}`
+                            : ""}
                         </option>
                       ))}
                     </select>
