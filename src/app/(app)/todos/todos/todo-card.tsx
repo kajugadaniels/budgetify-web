@@ -20,24 +20,28 @@ import {
 interface TodoCardProps {
   busyDone: boolean;
   busyRecordExpense: boolean;
+  busyReverseRecordingId: string | null;
   entry: TodoResponse;
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
   onOpenExpense: (expenseId: string) => void;
   onOpenGallery: (todoId: string, index: number) => void;
   onRecordExpense: (entry: TodoResponse) => void;
+  onReverseRecording: (entry: TodoResponse, recordingId: string) => void;
   onToggleDone: (entry: TodoResponse) => void;
 }
 
 export function TodoCard({
   busyDone,
   busyRecordExpense,
+  busyReverseRecordingId,
   entry,
   onDelete,
   onEdit,
   onOpenExpense,
   onOpenGallery,
   onRecordExpense,
+  onReverseRecording,
   onToggleDone,
 }: TodoCardProps) {
   const meta = PRIORITY_META[entry.priority];
@@ -185,6 +189,11 @@ export function TodoCard({
                   {rwf(latestRecording.totalChargedAmount)} charged on{" "}
                   {latestRecording.occurrenceDate}
                 </p>
+                {latestRecording.reversedAt ? (
+                  <p className="mt-1 text-xs text-warning">
+                    Reversed on {latestRecording.reversedAt.slice(0, 10)}
+                  </p>
+                ) : null}
               </div>
               <div className="text-right text-xs text-text-secondary">
                 <p>{latestRecording.paymentMethod.replaceAll("_", " ")}</p>
@@ -193,15 +202,31 @@ export function TodoCard({
                     ? `Fee ${rwf(latestRecording.feeAmount)}`
                     : "No fee"}
                 </p>
-                {latestRecording.expense ? (
-                  <button
-                    type="button"
-                    onClick={() => onOpenExpense(latestRecording.expense!.id)}
-                    className="mt-2 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/16"
-                  >
-                    Open expense
-                  </button>
-                ) : null}
+                <div className="mt-2 flex flex-wrap justify-end gap-2">
+                  {latestRecording.expense && !latestRecording.reversedAt ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenExpense(latestRecording.expense!.id)}
+                      className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/16"
+                    >
+                      Open expense
+                    </button>
+                  ) : null}
+                  {!latestRecording.reversedAt ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onReverseRecording(entry, latestRecording.id)
+                      }
+                      disabled={busyReverseRecordingId === latestRecording.id}
+                      className="rounded-full border border-danger/24 bg-danger/10 px-2.5 py-1 text-[11px] font-medium text-danger transition-colors hover:bg-danger/16 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {busyReverseRecordingId === latestRecording.id
+                        ? "Reversing..."
+                        : "Reverse"}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
