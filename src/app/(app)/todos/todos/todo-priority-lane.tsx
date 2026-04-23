@@ -5,24 +5,28 @@ import { TodoCard } from "./todo-card";
 interface TodoPriorityLaneProps {
   busyDoneId: string | null;
   busyRecordExpenseId: string | null;
+  busyReverseRecordingId: string | null;
   entries: TodoResponse[];
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
   onOpenExpense: (expenseId: string) => void;
   onOpenGallery: (todoId: string, index: number) => void;
   onRecordExpense: (entry: TodoResponse) => void;
+  onReverseRecording: (entry: TodoResponse, recordingId: string) => void;
   onToggleDone: (entry: TodoResponse) => void;
 }
 
 export function TodoPriorityLane({
   busyDoneId,
   busyRecordExpenseId,
+  busyReverseRecordingId,
   entries,
   onDelete,
   onEdit,
   onOpenExpense,
   onOpenGallery,
   onRecordExpense,
+  onReverseRecording,
   onToggleDone,
 }: TodoPriorityLaneProps) {
   return (
@@ -34,12 +38,14 @@ export function TodoPriorityLane({
               key={entry.id}
               busyDone={busyDoneId === entry.id}
               busyRecordExpense={busyRecordExpenseId === entry.id}
+              busyReverseRecordingId={busyReverseRecordingId}
               entry={entry}
               onDelete={onDelete}
               onEdit={onEdit}
               onOpenExpense={onOpenExpense}
               onOpenGallery={onOpenGallery}
               onRecordExpense={onRecordExpense}
+              onReverseRecording={onReverseRecording}
               onToggleDone={onToggleDone}
             />
           ))}
