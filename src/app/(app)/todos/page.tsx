@@ -36,6 +36,7 @@ import type {
   TodoBoardFrequencyFilter,
   TodoBoardPriorityFilter,
   TodoBoardStatusFilter,
+  TodoBoardTypeFilter,
   TodoExpenseDialogState,
   TodoExpenseFormValues,
   TodoGalleryState,
@@ -46,6 +47,7 @@ import {
   createTodoExpenseFormFromEntry,
   formatTodoDate,
   resolveTodoStatusLabel,
+  resolveTodoTypeLabel,
   sortTodos,
 } from "./todos/todos.utils";
 
@@ -56,6 +58,16 @@ function resolveFrequencyFilterFromSearchParam(
     value === "WEEKLY" ||
     value === "MONTHLY" ||
     value === "YEARLY"
+    ? value
+    : "ALL";
+}
+
+function resolveTypeFilterFromSearchParam(
+  value: string | null,
+): TodoBoardTypeFilter {
+  return value === "WISHLIST" ||
+    value === "PLANNED_SPEND" ||
+    value === "RECURRING_OBLIGATION"
     ? value
     : "ALL";
 }
@@ -106,6 +118,9 @@ export default function TodosPage() {
     useState<TodoBoardFrequencyFilter>(() =>
       resolveFrequencyFilterFromSearchParam(searchParams.get("frequency")),
     );
+  const [selectedType, setSelectedType] = useState<TodoBoardTypeFilter>(() =>
+    resolveTypeFilterFromSearchParam(searchParams.get("type")),
+  );
   const [selectedStatus, setSelectedStatus] =
     useState<TodoBoardStatusFilter>("ALL");
   const [searchInput, setSearchInput] = useState("");
@@ -119,7 +134,13 @@ export default function TodosPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedSearch, selectedDateFrom, selectedDateTo, selectedFrequency]);
+  }, [
+    appliedSearch,
+    selectedDateFrom,
+    selectedDateTo,
+    selectedFrequency,
+    selectedType,
+  ]);
 
   useEffect(() => {
     if (!token) return;
@@ -135,6 +156,7 @@ export default function TodosPage() {
         const filters = {
           frequency:
             selectedFrequency === "ALL" ? undefined : selectedFrequency,
+          type: selectedType === "ALL" ? undefined : selectedType,
           priority:
             selectedPriority === "ALL" ? undefined : selectedPriority,
           status:
@@ -171,7 +193,7 @@ export default function TodosPage() {
           setError(
             loadError instanceof ApiError
               ? loadError.message
-              : "Wishlist items could not be loaded right now.",
+              : "Plan items could not be loaded right now.",
           );
         }
       } finally {
@@ -194,6 +216,7 @@ export default function TodosPage() {
     selectedDateTo,
     selectedStatus,
     selectedFrequency,
+    selectedType,
     selectedPriority,
     token,
   ]);
@@ -321,8 +344,18 @@ export default function TodosPage() {
   const dueNext30DaysAmount = summary?.next30DaysScheduledAmount ?? 0;
   const recurringBudgetBurnDown = summary?.recurringBudgetBurnDown ?? null;
   const latestTodo = summary?.latestTodo ?? null;
+  const typeBreakdown = summary?.typeBreakdown ?? [];
+  const wishlistCount =
+    typeBreakdown.find((metric) => metric.type === "WISHLIST")?.totalCount ?? 0;
+  const plannedSpendCount =
+    typeBreakdown.find((metric) => metric.type === "PLANNED_SPEND")
+      ?.totalCount ?? 0;
+  const recurringObligationCount =
+    typeBreakdown.find((metric) => metric.type === "RECURRING_OBLIGATION")
+      ?.totalCount ?? 0;
   const hasActiveBoardFilters =
     selectedFrequency !== "ALL" ||
+    selectedType !== "ALL" ||
     selectedPriority !== "ALL" ||
     selectedStatus !== "ALL" ||
     appliedSearch !== undefined ||
@@ -352,8 +385,8 @@ export default function TodosPage() {
     if (!canRecordTodoExpense(entry)) {
       toast.info(
         entry.frequency === "ONCE"
-          ? `This todo is ${resolveTodoStatusLabel(entry.status).toLowerCase()}.`
-          : "This recurring todo has no remaining budget or available occurrence left.",
+          ? `This plan is ${resolveTodoStatusLabel(entry.status).toLowerCase()}.`
+          : "This recurring obligation has no remaining budget or available occurrence left.",
       );
       return;
     }
@@ -412,7 +445,7 @@ export default function TodosPage() {
         triggerRefresh();
       }
 
-      toast.success("Wishlist item deleted.");
+      toast.success("Plan item deleted.");
 
       if (galleryTarget?.todoId === deleteTarget.id) {
         setGalleryTarget(null);
@@ -423,7 +456,7 @@ export default function TodosPage() {
       toast.error(
         deleteError instanceof ApiError
           ? deleteError.message
-          : "Wishlist item could not be deleted right now.",
+          : "Plan item could not be deleted right now.",
       );
     }
   }
@@ -447,14 +480,14 @@ export default function TodosPage() {
       triggerRefresh();
       toast.success(
         nextStatus === "COMPLETED"
-          ? "Wishlist item marked as completed."
-          : "Wishlist item reopened.",
+          ? "Plan item marked as completed."
+          : "Plan item reopened.",
       );
     } catch (updateError) {
       toast.error(
         updateError instanceof ApiError
           ? updateError.message
-          : "Wishlist item status could not be updated right now.",
+          : "Plan item status could not be updated right now.",
       );
     } finally {
       setStatusBusyId(null);
@@ -590,7 +623,7 @@ export default function TodosPage() {
                   <div className="space-y-1.5">
                     <span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
                       <span className="motion-safe:animate-income-glow h-1.5 w-1.5 rounded-full bg-primary" />
-                      Wishlist
+                      Planning workspace
                     </span>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/58">
                       Purchase pipeline
@@ -636,6 +669,19 @@ export default function TodosPage() {
                     </span>
                   </div>
                 </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                    {wishlistCount} wishlist
+                  </span>
+                  <span className="rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary">
+                    {plannedSpendCount} planned spend
+                  </span>
+                  <span className="rounded-full border border-warning/14 bg-warning/8 px-2.5 py-1 text-[11px] font-medium text-warning/88">
+                    {recurringObligationCount} recurring obligation
+                    {recurringObligationCount === 1 ? "" : "s"}
+                  </span>
+                </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
@@ -652,7 +698,7 @@ export default function TodosPage() {
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {latestTodo
                       ? latestTodo.name
-                      : "Add an item to start shaping the wishlist."}
+                      : "Add a plan item to start shaping this workspace."}
                   </p>
                 </div>
 
@@ -694,10 +740,10 @@ export default function TodosPage() {
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/60">
-                Wishlist board
+                Planning board
               </p>
               <h2 className="mt-2 text-xl font-semibold tracking-heading-md text-text-primary">
-                Wishlist items ordered by when you added them
+                Wishlists, planned spends, and recurring obligations in one queue
               </h2>
             </div>
             <p className="text-sm text-text-secondary">
@@ -714,9 +760,11 @@ export default function TodosPage() {
             frequency={selectedFrequency}
             hasActiveFilters={hasActiveBoardFilters}
             priority={selectedPriority}
+            type={selectedType}
             search={searchInput}
             onClear={() => {
               setSelectedFrequency("ALL");
+              setSelectedType("ALL");
               setSelectedPriority("ALL");
               setSelectedStatus("ALL");
               setSearchInput("");
@@ -734,6 +782,10 @@ export default function TodosPage() {
               setSelectedFrequency(value);
               setCurrentPage(1);
             }}
+            onTypeChange={(value) => {
+              setSelectedType(value);
+              setCurrentPage(1);
+            }}
             onPriorityChange={(value) => {
               setSelectedPriority(value);
               setCurrentPage(1);
@@ -746,7 +798,7 @@ export default function TodosPage() {
               <TodosBoardSkeleton />
             ) : error ? (
               <EmptyState
-                title="Could not load the wishlist"
+                title="Could not load the plans"
                 description={error}
                 action={{
                   label: "Refresh",
@@ -755,21 +807,22 @@ export default function TodosPage() {
               />
             ) : totalCount === 0 ? (
               <EmptyState
-                title="No wishlist items yet"
-                description="Add the products or goals you want to save for, then keep the top lane brutally selective."
+                title="No plans yet"
+                description="Add wishlist ideas, one-off planned spends, or recurring obligations and keep the list honest."
                 action={{
-                  label: "Add item",
+                  label: "Add plan",
                   onClick: openCreatePage,
                 }}
               />
             ) : totalItems === 0 ? (
               <EmptyState
-                title="No wishlist matches"
-                description="Try another search, date range, priority, or status filter to reveal more wishlist items."
+                title="No plan matches"
+                description={`Try another search, date range, type, priority, or status filter to reveal more ${selectedType === "ALL" ? "plan items" : resolveTodoTypeLabel(selectedType).toLowerCase()}.`}
                 action={{
                   label: "Clear filters",
                   onClick: () => {
                     setSelectedFrequency("ALL");
+                    setSelectedType("ALL");
                     setSelectedPriority("ALL");
                     setSelectedStatus("ALL");
                     setSearchInput("");
@@ -833,7 +886,7 @@ export default function TodosPage() {
 
       {deleteTarget ? (
         <ConfirmDeleteDialog
-          label="wishlist item"
+          label="plan item"
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
         />

@@ -11,7 +11,9 @@ import {
   getRecordedTodoOccurrences,
   isRecurringTodo,
   isClosedTodoStatus,
+  resolveTodoAmountLabel,
   resolveTodoStatusLabel,
+  resolveTodoTypeLabel,
 } from "./todos.utils";
 
 interface TodoCardProps {
@@ -57,7 +59,7 @@ export function TodoCard({
 
       <TodoImageCarousel
         images={entry.images}
-        emptyDescription="Add a product image to give this wishlist item presence."
+        emptyDescription="Add an image to give this plan item presence."
         emptyTitle="No image yet"
         heightClass="h-52"
         onImageClick={(index) => onOpenGallery(entry.id, index)}
@@ -71,6 +73,9 @@ export function TodoCard({
                 className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${meta.chipClass}`}
               >
                 {meta.label}
+              </span>
+              <span className="inline-flex rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary">
+                {resolveTodoTypeLabel(entry.type)}
               </span>
               <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
                 {formatTodoFrequencyLabel(entry.frequency)}
@@ -124,7 +129,7 @@ export function TodoCard({
 
           <div className="shrink-0 rounded-[20px] px-4 py-3 text-right">
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/65">
-              Price
+              {resolveTodoAmountLabel(entry)}
             </p>
             <p className="mt-2 text-lg font-semibold text-text-primary">
               {rwf(Number(entry.price))}

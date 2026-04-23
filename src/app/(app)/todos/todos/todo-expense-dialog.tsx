@@ -21,7 +21,9 @@ import {
   getTrackedTodoOccurrences,
   isRecurringTodo,
   isOpenTodoOccurrenceStatus,
+  resolveTodoAmountLabel,
   resolveTodoOccurrenceStatusLabel,
+  resolveTodoTypeLabel,
 } from "./todos.utils";
 
 const INPUT_CLASS =
@@ -36,7 +38,7 @@ const EYEBROW_CLASS =
 type Step = 1 | 2 | 3 | 4 | 5;
 
 const STEP_LABELS: Record<Step, string> = {
-  1: "Todo",
+  1: "Plan",
   2: "Category",
   3: "Payment",
   4: "Amount & date",
@@ -134,13 +136,13 @@ export function TodoExpenseDialog({
               Record expense
             </div>
             <h2 className="mt-3 text-xl font-semibold tracking-heading-md text-text-primary sm:text-[1.35rem]">
-              Move todo into expenses
+              Record plan as expense
             </h2>
             <p className="mt-2 max-w-lg text-sm leading-6 text-text-secondary">
               {step === 1
                 ? recurring
-                  ? "Review the todo first, then record it as an expense against one recurring occurrence."
-                  : "Review the todo first, then move it into expenses and move it to recorded status."
+                  ? "Review the plan first, then record it as an expense against one recurring occurrence."
+                  : "Review the plan first, then move it into expenses and shift it to recorded status."
                 : step === 2
                   ? "Choose where this spend belongs in your expense ledger."
                 : step === 3
@@ -181,7 +183,7 @@ export function TodoExpenseDialog({
                 )}
               >
                 <div className="min-w-0 rounded-[18px] border border-white/8 bg-surface-elevated/70 px-3.5 py-3">
-                  <p className={EYEBROW_CLASS}>Todo</p>
+                  <p className={EYEBROW_CLASS}>Plan</p>
                   <p className="mt-2 truncate text-sm font-semibold text-text-primary">
                     {entry.name}
                   </p>
@@ -194,6 +196,9 @@ export function TodoExpenseDialog({
                     <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
                       Added {formatTodoDate(entry.createdAt)}
                     </span>
+                    <span className="rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary">
+                      {resolveTodoTypeLabel(entry.type)}
+                    </span>
                     <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
                       {formatTodoFrequencyLabel(entry.frequency)}
                     </span>
@@ -202,7 +207,7 @@ export function TodoExpenseDialog({
 
                 <div className="grid gap-2">
                   <MiniStat
-                    label="Wishlist price"
+                    label={resolveTodoAmountLabel(entry)}
                     value={rwf(Number(entry.price))}
                   />
                   <MiniStat

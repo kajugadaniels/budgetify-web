@@ -47,8 +47,8 @@ export function TodoPriorityLane({
       ) : (
         <div className="rounded-[24px] border border-white/8 bg-surface-elevated/65 p-4">
           <EmptyState
-            title="No wishlist items yet"
-            description="Add the things you want to buy and they will appear here in the order you created them."
+            title="No plans yet"
+            description="Add a wishlist item, a planned spend, or a recurring obligation and it will appear here in the order you created it."
           />
         </div>
       )}

@@ -2,13 +2,22 @@
 
 import { useState } from "react";
 import { PRIORITY_META } from "@/constant/todos/priority-meta";
-import type { TodoResponse, TodoStatus } from "@/lib/types/todo.types";
+import type {
+  TodoResponse,
+  TodoStatus,
+  TodoType,
+} from "@/lib/types/todo.types";
 import { cn } from "@/lib/utils/cn";
 import { TodoImageCarousel } from "./todo-image-carousel";
 import { TodoImageDropzone } from "./todo-image-dropzone";
 import { TodoScheduleCalendar } from "./todo-schedule-calendar";
 import { TodoWeekdayPicker } from "./todo-weekday-picker";
 import type { TodoFormValues } from "./todos-page.types";
+import {
+  resolveTodoAmountLabel,
+  resolveTodoTypeDescription,
+  resolveTodoTypeLabel,
+} from "./todos.utils";
 
 const INPUT_CLASS =
   "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 transition-colors focus:border-primary/60 focus:outline-none";
@@ -28,12 +37,20 @@ const STATUS_OPTIONS: Array<{ value: TodoStatus; label: string }> = [
   { value: "ARCHIVED", label: "Archived" },
 ] as const;
 
+const TODO_TYPE_OPTIONS: Array<{
+  value: TodoType;
+}> = [
+  { value: "WISHLIST" },
+  { value: "PLANNED_SPEND" },
+  { value: "RECURRING_OBLIGATION" },
+] as const;
+
 const STEP_META = [
   {
     step: 0 as const,
     eyebrow: "Step 1",
-    title: "Core",
-    description: "Name, amount, and status.",
+    title: "Intent",
+    description: "Type, amount, and status.",
   },
   {
     step: 1 as const,
@@ -88,6 +105,7 @@ export function TodoFormWizard({
   const resolvedImageIndex =
     images.length > 0 ? Math.min(activeImageIndex, images.length - 1) : 0;
   const selectedImage = images[resolvedImageIndex];
+  const recurringType = form.type === "RECURRING_OBLIGATION";
   const scheduleReady =
     form.frequency === "ONCE"
       ? true
@@ -152,11 +170,11 @@ export function TodoFormWizard({
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
               >
                 <span aria-hidden="true">←</span>
-                Back to todos
+                Back to plans
               </button>
 
               <h1 className="mt-3 text-[1.4rem] font-semibold tracking-[-0.045em] text-text-primary">
-                {mode === "edit" ? "Edit wishlist item" : "Add wishlist item"}
+                {mode === "edit" ? "Edit plan item" : "Add plan item"}
               </h1>
               <p className="mt-1 text-sm text-text-secondary">
                 {STEP_META[step].description}
@@ -188,6 +206,36 @@ export function TodoFormWizard({
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(240px,0.85fr)]">
               <section className="rounded-[22px] border border-white/8 bg-background/24 p-4">
                 <div className="grid gap-3">
+                  <Field label="Track as">
+                    <div className="grid gap-2">
+                      {TODO_TYPE_OPTIONS.map((option) => {
+                        const selected = form.type === option.value;
+
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => onChange({ type: option.value })}
+                            className={cn(
+                              "rounded-[18px] border px-3.5 py-3 text-left transition-all",
+                              selected
+                                ? "border-primary/20 bg-primary/10 text-text-primary"
+                                : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
+                            )}
+                          >
+                            <p className="text-sm font-semibold">
+                              {resolveTodoTypeLabel(option.value)}
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-text-secondary">
+                              {resolveTodoTypeDescription(option.value)}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+
                   <Field label="Item name">
                     <input
                       type="text"
@@ -200,7 +248,7 @@ export function TodoFormWizard({
                     />
                   </Field>
 
-                  <Field label="Planned price">
+                  <Field label={resolveTodoAmountLabel(form)}>
                     <input
                       type="number"
                       value={form.price}
@@ -300,46 +348,59 @@ export function TodoFormWizard({
             <div className="space-y-3">
               <section className="rounded-[22px] border border-white/8 bg-background/24 p-4">
                 <Field label="Schedule">
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {FREQUENCY_OPTIONS.map((option) => {
-                      const selected = form.frequency === option.value;
+                  {recurringType ? (
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      {FREQUENCY_OPTIONS.filter(
+                        (option) => option.value !== "ONCE",
+                      ).map((option) => {
+                        const selected = form.frequency === option.value;
 
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          aria-pressed={selected}
-                          onClick={() =>
-                            onChange({
-                              frequency: option.value,
-                              frequencyDays:
-                                option.value === "WEEKLY"
-                                  ? form.frequencyDays
-                                  : [],
-                              occurrenceDates:
-                                option.value === "ONCE"
-                                  ? [form.startDate]
-                                  : option.value === "WEEKLY"
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() =>
+                              onChange({
+                                frequency: option.value,
+                                frequencyDays:
+                                  option.value === "WEEKLY"
+                                    ? form.frequencyDays
+                                    : [],
+                                occurrenceDates:
+                                  option.value === "WEEKLY"
                                     ? form.occurrenceDates
                                     : [],
-                            })
-                          }
-                          className={cn(
-                            "inline-flex items-center justify-center rounded-2xl border px-3 py-2 text-sm font-medium transition-all",
-                            selected
-                              ? "border-primary bg-primary text-background shadow-[0_12px_28px_rgba(199,191,167,0.18)]"
-                              : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
-                          )}
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                              })
+                            }
+                            className={cn(
+                              "inline-flex items-center justify-center rounded-2xl border px-3 py-2 text-sm font-medium transition-all",
+                              selected
+                                ? "border-primary bg-primary text-background shadow-[0_12px_28px_rgba(199,191,167,0.18)]"
+                                : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-[18px] border border-white/8 bg-surface-elevated/70 px-3.5 py-3">
+                      <p className="text-sm font-semibold text-text-primary">
+                        One-time plan
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-text-secondary">
+                        {resolveTodoTypeLabel(form.type)} items stay on a single
+                        planned date until you intentionally convert them into a
+                        recurring obligation.
+                      </p>
+                    </div>
+                  )}
                 </Field>
 
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  <Field label="Starts on">
+                  <Field label={recurringType ? "Starts on" : "Planned on"}>
                     <input
                       type="date"
                       value={form.startDate}
@@ -351,7 +412,7 @@ export function TodoFormWizard({
                     />
                   </Field>
 
-                  <Field label="Ends on">
+                  <Field label={recurringType ? "Ends on" : "Window end"}>
                     <input
                       type="date"
                       value={form.endDate}
@@ -362,7 +423,7 @@ export function TodoFormWizard({
                 </div>
               </section>
 
-              {form.frequency === "WEEKLY" ? (
+              {recurringType && form.frequency === "WEEKLY" ? (
                 <section className="rounded-[22px] border border-white/8 bg-background/24 p-4">
                   <Field label="Weekdays">
                     <TodoWeekdayPicker
@@ -375,7 +436,8 @@ export function TodoFormWizard({
                 </section>
               ) : null}
 
-              {form.frequency === "MONTHLY" || form.frequency === "YEARLY" ? (
+              {recurringType &&
+              (form.frequency === "MONTHLY" || form.frequency === "YEARLY") ? (
                 <section className="rounded-[22px] border border-white/8 bg-background/24 p-4">
                   <Field label="Occurrence dates">
                     <TodoScheduleCalendar
@@ -397,8 +459,8 @@ export function TodoFormWizard({
                       Planned occurrences
                     </p>
                     <p className="mt-1 text-sm text-text-primary">
-                      {form.frequency === "ONCE"
-                        ? "One expense-ready occurrence"
+                      {!recurringType
+                        ? "One planned occurrence"
                         : `${form.occurrenceDates.length} occurrence${form.occurrenceDates.length === 1 ? "" : "s"} planned`}
                     </p>
                   </div>
@@ -415,19 +477,17 @@ export function TodoFormWizard({
               <section className="grid gap-2 sm:grid-cols-3">
                 <MiniStat label="Item" value={form.name.trim() || "Untitled"} />
                 <MiniStat
-                  label="Frequency"
-                  value={
-                    FREQUENCY_OPTIONS.find(
-                      (option) => option.value === form.frequency,
-                    )?.label ?? "Once"
-                  }
+                  label="Type"
+                  value={resolveTodoTypeLabel(form.type)}
                 />
                 <MiniStat
-                  label={mode === "edit" ? "Saved" : "Pending"}
+                  label="Frequency"
                   value={
-                    mode === "edit"
-                      ? String(savedImagesCount)
-                      : String(pendingImages.length)
+                    recurringType
+                      ? (FREQUENCY_OPTIONS.find(
+                          (option) => option.value === form.frequency,
+                        )?.label ?? "Once")
+                      : "One-time"
                   }
                 />
               </section>
@@ -577,7 +637,7 @@ export function TodoFormWizard({
                   ? "Saving..."
                   : mode === "edit"
                     ? "Save changes"
-                    : "Add item"}
+                    : "Add plan"}
               </button>
             )}
           </div>

@@ -1,4 +1,4 @@
-import type { TodoFrequency } from "@/lib/types/todo.types";
+import type { TodoFrequency, TodoType } from "@/lib/types/todo.types";
 import {
   Select,
   SelectContent,
@@ -11,6 +11,7 @@ import type {
   TodoBoardFrequencyFilter,
   TodoBoardPriorityFilter,
   TodoBoardStatusFilter,
+  TodoBoardTypeFilter,
 } from "./todos-page.types";
 
 const TODO_FREQUENCY_OPTIONS: Array<{
@@ -23,6 +24,15 @@ const TODO_FREQUENCY_OPTIONS: Array<{
   { label: "Yearly", value: "YEARLY" },
 ];
 
+const TODO_TYPE_OPTIONS: Array<{
+  label: string;
+  value: TodoType;
+}> = [
+  { label: "Wishlist", value: "WISHLIST" },
+  { label: "Planned spend", value: "PLANNED_SPEND" },
+  { label: "Recurring obligation", value: "RECURRING_OBLIGATION" },
+];
+
 interface TodosBoardFiltersProps {
   dateFrom: string;
   dateTo: string;
@@ -30,6 +40,7 @@ interface TodosBoardFiltersProps {
   frequency: TodoBoardFrequencyFilter;
   hasActiveFilters: boolean;
   priority: TodoBoardPriorityFilter;
+  type: TodoBoardTypeFilter;
   search: string;
   onClear: () => void;
   onDateFromChange: (value: string) => void;
@@ -37,6 +48,7 @@ interface TodosBoardFiltersProps {
   onStatusChange: (value: TodoBoardStatusFilter) => void;
   onFrequencyChange: (value: TodoBoardFrequencyFilter) => void;
   onPriorityChange: (value: TodoBoardPriorityFilter) => void;
+  onTypeChange: (value: TodoBoardTypeFilter) => void;
   onSearchChange: (value: string) => void;
 }
 
@@ -47,6 +59,7 @@ export function TodosBoardFilters({
   frequency,
   hasActiveFilters,
   priority,
+  type,
   search,
   onClear,
   onDateFromChange,
@@ -54,6 +67,7 @@ export function TodosBoardFilters({
   onStatusChange,
   onFrequencyChange,
   onPriorityChange,
+  onTypeChange,
   onSearchChange,
 }: TodosBoardFiltersProps) {
   return (
@@ -64,7 +78,7 @@ export function TodosBoardFilters({
             type="search"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search wishlist item"
+            placeholder="Search a plan"
             className="h-11 w-full rounded-full border border-white/10 bg-background-secondary pl-4 pr-24 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary/55 focus:border-primary/35"
           />
           <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/45">
@@ -100,6 +114,25 @@ export function TodosBoardFilters({
               <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
                 <SelectItem value="ALL">All frequencies</SelectItem>
                 {TODO_FREQUENCY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={type}
+              onValueChange={(value) =>
+                onTypeChange(value as TodoBoardTypeFilter)
+              }
+            >
+              <SelectTrigger className="h-11 min-w-[182px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
+                <SelectItem value="ALL">All plan types</SelectItem>
+                {TODO_TYPE_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>

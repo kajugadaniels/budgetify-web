@@ -32,7 +32,7 @@ export function TodosBoard({
             Newest first
           </p>
           <p className="mt-1 text-sm text-text-secondary">
-            Ordered by the date each wishlist item was created
+            Ordered by the date each plan item was created
           </p>
         </div>
         <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-text-secondary">

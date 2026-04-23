@@ -81,7 +81,7 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
           setError(
             loadError instanceof ApiError
               ? loadError.message
-              : "This wishlist item could not be loaded right now.",
+              : "This plan item could not be loaded right now.",
           );
         }
       } finally {
@@ -174,18 +174,19 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
     }
 
     if (form.frequency === "WEEKLY" && form.frequencyDays.length === 0) {
-      toast.error("Select at least one weekday for this recurring todo.");
+      toast.error("Select at least one weekday for this recurring obligation.");
       return;
     }
 
     if (form.frequency !== "ONCE" && form.occurrenceDates.length === 0) {
-      toast.error("Select at least one occurrence for this recurring todo.");
+      toast.error("Select at least one occurrence for this recurring obligation.");
       return;
     }
 
     const payload: CreateTodoRequest = {
       name: form.name.trim(),
       price,
+      type: form.type,
       priority: form.priority,
       status: form.status,
       frequency: form.frequency,
@@ -200,10 +201,10 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
     try {
       if (mode === "edit" && todoId) {
         await updateTodo(token, todoId, payload, pendingImages);
-        toast.success("Wishlist item updated.");
+        toast.success("Plan item updated.");
       } else {
         await createTodo(token, payload, pendingImages);
-        toast.success("Wishlist item added.");
+        toast.success("Plan item added.");
       }
 
       router.push("/todos");
@@ -211,7 +212,7 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
       toast.error(
         saveError instanceof ApiError
           ? saveError.message
-          : "Wishlist item could not be saved right now.",
+          : "Plan item could not be saved right now.",
       );
     } finally {
       setSaving(false);
@@ -249,7 +250,7 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
       await deleteTodoImage(token, editingEntry.id, imageId);
       const refreshedTodo = await getTodo(token, editingEntry.id);
       setEditingEntry(refreshedTodo);
-      toast.info("Image removed from wishlist item.");
+      toast.info("Image removed from the plan item.");
     } catch (imageError) {
       toast.error(
         imageError instanceof ApiError
@@ -266,15 +267,15 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         {mode === "edit" && !todoId ? (
           <EmptyState
-            title="Todo not found"
-            description="This edit route is missing the wishlist item id."
-            action={{ label: "Back to todos", onClick: handleBack }}
+            title="Plan not found"
+            description="This edit route is missing the plan item id."
+            action={{ label: "Back to plans", onClick: handleBack }}
           />
         ) : loadingEntry ? (
           <TodoFormPageSkeleton />
         ) : error ? (
           <EmptyState
-            title="Could not open the wishlist item"
+            title="Could not open the plan item"
             description={error}
             action={{
               label: "Try again",

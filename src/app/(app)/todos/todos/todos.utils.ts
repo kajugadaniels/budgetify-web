@@ -9,10 +9,12 @@ import type {
   TodoOccurrenceStatus,
   TodoResponse,
   TodoStatus,
+  TodoType,
 } from "@/lib/types/todo.types";
 import type {
   TodoBoardStatusFilter,
   TodoBoardPriorityFilter,
+  TodoBoardTypeFilter,
   TodoExpenseFormValues,
   TodoFormValues,
 } from "./todos-page.types";
@@ -35,6 +37,7 @@ export function createEmptyTodoForm(): TodoFormValues {
   return {
     name: "",
     price: "",
+    type: "WISHLIST",
     priority: "TOP_PRIORITY",
     status: "ACTIVE",
     frequency: "ONCE",
@@ -55,6 +58,7 @@ export function createTodoFormFromEntry(entry: TodoResponse): TodoFormValues {
   return {
     name: entry.name,
     price: String(entry.price),
+    type: entry.type,
     priority: entry.priority,
     status: entry.status,
     frequency: entry.frequency,
@@ -71,14 +75,21 @@ export function applyTodoFormPatch(
   next: Partial<TodoFormValues>,
 ): TodoFormValues {
   const frequency = next.frequency ?? current.frequency;
+  const type = next.type ?? current.type;
+  const normalizedFrequency =
+    type === "RECURRING_OBLIGATION"
+      ? frequency === "ONCE"
+        ? "MONTHLY"
+        : frequency
+      : "ONCE";
   const startDate = next.startDate ?? current.startDate;
-  const endDate = computeTodoEndDate(startDate, frequency);
+  const endDate = computeTodoEndDate(startDate, normalizedFrequency);
   const frequencyDays =
     next.frequencyDays ?? current.frequencyDays;
   const nextOccurrenceDatesInput =
     next.occurrenceDates ?? current.occurrenceDates;
   const occurrenceDates = buildTodoOccurrenceDates({
-    frequency,
+    frequency: normalizedFrequency,
     startDate,
     endDate,
     frequencyDays,
@@ -88,11 +99,12 @@ export function applyTodoFormPatch(
   return {
     ...current,
     ...next,
-    frequency,
+    type,
+    frequency: normalizedFrequency,
     startDate,
     endDate,
     frequencyDays:
-      frequency === "WEEKLY"
+      normalizedFrequency === "WEEKLY"
         ? sortNumberValues(frequencyDays)
         : [],
     occurrenceDates,
@@ -176,17 +188,19 @@ export function validateTodoUploadFile(file: File): string | null {
 export function filterTodos(
   entries: TodoResponse[],
   filters: {
+    type: TodoBoardTypeFilter;
     priority: TodoBoardPriorityFilter;
     status: TodoBoardStatusFilter;
   },
 ): TodoResponse[] {
   return entries.filter((entry) => {
+    const typeMatches = filters.type === "ALL" || entry.type === filters.type;
     const priorityMatches =
       filters.priority === "ALL" || entry.priority === filters.priority;
     const statusMatches =
       filters.status === "ALL" || entry.status === filters.status;
 
-    return priorityMatches && statusMatches;
+    return typeMatches && priorityMatches && statusMatches;
   });
 }
 
@@ -257,9 +271,11 @@ export function buildTodoOccurrenceDates(input: {
 }
 
 export function isRecurringTodo(
-  entry: Pick<TodoResponse, "frequency">,
+  entry: Pick<TodoResponse, "frequency" | "type">,
 ): boolean {
-  return entry.frequency !== "ONCE";
+  return (
+    entry.type === "RECURRING_OBLIGATION" && entry.frequency !== "ONCE"
+  );
 }
 
 export function getRemainingOccurrenceDates(
@@ -281,6 +297,7 @@ export function getRemainingOccurrenceDates(
 export function getSuggestedTodoExpenseAmount(
   entry: Pick<
     TodoResponse,
+    | "type"
     | "frequency"
     | "price"
     | "remainingAmount"
@@ -307,6 +324,7 @@ export function canRecordTodoExpense(
   entry: Pick<
     TodoResponse,
     | "status"
+    | "type"
     | "frequency"
     | "remainingAmount"
     | "occurrences"
@@ -348,8 +366,53 @@ export function formatTodoFrequencyLabel(
   }
 }
 
+export function resolveTodoTypeLabel(type: TodoType): string {
+  switch (type) {
+    case "PLANNED_SPEND":
+      return "Planned spend";
+    case "RECURRING_OBLIGATION":
+      return "Recurring obligation";
+    case "WISHLIST":
+    default:
+      return "Wishlist";
+  }
+}
+
+export function resolveTodoTypeDescription(type: TodoType): string {
+  switch (type) {
+    case "PLANNED_SPEND":
+      return "A one-off operational purchase you expect to make.";
+    case "RECURRING_OBLIGATION":
+      return "A repeating financial commitment that should stay on schedule.";
+    case "WISHLIST":
+    default:
+      return "An aspirational item you want to track without treating it as an obligation yet.";
+  }
+}
+
+export function isOperationalTodoType(
+  type: TodoType,
+): boolean {
+  return type === "PLANNED_SPEND" || type === "RECURRING_OBLIGATION";
+}
+
+export function resolveTodoAmountLabel(
+  entry: Pick<TodoResponse, "type">,
+): string {
+  switch (entry.type) {
+    case "PLANNED_SPEND":
+      return "Planned spend";
+    case "RECURRING_OBLIGATION":
+      return "Cycle budget";
+    case "WISHLIST":
+    default:
+      return "Wishlist price";
+  }
+}
+
 export function formatTodoScheduleSummary(entry: Pick<
   TodoResponse,
+  | "type"
   | "frequency"
   | "occurrences"
   | "occurrenceDates"
