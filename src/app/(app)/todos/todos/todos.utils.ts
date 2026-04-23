@@ -5,6 +5,8 @@ import {
 import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
 import type {
   TodoFrequency,
+  TodoOccurrenceResponse,
+  TodoOccurrenceStatus,
   TodoResponse,
   TodoStatus,
 } from "@/lib/types/todo.types";
@@ -112,9 +114,10 @@ export function createTodoExpenseFormFromEntry(
   entry: TodoResponse,
   categories: ExpenseCategoryOptionResponse[],
 ): TodoExpenseFormValues {
+  const remainingOccurrenceDates = getRemainingOccurrenceDates(entry);
   const defaultDate =
-    isRecurringTodo(entry) && getRemainingOccurrenceDates(entry).length > 0
-      ? getRemainingOccurrenceDates(entry)[0]
+    isRecurringTodo(entry) && remainingOccurrenceDates.length > 0
+      ? remainingOccurrenceDates[0]
       : getTodayDateValue();
 
   return {
@@ -260,8 +263,16 @@ export function isRecurringTodo(
 }
 
 export function getRemainingOccurrenceDates(
-  entry: Pick<TodoResponse, "occurrenceDates" | "recordedOccurrenceDates">,
+  entry: Pick<TodoResponse, "occurrences" | "occurrenceDates" | "recordedOccurrenceDates">,
 ): string[] {
+  if (entry.occurrences.length > 0) {
+    return sortDateValues(
+      entry.occurrences
+        .filter((occurrence) => isOpenTodoOccurrenceStatus(occurrence.status))
+        .map((occurrence) => occurrence.occurrenceDate),
+    );
+  }
+
   return entry.occurrenceDates.filter(
     (date) => !entry.recordedOccurrenceDates.includes(date),
   );
@@ -270,7 +281,12 @@ export function getRemainingOccurrenceDates(
 export function getSuggestedTodoExpenseAmount(
   entry: Pick<
     TodoResponse,
-    "frequency" | "price" | "remainingAmount" | "occurrenceDates" | "recordedOccurrenceDates"
+    | "frequency"
+    | "price"
+    | "remainingAmount"
+    | "occurrences"
+    | "occurrenceDates"
+    | "recordedOccurrenceDates"
   >,
 ): number {
   if (!isRecurringTodo(entry)) {
@@ -290,7 +306,12 @@ export function getSuggestedTodoExpenseAmount(
 export function canRecordTodoExpense(
   entry: Pick<
     TodoResponse,
-    "status" | "frequency" | "remainingAmount" | "occurrenceDates" | "recordedOccurrenceDates"
+    | "status"
+    | "frequency"
+    | "remainingAmount"
+    | "occurrences"
+    | "occurrenceDates"
+    | "recordedOccurrenceDates"
   >,
 ): boolean {
   if (
@@ -329,14 +350,31 @@ export function formatTodoFrequencyLabel(
 
 export function formatTodoScheduleSummary(entry: Pick<
   TodoResponse,
-  "frequency" | "occurrenceDates" | "recordedOccurrenceDates" | "startDate" | "endDate"
+  | "frequency"
+  | "occurrences"
+  | "occurrenceDates"
+  | "recordedOccurrenceDates"
+  | "startDate"
+  | "endDate"
 >): string {
   if (!isRecurringTodo(entry)) {
     return entry.startDate ? `One-time on ${formatTodoDate(entry.startDate)}` : "One-time";
   }
 
+  const totalOccurrences =
+    entry.occurrences.length > 0 ? entry.occurrences.length : entry.occurrenceDates.length;
   const remainingCount = getRemainingOccurrenceDates(entry).length;
-  return `${entry.occurrenceDates.length} planned · ${remainingCount} left`;
+  const overdueCount = getOverdueTodoOccurrences(entry).length;
+  const recordedCount = getRecordedTodoOccurrences(entry).length;
+  const statusBits = [`${totalOccurrences} planned`, `${remainingCount} open`];
+
+  if (overdueCount > 0) {
+    statusBits.push(`${overdueCount} overdue`);
+  } else if (recordedCount > 0) {
+    statusBits.push(`${recordedCount} recorded`);
+  }
+
+  return statusBits.join(" · ");
 }
 
 export function resolveTodoStatusLabel(status: TodoStatus): string {
@@ -361,6 +399,54 @@ export function isClosedTodoStatus(status: TodoStatus): boolean {
     status === "SKIPPED" ||
     status === "ARCHIVED"
   );
+}
+
+export function getTrackedTodoOccurrences(
+  entry: Pick<TodoResponse, "occurrences">,
+): TodoOccurrenceResponse[] {
+  return [...entry.occurrences].sort((left, right) =>
+    left.occurrenceDate.localeCompare(right.occurrenceDate),
+  );
+}
+
+export function getRecordedTodoOccurrences(
+  entry: Pick<TodoResponse, "occurrences">,
+): TodoOccurrenceResponse[] {
+  return getTrackedTodoOccurrences(entry).filter(
+    (occurrence) => occurrence.status === "RECORDED",
+  );
+}
+
+export function getOverdueTodoOccurrences(
+  entry: Pick<TodoResponse, "occurrences">,
+): TodoOccurrenceResponse[] {
+  return getTrackedTodoOccurrences(entry).filter(
+    (occurrence) => occurrence.status === "OVERDUE",
+  );
+}
+
+export function resolveTodoOccurrenceStatusLabel(
+  status: TodoOccurrenceStatus,
+): string {
+  switch (status) {
+    case "RECORDED":
+      return "Recorded";
+    case "SKIPPED":
+      return "Skipped";
+    case "OVERDUE":
+      return "Overdue";
+    case "COMPLETED":
+      return "Completed";
+    case "SCHEDULED":
+    default:
+      return "Scheduled";
+  }
+}
+
+export function isOpenTodoOccurrenceStatus(
+  status: TodoOccurrenceStatus,
+): boolean {
+  return status === "SCHEDULED" || status === "OVERDUE";
 }
 
 export function getTodayDateValue(): string {
