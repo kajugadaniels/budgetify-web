@@ -69,9 +69,11 @@ interface TodoExpenseDialogProps {
   entry: TodoResponse;
   form: TodoExpenseFormValues;
   onOpenExpense: (expenseId: string) => void;
+  onReverseRecording: (recordingId: string) => void;
   quote: MobileMoneyQuoteResponse | null;
   quoteError: string | null;
   quoteLoading: boolean;
+  reversingRecordingId: string | null;
   saving: boolean;
   onChange: (next: Partial<TodoExpenseFormValues>) => void;
   onClose: () => void;
@@ -83,9 +85,11 @@ export function TodoExpenseDialog({
   entry,
   form,
   onOpenExpense,
+  onReverseRecording,
   quote,
   quoteError,
   quoteLoading,
+  reversingRecordingId,
   saving,
   onChange,
   onClose,
@@ -315,6 +319,11 @@ export function TodoExpenseDialog({
                             {recording.occurrenceDate} •{" "}
                             {recording.paymentMethod.replaceAll("_", " ")}
                           </p>
+                          {recording.reversedAt ? (
+                            <p className="mt-1 text-xs text-warning">
+                              Reversed {formatTodoDate(recording.reversedAt)}
+                            </p>
+                          ) : null}
                         </div>
                         <div className="text-right text-xs text-text-secondary">
                           <p>Plan {rwf(recording.plannedAmount)}</p>
@@ -324,22 +333,36 @@ export function TodoExpenseDialog({
                             className={
                               recording.varianceAmount > 0
                                 ? "text-danger"
-                                : recording.varianceAmount < 0
+                              : recording.varianceAmount < 0
                                   ? "text-success"
                                   : undefined
                             }
                           >
                             Variance {rwf(recording.varianceAmount)}
                           </p>
-                          {recording.expense ? (
-                            <button
-                              type="button"
-                              onClick={() => onOpenExpense(recording.expense!.id)}
-                              className="mt-2 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/16"
-                            >
-                              Open expense
-                            </button>
-                          ) : null}
+                          <div className="mt-2 flex flex-wrap justify-end gap-2">
+                            {recording.expense && !recording.reversedAt ? (
+                              <button
+                                type="button"
+                                onClick={() => onOpenExpense(recording.expense!.id)}
+                                className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/16"
+                              >
+                                Open expense
+                              </button>
+                            ) : null}
+                            {!recording.reversedAt ? (
+                              <button
+                                type="button"
+                                onClick={() => onReverseRecording(recording.id)}
+                                disabled={reversingRecordingId === recording.id}
+                                className="rounded-full border border-danger/24 bg-danger/10 px-2.5 py-1 text-[11px] font-medium text-danger transition-colors hover:bg-danger/16 disabled:cursor-not-allowed disabled:opacity-70"
+                              >
+                                {reversingRecordingId === recording.id
+                                  ? "Reversing..."
+                                  : "Reverse"}
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     ))}
