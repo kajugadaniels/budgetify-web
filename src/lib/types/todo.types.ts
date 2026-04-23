@@ -15,6 +15,12 @@ export type TodoStatus =
   | "COMPLETED"
   | "SKIPPED"
   | "ARCHIVED";
+export type TodoOccurrenceStatus =
+  | "SCHEDULED"
+  | "RECORDED"
+  | "SKIPPED"
+  | "OVERDUE"
+  | "COMPLETED";
 
 export interface TodoImageResponse {
   id: string;
@@ -41,6 +47,7 @@ export interface TodoResponse {
   frequencyDays: number[];
   occurrenceDates: string[];
   recordedOccurrenceDates: string[];
+  occurrences: TodoOccurrenceResponse[];
   remainingAmount: number | null;
   recordingCount: number;
   recordings: TodoRecordingResponse[];
@@ -50,6 +57,14 @@ export interface TodoResponse {
   createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TodoOccurrenceResponse {
+  id: string;
+  occurrenceDate: string;
+  status: TodoOccurrenceStatus;
+  recordingId: string | null;
+  expenseId: string | null;
 }
 
 export interface TodoRecordingResponse {
