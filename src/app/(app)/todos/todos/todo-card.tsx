@@ -7,6 +7,8 @@ import {
   canRecordTodoExpense,
   formatTodoFrequencyLabel,
   formatTodoScheduleSummary,
+  getOverdueTodoOccurrences,
+  getRecordedTodoOccurrences,
   isRecurringTodo,
   isClosedTodoStatus,
   resolveTodoStatusLabel,
@@ -39,6 +41,8 @@ export function TodoCard({
   const recurring = isRecurringTodo(entry);
   const canRecord = canRecordTodoExpense(entry);
   const latestRecording = entry.recordings[0] ?? null;
+  const overdueOccurrences = getOverdueTodoOccurrences(entry);
+  const recordedOccurrences = getRecordedTodoOccurrences(entry);
   const remainingShare =
     recurring && entry.remainingAmount !== null && entry.price > 0
       ? Math.max(
@@ -97,6 +101,15 @@ export function TodoCard({
               {entry.recordingCount > 0 ? (
                 <span className="inline-flex rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary">
                   {entry.recordingCount} recorded
+                </span>
+              ) : null}
+              {recurring && overdueOccurrences.length > 0 ? (
+                <span className="inline-flex rounded-full border border-danger/24 bg-danger/10 px-2.5 py-1 text-[11px] font-medium text-danger">
+                  {overdueOccurrences.length} overdue
+                </span>
+              ) : recurring && recordedOccurrences.length > 0 ? (
+                <span className="inline-flex rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary">
+                  {recordedOccurrences.length} occurrence{recordedOccurrences.length === 1 ? "" : "s"} recorded
                 </span>
               ) : null}
             </div>
