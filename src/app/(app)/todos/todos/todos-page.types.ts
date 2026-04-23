@@ -24,6 +24,13 @@ export interface TodoFormValues {
   priority: TodoPriority;
   status: TodoStatus;
   frequency: TodoFrequency;
+  defaultExpenseCategory: ExpenseCategory | "";
+  defaultPaymentMethod: ExpensePaymentMethod | "";
+  defaultMobileMoneyChannel: ExpenseMobileMoneyChannel | "";
+  defaultMobileMoneyNetwork: ExpenseMobileMoneyNetwork | "";
+  payee: string;
+  expenseNote: string;
+  responsibleUserId: string;
   startDate: string;
   endDate: string;
   frequencyDays: number[];
@@ -31,12 +38,19 @@ export interface TodoFormValues {
 }
 
 export interface TodoExpenseFormValues {
+  label: string;
   amount: string;
   category: ExpenseCategory | "";
   paymentMethod: ExpensePaymentMethod | "";
   mobileMoneyChannel: ExpenseMobileMoneyChannel | "";
   mobileMoneyNetwork: ExpenseMobileMoneyNetwork | "";
   date: string;
+  note: string;
+}
+
+export interface TodoResponsibleUserOption {
+  id: string;
+  label: string;
 }
 
 export type TodoGalleryState = {
