@@ -2,6 +2,7 @@ import { apiFetch } from "../client";
 import { collectPaginatedItems } from "../pagination";
 import { TODOS_ROUTES } from "./todos.routes";
 import type {
+  TodoAuditResponse,
   CreateTodoRecordingRequest,
   CreateTodoExpenseRequest,
   CreateTodoRequest,
@@ -110,6 +111,15 @@ export async function getTodoSummary(
   });
 }
 
+export async function getTodoAudit(
+  token: string,
+  params?: Omit<ListTodosParams, "page" | "limit">,
+): Promise<TodoAuditResponse> {
+  return apiFetch<TodoAuditResponse>(TODOS_ROUTES.audit(params), {
+    token,
+  });
+}
+
 export async function getTodoUpcoming(
   token: string,
   params?: TodoUpcomingParams,
@@ -142,11 +152,30 @@ export async function createTodo(
 
 export async function listTodoRecordings(
   token: string,
-  todoId: string,
+  params?: Omit<ListTodosParams, "page" | "limit">,
 ): Promise<TodoRecordingResponse[]> {
-  return apiFetch<TodoRecordingResponse[]>(TODOS_ROUTES.recordings(todoId), {
+  return apiFetch<TodoRecordingResponse[]>(TODOS_ROUTES.recordingsIndex(params), {
     token,
   });
+}
+
+export async function listTodoRecordingsForTodo(
+  token: string,
+  todoId: string,
+): Promise<TodoRecordingResponse[]> {
+  return apiFetch<TodoRecordingResponse[]>(
+    TODOS_ROUTES.recordingsByTodo(todoId),
+    {
+      token,
+    },
+  );
+}
+
+export async function listTodoRecordingsByTodo(
+  token: string,
+  todoId: string,
+): Promise<TodoRecordingResponse[]> {
+  return listTodoRecordingsForTodo(token, todoId);
 }
 
 export async function createTodoRecording(
@@ -154,7 +183,7 @@ export async function createTodoRecording(
   todoId: string,
   body: CreateTodoRecordingRequest,
 ): Promise<TodoRecordingResponse> {
-  return apiFetch<TodoRecordingResponse>(TODOS_ROUTES.recordings(todoId), {
+  return apiFetch<TodoRecordingResponse>(TODOS_ROUTES.recordingsByTodo(todoId), {
     method: "POST",
     token,
     body,

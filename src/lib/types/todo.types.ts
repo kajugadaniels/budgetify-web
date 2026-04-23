@@ -82,7 +82,15 @@ export interface TodoRecordingResponse {
   mobileMoneyNetwork: ExpenseMobileMoneyNetwork | null;
   recordedAt: string;
   recordedBy: CreatedBySummary;
+  todo: TodoRecordingTodoSummary;
   expense: TodoRecordingExpenseSummary | null;
+}
+
+export interface TodoRecordingTodoSummary {
+  id: string;
+  name: string;
+  frequency: TodoFrequency;
+  status: TodoStatus;
 }
 
 export interface TodoRecordingExpenseSummary {
@@ -100,6 +108,20 @@ export interface TodoSummaryLatestTodo {
   createdAt: string;
 }
 
+export interface TodoFrequencyCompletionMetric {
+  frequency: TodoFrequency;
+  totalCount: number;
+  completedCount: number;
+  completionPercentage: number;
+}
+
+export interface TodoRecurringBudgetBurnDown {
+  targetAmount: number;
+  usedAmount: number;
+  remainingAmount: number;
+  usagePercentage: number;
+}
+
 export interface TodoSummaryResponse {
   totalCount: number;
   openCount: number;
@@ -112,12 +134,47 @@ export interface TodoSummaryResponse {
   plannedTotal: number;
   openPlannedTotal: number;
   remainingRecurringBudgetTotal: number;
+  totalRemainingAmount: number;
   recordedCount: number;
+  recordedBaseTotalAmount: number;
+  recordedFeeTotalAmount: number;
   recordedTotalAmount: number;
+  recordedVarianceTotalAmount: number;
+  feeBearingRecordingCount: number;
   overdueCount: number;
+  overdueOccurrenceCount: number;
+  dueNext7DaysCount: number;
   next7DaysScheduledAmount: number;
+  dueNext30DaysCount: number;
   next30DaysScheduledAmount: number;
+  recurringBudgetBurnDown: TodoRecurringBudgetBurnDown;
+  completionByFrequency: TodoFrequencyCompletionMetric[];
   latestTodo: TodoSummaryLatestTodo | null;
+}
+
+export interface TodoAuditResponse {
+  periodStartDate: string | null;
+  periodEndDate: string | null;
+  todoCount: number;
+  openTodoCount: number;
+  recurringTodoCount: number;
+  totalPlannedAmount: number;
+  totalRemainingAmount: number;
+  recordingCount: number;
+  totalRecordedBaseAmount: number;
+  totalRecordedFeeAmount: number;
+  totalRecordedChargedAmount: number;
+  totalRecordedVarianceAmount: number;
+  feeBearingRecordingCount: number;
+  overdueTodoCount: number;
+  overdueOccurrenceCount: number;
+  dueThisWeekCount: number;
+  dueThisWeekAmount: number;
+  dueThisMonthCount: number;
+  dueThisMonthAmount: number;
+  completionPercentage: number;
+  recurringBudgetBurnDown: TodoRecurringBudgetBurnDown;
+  completionByFrequency: TodoFrequencyCompletionMetric[];
 }
 
 export interface TodoUpcomingItem {

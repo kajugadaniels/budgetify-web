@@ -72,6 +72,14 @@ export const TODOS_ROUTES = {
     dateFrom?: string;
     dateTo?: string;
   }) => `${BASE}/summary${buildTodoSearchParams(params)}`,
+  audit:       (params?: {
+    frequency?: string;
+    priority?: string;
+    status?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }) => `${BASE}/audit${buildTodoSearchParams(params)}`,
   upcoming:    (params?: {
     frequency?: string;
     priority?: string;
@@ -81,9 +89,17 @@ export const TODOS_ROUTES = {
     dateTo?: string;
     days?: number;
   }) => `${BASE}/upcoming${buildTodoSearchParams(params)}`,
+  recordingsIndex: (params?: {
+    frequency?: string;
+    priority?: string;
+    status?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }) => `${BASE}/recordings${buildTodoSearchParams(params)}`,
   create:      BASE,
   byId:        (id: string) => `${BASE}/${id}`,
-  recordings:  (id: string) => `${BASE}/${id}/recordings`,
+  recordingsByTodo:  (id: string) => `${BASE}/${id}/recordings`,
   recordExpense: (id: string) => `${BASE}/${id}/record-expense`,
   images:      (id: string) => `${BASE}/${id}/images`,
   imageById:   (id: string, imageId: string) => `${BASE}/${id}/images/${imageId}`,
