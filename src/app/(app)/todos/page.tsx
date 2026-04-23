@@ -42,6 +42,7 @@ import type {
   TodoGalleryState,
 } from "./todos/todos-page.types";
 import {
+  applyTodoExpenseFormPatch,
   canRecordTodoExpense,
   createEmptyTodoExpenseForm,
   createTodoExpenseFormFromEntry,
@@ -408,25 +409,7 @@ export default function TodosPage() {
   }
 
   function updateExpenseForm(next: Partial<TodoExpenseFormValues>) {
-    setExpenseForm((current) => {
-      const merged = { ...current, ...next };
-
-      if (next.paymentMethod === "MOBILE_MONEY") {
-        merged.mobileMoneyChannel = current.mobileMoneyChannel || "P2P_TRANSFER";
-        merged.mobileMoneyNetwork = current.mobileMoneyNetwork || "ON_NET";
-      }
-
-      if (next.paymentMethod && next.paymentMethod !== "MOBILE_MONEY") {
-        merged.mobileMoneyChannel = "";
-        merged.mobileMoneyNetwork = "";
-      }
-
-      if (next.mobileMoneyChannel === "MERCHANT_CODE") {
-        merged.mobileMoneyNetwork = "ON_NET";
-      }
-
-      return merged;
-    });
+    setExpenseForm((current) => applyTodoExpenseFormPatch(current, next));
   }
 
   function openGallery(todoId: string, index: number) {
@@ -504,13 +487,16 @@ export default function TodosPage() {
     const amount = Number(expenseForm.amount);
 
     if (
+      !expenseForm.label.trim() ||
       expenseForm.category === "" ||
       expenseForm.paymentMethod === "" ||
       Number.isNaN(amount) ||
       amount <= 0 ||
       !expenseForm.date
     ) {
-      toast.error("Choose a category, payment method, amount, and date before recording.");
+      toast.error(
+        "Choose a label, category, payment method, amount, and date before recording.",
+      );
       return;
     }
 
@@ -570,7 +556,7 @@ export default function TodosPage() {
           : undefined;
 
       await recordTodoExpense(token, expenseDialog.entry.id, {
-        label: expenseDialog.entry.name.trim(),
+        label: expenseForm.label.trim(),
         amount,
         category: expenseForm.category,
         paymentMethod: expenseForm.paymentMethod,
@@ -584,6 +570,9 @@ export default function TodosPage() {
             }
           : {}),
         date: expenseForm.date,
+        ...(expenseForm.note.trim()
+          ? { note: expenseForm.note.trim() }
+          : {}),
         occurrenceDate: expenseForm.date,
       });
       triggerRefresh();
