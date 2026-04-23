@@ -2,7 +2,12 @@ import {
   ALLOWED_TODO_IMAGE_MIME_TYPES,
   MAX_TODO_IMAGE_SIZE_BYTES,
 } from "@/constant/todos/upload";
-import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
+import { getUserDisplayName } from "@/lib/utils/user-display";
+import type { CreatedBySummary } from "@/lib/types/created-by.types";
+import type {
+  ExpenseCategory,
+  ExpenseCategoryOptionResponse,
+} from "@/lib/types/expense.types";
 import type {
   TodoFrequency,
   TodoOccurrenceResponse,
@@ -41,6 +46,13 @@ export function createEmptyTodoForm(): TodoFormValues {
     priority: "TOP_PRIORITY",
     status: "ACTIVE",
     frequency: "ONCE",
+    defaultExpenseCategory: "",
+    defaultPaymentMethod: "",
+    defaultMobileMoneyChannel: "",
+    defaultMobileMoneyNetwork: "",
+    payee: "",
+    expenseNote: "",
+    responsibleUserId: "",
     startDate,
     endDate: computeTodoEndDate(startDate, "ONCE"),
     frequencyDays: [],
@@ -62,6 +74,13 @@ export function createTodoFormFromEntry(entry: TodoResponse): TodoFormValues {
     priority: entry.priority,
     status: entry.status,
     frequency: entry.frequency,
+    defaultExpenseCategory: entry.defaultExpenseCategory ?? "",
+    defaultPaymentMethod: entry.defaultPaymentMethod ?? "",
+    defaultMobileMoneyChannel: entry.defaultMobileMoneyChannel ?? "",
+    defaultMobileMoneyNetwork: entry.defaultMobileMoneyNetwork ?? "",
+    payee: entry.payee ?? "",
+    expenseNote: entry.expenseNote ?? "",
+    responsibleUserId: entry.responsibleUser.id,
     startDate,
     endDate,
     frequencyDays: entry.frequencyDays,
@@ -95,12 +114,28 @@ export function applyTodoFormPatch(
     frequencyDays,
     occurrenceDates: nextOccurrenceDatesInput,
   });
+  const defaultPaymentMethod =
+    next.defaultPaymentMethod ?? current.defaultPaymentMethod;
+  let defaultMobileMoneyChannel =
+    next.defaultMobileMoneyChannel ?? current.defaultMobileMoneyChannel;
+  let defaultMobileMoneyNetwork =
+    next.defaultMobileMoneyNetwork ?? current.defaultMobileMoneyNetwork;
+
+  if (defaultPaymentMethod !== "MOBILE_MONEY") {
+    defaultMobileMoneyChannel = "";
+    defaultMobileMoneyNetwork = "";
+  } else if (defaultMobileMoneyChannel !== "P2P_TRANSFER") {
+    defaultMobileMoneyNetwork = "";
+  }
 
   return {
     ...current,
     ...next,
     type,
     frequency: normalizedFrequency,
+    defaultPaymentMethod,
+    defaultMobileMoneyChannel,
+    defaultMobileMoneyNetwork,
     startDate,
     endDate,
     frequencyDays:
@@ -113,12 +148,14 @@ export function applyTodoFormPatch(
 
 export function createEmptyTodoExpenseForm(): TodoExpenseFormValues {
   return {
+    label: "",
     amount: "",
     category: "",
     paymentMethod: "",
     mobileMoneyChannel: "",
     mobileMoneyNetwork: "",
     date: getTodayDateValue(),
+    note: "",
   };
 }
 
@@ -133,13 +170,41 @@ export function createTodoExpenseFormFromEntry(
       : getTodayDateValue();
 
   return {
+    label: entry.payee?.trim() || entry.name,
     amount: String(getSuggestedTodoExpenseAmount(entry)),
-    category: resolveDefaultTodoExpenseCategory(categories),
-    paymentMethod: "",
-    mobileMoneyChannel: "",
-    mobileMoneyNetwork: "",
+    category: resolveDefaultTodoExpenseCategory(
+      categories,
+      entry.defaultExpenseCategory,
+    ),
+    paymentMethod: entry.defaultPaymentMethod ?? "",
+    mobileMoneyChannel:
+      entry.defaultPaymentMethod === "MOBILE_MONEY"
+        ? entry.defaultMobileMoneyChannel ?? ""
+        : "",
+    mobileMoneyNetwork:
+      entry.defaultPaymentMethod === "MOBILE_MONEY" &&
+      entry.defaultMobileMoneyChannel === "P2P_TRANSFER"
+        ? entry.defaultMobileMoneyNetwork ?? ""
+        : "",
     date: defaultDate,
+    note: entry.expenseNote ?? "",
   };
+}
+
+export function applyTodoExpenseFormPatch(
+  current: TodoExpenseFormValues,
+  next: Partial<TodoExpenseFormValues>,
+): TodoExpenseFormValues {
+  const merged = { ...current, ...next };
+
+  if (merged.paymentMethod !== "MOBILE_MONEY") {
+    merged.mobileMoneyChannel = "";
+    merged.mobileMoneyNetwork = "";
+  } else if (merged.mobileMoneyChannel !== "P2P_TRANSFER") {
+    merged.mobileMoneyNetwork = "";
+  }
+
+  return merged;
 }
 
 export function sortTodos(entries: TodoResponse[]): TodoResponse[] {
@@ -390,6 +455,15 @@ export function resolveTodoTypeDescription(type: TodoType): string {
   }
 }
 
+export function formatTodoResponsibleUserLabel(
+  user: CreatedBySummary,
+  currentUserId?: string,
+): string {
+  const label = getUserDisplayName(user, "Workspace user");
+
+  return currentUserId && user.id === currentUserId ? `${label} (You)` : label;
+}
+
 export function isOperationalTodoType(
   type: TodoType,
 ): boolean {
@@ -534,9 +608,17 @@ export function getScheduleMonthBounds(
 
 function resolveDefaultTodoExpenseCategory(
   categories: ExpenseCategoryOptionResponse[],
+  preferredCategory?: ExpenseCategory | null,
 ): TodoExpenseFormValues["category"] {
   if (categories.length === 0) {
     return "";
+  }
+
+  if (
+    preferredCategory &&
+    categories.some((category) => category.value === preferredCategory)
+  ) {
+    return preferredCategory;
   }
 
   const shoppingCategory = categories.find(
