@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PRIORITY_META } from "@/constant/todos/priority-meta";
+import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
 import type {
   TodoResponse,
   TodoStatus,
@@ -21,6 +22,7 @@ import {
 
 const INPUT_CLASS =
   "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 transition-colors focus:border-primary/60 focus:outline-none";
+const TEXTAREA_CLASS = `${INPUT_CLASS} min-h-[120px] resize-y`;
 
 const FREQUENCY_OPTIONS = [
   { value: "ONCE", label: "Once" },
@@ -45,12 +47,33 @@ const TODO_TYPE_OPTIONS: Array<{
   { value: "RECURRING_OBLIGATION" },
 ] as const;
 
+const DEFAULT_PAYMENT_METHOD_OPTIONS = [
+  { value: "", label: "No default" },
+  { value: "CASH", label: "Cash" },
+  { value: "BANK", label: "Bank" },
+  { value: "MOBILE_MONEY", label: "Mobile money" },
+  { value: "CARD", label: "Card" },
+  { value: "OTHER", label: "Other" },
+] as const;
+
+const DEFAULT_MOBILE_MONEY_CHANNEL_OPTIONS = [
+  { value: "", label: "Select transfer type" },
+  { value: "P2P_TRANSFER", label: "Normal transfer" },
+  { value: "MERCHANT_CODE", label: "Merchant code" },
+] as const;
+
+const DEFAULT_MOBILE_MONEY_NETWORK_OPTIONS = [
+  { value: "", label: "Select network" },
+  { value: "ON_NET", label: "MTN → MTN" },
+  { value: "OFF_NET", label: "Other network" },
+] as const;
+
 const STEP_META = [
   {
     step: 0 as const,
     eyebrow: "Step 1",
     title: "Intent",
-    description: "Type, amount, and status.",
+    description: "Type, amount, ownership, and defaults.",
   },
   {
     step: 1 as const,
@@ -68,10 +91,13 @@ const STEP_META = [
 
 interface TodoFormWizardProps {
   editingEntry: TodoResponse | null;
+  expenseCategories: ExpenseCategoryOptionResponse[];
+  expenseCategoriesError: string | null;
   form: TodoFormValues;
   imageBusyKey: string | null;
   mode: "create" | "edit";
   pendingImages: File[];
+  responsibleUserOptions: Array<{ id: string; label: string }>;
   saving: boolean;
   onAddPendingImages: (files: File[]) => void;
   onBack: () => void;
@@ -85,10 +111,13 @@ interface TodoFormWizardProps {
 
 export function TodoFormWizard({
   editingEntry,
+  expenseCategories,
+  expenseCategoriesError,
   form,
   imageBusyKey,
   mode,
   pendingImages,
+  responsibleUserOptions,
   saving,
   onAddPendingImages,
   onBack,
@@ -106,6 +135,8 @@ export function TodoFormWizard({
     images.length > 0 ? Math.min(activeImageIndex, images.length - 1) : 0;
   const selectedImage = images[resolvedImageIndex];
   const recurringType = form.type === "RECURRING_OBLIGATION";
+  const hasDefaultMobileMoney =
+    form.defaultPaymentMethod === "MOBILE_MONEY";
   const scheduleReady =
     form.frequency === "ONCE"
       ? true
@@ -118,6 +149,13 @@ export function TodoFormWizard({
     Number(form.price) > 0;
   const canSubmit = basicsReady && scheduleReady;
   const savedImagesCount = images.length;
+  const resolvedResponsibleUserLabel =
+    responsibleUserOptions.find((option) => option.id === form.responsibleUserId)
+      ?.label ?? "Unassigned";
+  const resolvedDefaultCategoryLabel =
+    expenseCategories.find(
+      (category) => category.value === form.defaultExpenseCategory,
+    )?.label ?? "No default";
 
   function canVisitStep(nextStep: 0 | 1 | 2): boolean {
     if (nextStep === 0) {
@@ -203,143 +241,309 @@ export function TodoFormWizard({
 
         <div className="mt-5 space-y-3 pb-28 sm:pb-32">
           {step === 0 ? (
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(240px,0.85fr)]">
-              <section className="rounded-[22px] border border-white/8 bg-background/24 p-4">
-                <div className="grid gap-3">
-                  <Field label="Track as">
-                    <div className="grid gap-2">
-                      {TODO_TYPE_OPTIONS.map((option) => {
-                        const selected = form.type === option.value;
+            <div className="space-y-3">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(240px,0.85fr)]">
+                <section className="rounded-[22px] border border-white/8 bg-background/24 p-4">
+                  <div className="grid gap-3">
+                    <Field label="Track as">
+                      <div className="grid gap-2">
+                        {TODO_TYPE_OPTIONS.map((option) => {
+                          const selected = form.type === option.value;
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              aria-pressed={selected}
+                              onClick={() => onChange({ type: option.value })}
+                              className={cn(
+                                "rounded-[18px] border px-3.5 py-3 text-left transition-all",
+                                selected
+                                  ? "border-primary/20 bg-primary/10 text-text-primary"
+                                  : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
+                              )}
+                            >
+                              <p className="text-sm font-semibold">
+                                {resolveTodoTypeLabel(option.value)}
+                              </p>
+                              <p className="mt-1 text-xs leading-5 text-text-secondary">
+                                {resolveTodoTypeDescription(option.value)}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </Field>
+
+                    <Field label="Item name">
+                      <input
+                        type="text"
+                        value={form.name}
+                        onChange={(event) =>
+                          onChange({ name: event.target.value })
+                        }
+                        className={INPUT_CLASS}
+                        placeholder="MacBook Air"
+                        maxLength={120}
+                        required
+                      />
+                    </Field>
+
+                    <Field label={resolveTodoAmountLabel(form)}>
+                      <input
+                        type="number"
+                        value={form.price}
+                        onChange={(event) =>
+                          onChange({ price: event.target.value })
+                        }
+                        className={INPUT_CLASS}
+                        placeholder="1750000"
+                        min={1}
+                        required
+                      />
+                    </Field>
+                  </div>
+                </section>
+
+                <section className="rounded-[22px] border border-white/8 bg-background/24 p-4">
+                  <Field label="Priority">
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(PRIORITY_META).map(([value, meta]) => {
+                        const selected = form.priority === value;
 
                         return (
                           <button
-                            key={option.value}
+                            key={value}
                             type="button"
                             aria-pressed={selected}
-                            onClick={() => onChange({ type: option.value })}
+                            onClick={() =>
+                              onChange({
+                                priority: value as TodoFormValues["priority"],
+                              })
+                            }
                             className={cn(
-                              "rounded-[18px] border px-3.5 py-3 text-left transition-all",
+                              "inline-flex items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
                               selected
-                                ? "border-primary/20 bg-primary/10 text-text-primary"
+                                ? meta.selectedClass
                                 : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
                             )}
                           >
-                            <p className="text-sm font-semibold">
-                              {resolveTodoTypeLabel(option.value)}
-                            </p>
-                            <p className="mt-1 text-xs leading-5 text-text-secondary">
-                              {resolveTodoTypeDescription(option.value)}
-                            </p>
+                            <span
+                              className={cn(
+                                "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
+                                selected
+                                  ? "border-background/20 bg-background/15 text-background"
+                                  : "border-white/10 bg-white/6 text-transparent",
+                              )}
+                            >
+                              ✓
+                            </span>
+                            {meta.label}
                           </button>
                         );
                       })}
                     </div>
                   </Field>
 
-                  <Field label="Item name">
+                  <Field label="Status" className="mt-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      {STATUS_OPTIONS.map((option) => {
+                        const selected = form.status === option.value;
+
+                        return (
+                          <button
+                            key={option.label}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => onChange({ status: option.value })}
+                            className={cn(
+                              "inline-flex items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
+                              selected
+                                ? option.value === "COMPLETED"
+                                  ? "border-success bg-success text-background"
+                                  : option.value === "ACTIVE"
+                                    ? "border-primary bg-primary text-background"
+                                    : "border-warning bg-warning text-background"
+                                : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
+                                selected
+                                  ? "border-background/20 bg-background/15 text-background"
+                                  : "border-white/10 bg-white/6 text-transparent",
+                              )}
+                            >
+                              ✓
+                            </span>
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+
+                  <Field label="Responsible user" className="mt-3">
+                    <select
+                      value={form.responsibleUserId}
+                      onChange={(event) =>
+                        onChange({ responsibleUserId: event.target.value })
+                      }
+                      className={INPUT_CLASS}
+                    >
+                      <option value="" disabled>
+                        Select workspace owner
+                      </option>
+                      {responsibleUserOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </section>
+              </div>
+
+              <section className="rounded-[22px] border border-white/8 bg-background/24 p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
+                      Financial defaults
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-text-secondary">
+                      Optional fields that prefill the expense-recording dialog later.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+                    Optional
+                  </span>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Field label="Default expense category">
+                    <select
+                      value={form.defaultExpenseCategory}
+                      onChange={(event) =>
+                        onChange({
+                          defaultExpenseCategory:
+                            event.target.value as TodoFormValues["defaultExpenseCategory"],
+                        })
+                      }
+                      className={INPUT_CLASS}
+                    >
+                      <option value="">No default category</option>
+                      {expenseCategories.map((category) => (
+                        <option key={category.value} value={category.value}>
+                          {category.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <Field label="Default payment method">
+                    <select
+                      value={form.defaultPaymentMethod}
+                      onChange={(event) =>
+                        onChange({
+                          defaultPaymentMethod:
+                            event.target.value as TodoFormValues["defaultPaymentMethod"],
+                        })
+                      }
+                      className={INPUT_CLASS}
+                    >
+                      {DEFAULT_PAYMENT_METHOD_OPTIONS.map((option) => (
+                        <option key={option.value || "NONE"} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  {hasDefaultMobileMoney ? (
+                    <>
+                      <Field label="Default mobile money type">
+                        <select
+                          value={form.defaultMobileMoneyChannel}
+                          onChange={(event) =>
+                            onChange({
+                              defaultMobileMoneyChannel:
+                                event.target
+                                  .value as TodoFormValues["defaultMobileMoneyChannel"],
+                            })
+                          }
+                          className={INPUT_CLASS}
+                        >
+                          {DEFAULT_MOBILE_MONEY_CHANNEL_OPTIONS.map((option) => (
+                            <option
+                              key={option.value || "NONE"}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+
+                      <Field label="Default mobile money network">
+                        <select
+                          value={form.defaultMobileMoneyNetwork}
+                          onChange={(event) =>
+                            onChange({
+                              defaultMobileMoneyNetwork:
+                                event.target
+                                  .value as TodoFormValues["defaultMobileMoneyNetwork"],
+                            })
+                          }
+                          className={INPUT_CLASS}
+                          disabled={
+                            form.defaultMobileMoneyChannel !== "P2P_TRANSFER"
+                          }
+                        >
+                          {DEFAULT_MOBILE_MONEY_NETWORK_OPTIONS.map((option) => (
+                            <option
+                              key={option.value || "NONE"}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </>
+                  ) : null}
+
+                  <Field label="Payee or vendor">
                     <input
                       type="text"
-                      value={form.name}
-                      onChange={(event) => onChange({ name: event.target.value })}
+                      value={form.payee}
+                      onChange={(event) =>
+                        onChange({ payee: event.target.value })
+                      }
                       className={INPUT_CLASS}
-                      placeholder="MacBook Air"
+                      placeholder="GS Kagarama"
                       maxLength={120}
-                      required
                     />
                   </Field>
 
-                  <Field label={resolveTodoAmountLabel(form)}>
-                    <input
-                      type="number"
-                      value={form.price}
-                      onChange={(event) => onChange({ price: event.target.value })}
-                      className={INPUT_CLASS}
-                      placeholder="1750000"
-                      min={1}
-                      required
+                  <Field label="Reusable note">
+                    <textarea
+                      value={form.expenseNote}
+                      onChange={(event) =>
+                        onChange({ expenseNote: event.target.value })
+                      }
+                      className={TEXTAREA_CLASS}
+                      placeholder="Second-term fees for May intake."
+                      maxLength={500}
                     />
                   </Field>
                 </div>
-              </section>
 
-              <section className="rounded-[22px] border border-white/8 bg-background/24 p-4">
-                <Field label="Priority">
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(PRIORITY_META).map(([value, meta]) => {
-                      const selected = form.priority === value;
-
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-pressed={selected}
-                          onClick={() =>
-                            onChange({
-                              priority: value as TodoFormValues["priority"],
-                            })
-                          }
-                          className={cn(
-                            "inline-flex items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
-                            selected
-                              ? meta.selectedClass
-                              : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
-                              selected
-                                ? "border-background/20 bg-background/15 text-background"
-                                : "border-white/10 bg-white/6 text-transparent",
-                            )}
-                          >
-                            ✓
-                          </span>
-                          {meta.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Field>
-
-                <Field label="Status" className="mt-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    {STATUS_OPTIONS.map((option) => {
-                      const selected = form.status === option.value;
-
-                      return (
-                        <button
-                          key={option.label}
-                          type="button"
-                          aria-pressed={selected}
-                          onClick={() => onChange({ status: option.value })}
-                          className={cn(
-                            "inline-flex items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
-                            selected
-                              ? option.value === "COMPLETED"
-                                ? "border-success bg-success text-background"
-                                : option.value === "ACTIVE"
-                                  ? "border-primary bg-primary text-background"
-                                  : "border-warning bg-warning text-background"
-                              : "border-border bg-surface-elevated/70 text-text-secondary hover:text-text-primary",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
-                              selected
-                                ? "border-background/20 bg-background/15 text-background"
-                                : "border-white/10 bg-white/6 text-transparent",
-                            )}
-                          >
-                            ✓
-                          </span>
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Field>
+                {expenseCategoriesError ? (
+                  <p className="mt-3 text-xs leading-5 text-danger">
+                    {expenseCategoriesError}
+                  </p>
+                ) : null}
               </section>
             </div>
           ) : null}
@@ -488,6 +692,29 @@ export function TodoFormWizard({
                           (option) => option.value === form.frequency,
                         )?.label ?? "Once")
                       : "One-time"
+                  }
+                />
+              </section>
+
+              <section className="grid gap-2 sm:grid-cols-4">
+                <MiniStat
+                  label="Responsible"
+                  value={resolvedResponsibleUserLabel}
+                />
+                <MiniStat
+                  label="Default category"
+                  value={resolvedDefaultCategoryLabel}
+                />
+                <MiniStat
+                  label="Payee"
+                  value={form.payee.trim() || "No payee"}
+                />
+                <MiniStat
+                  label="Payment default"
+                  value={
+                    DEFAULT_PAYMENT_METHOD_OPTIONS.find(
+                      (option) => option.value === form.defaultPaymentMethod,
+                    )?.label ?? "No default"
                   }
                 />
               </section>
