@@ -87,7 +87,9 @@ export function TodoCard({
                   ? "Updating..."
                   : isClosedTodoStatus(entry.status)
                     ? "Reopen"
-                    : "Mark completed"}
+                    : entry.status === "RECORDED"
+                      ? "Mark completed"
+                      : "Mark completed"}
               </button>
               <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
                 {resolveTodoStatusLabel(entry.status)}
@@ -185,7 +187,9 @@ export function TodoCard({
               : !canRecord
                 ? recurring
                   ? "No budget left"
-                  : "Recorded"
+                  : isClosedTodoStatus(entry.status)
+                    ? "Closed"
+                    : "Recorded"
                 : "Record expense"}
           </button>
           <button
