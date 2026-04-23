@@ -17,6 +17,7 @@ import {
   getTodoSummary,
   listTodosPage,
   recordTodoExpense,
+  reverseTodoRecording,
   updateTodo,
 } from "@/lib/api/todos/todos.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
@@ -24,10 +25,15 @@ import type {
   ExpenseCategoryOptionResponse,
   MobileMoneyQuoteResponse,
 } from "@/lib/types/expense.types";
-import type { TodoResponse, TodoSummaryResponse } from "@/lib/types/todo.types";
+import type {
+  TodoRecordingResponse,
+  TodoResponse,
+  TodoSummaryResponse,
+} from "@/lib/types/todo.types";
 import { rwfCompact } from "@/lib/utils/currency";
 import { TodoExpenseDialog } from "./todos/todo-expense-dialog";
 import { TodoGalleryDialog } from "./todos/todo-gallery-dialog";
+import { TodoRecordingReversalDialog } from "./todos/todo-recording-reversal-dialog";
 import { TodosBoard } from "./todos/todos-board";
 import { TodosBoardFilters } from "./todos/todos-board-filters";
 import { TodosBoardSkeleton } from "./todos/todos-board-skeleton";
@@ -51,6 +57,14 @@ import {
   resolveTodoTypeLabel,
   sortTodos,
 } from "./todos/todos.utils";
+
+type TodoRecordingReversalState =
+  | {
+      recording: TodoRecordingResponse;
+      todoId: string;
+      todoName: string;
+    }
+  | null;
 
 function resolveFrequencyFilterFromSearchParam(
   value: string | null,
@@ -84,6 +98,9 @@ export default function TodosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recordingExpense, setRecordingExpense] = useState(false);
+  const [reversingRecordingId, setReversingRecordingId] = useState<string | null>(
+    null,
+  );
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null);
   const [recordExpenseBusyId, setRecordExpenseBusyId] = useState<string | null>(
     null,
@@ -96,6 +113,8 @@ export default function TodosPage() {
     useState<TodoExpenseDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<TodoResponse | null>(null);
   const [galleryTarget, setGalleryTarget] = useState<TodoGalleryState>(null);
+  const [recordingToReverse, setRecordingToReverse] =
+    useState<TodoRecordingReversalState>(null);
   const [expenseForm, setExpenseForm] = useState<TodoExpenseFormValues>(() =>
     createEmptyTodoExpenseForm(),
   );
@@ -329,6 +348,20 @@ export default function TodosPage() {
       ? pageEntries.find((entry) => entry.id === galleryTarget.todoId) ?? null
       : null;
 
+  useEffect(() => {
+    if (!expenseDialog) {
+      return;
+    }
+
+    const nextEntry = pageEntries.find(
+      (entry) => entry.id === expenseDialog.entry.id,
+    );
+
+    if (nextEntry && nextEntry !== expenseDialog.entry) {
+      setExpenseDialog({ entry: nextEntry });
+    }
+  }, [expenseDialog, pageEntries]);
+
   const totalCount = summary?.totalCount ?? 0;
   const plannedTotal = summary?.plannedTotal ?? 0;
   const openLifecycleCount = summary?.openCount ?? 0;
@@ -406,6 +439,23 @@ export default function TodosPage() {
     setExpenseDialog(null);
     setExpenseForm(createEmptyTodoExpenseForm());
     setExpenseQuote({ loading: false, error: null, data: null });
+  }
+
+  function openRecordingReversal(
+    entry: TodoResponse,
+    recordingId: string,
+  ) {
+    const recording = entry.recordings.find((item) => item.id === recordingId);
+
+    if (!recording || recording.reversedAt) {
+      return;
+    }
+
+    setRecordingToReverse({
+      todoId: entry.id,
+      todoName: entry.name,
+      recording,
+    });
   }
 
   function updateExpenseForm(next: Partial<TodoExpenseFormValues>) {
@@ -591,6 +641,32 @@ export default function TodosPage() {
     } finally {
       setRecordingExpense(false);
       setRecordExpenseBusyId(null);
+    }
+  }
+
+  async function handleReverseRecording(reason: string) {
+    if (!token || !recordingToReverse) return;
+
+    setReversingRecordingId(recordingToReverse.recording.id);
+
+    try {
+      await reverseTodoRecording(
+        token,
+        recordingToReverse.todoId,
+        recordingToReverse.recording.id,
+        reason.trim().length > 0 ? { reason: reason.trim() } : {},
+      );
+      triggerRefresh();
+      setRecordingToReverse(null);
+      toast.success("Todo recording reversed and plan restored.");
+    } catch (reverseError) {
+      toast.error(
+        reverseError instanceof ApiError
+          ? reverseError.message
+          : "Todo recording could not be reversed right now.",
+      );
+    } finally {
+      setReversingRecordingId(null);
     }
   }
 
@@ -825,12 +901,14 @@ export default function TodosPage() {
               <TodosBoard
                 busyDoneId={statusBusyId}
                 busyRecordExpenseId={recordExpenseBusyId}
+                busyReverseRecordingId={reversingRecordingId}
                 entries={pageEntries}
                 onDelete={setDeleteTarget}
                 onEdit={openEditPage}
                 onOpenExpense={openLinkedExpense}
                 onOpenGallery={openGallery}
                 onRecordExpense={openExpenseDialog}
+                onReverseRecording={openRecordingReversal}
                 onToggleDone={handleToggleStatus}
               />
             )}
@@ -854,13 +932,29 @@ export default function TodosPage() {
           entry={expenseDialog.entry}
           form={expenseForm}
           onOpenExpense={openLinkedExpense}
+          onReverseRecording={(recordingId) =>
+            openRecordingReversal(expenseDialog.entry, recordingId)
+          }
           quote={expenseQuote.data}
           quoteError={expenseQuote.error}
           quoteLoading={expenseQuote.loading}
+          reversingRecordingId={reversingRecordingId}
           saving={recordingExpense}
           onChange={updateExpenseForm}
           onClose={closeExpenseDialog}
           onSubmit={handleRecordExpense}
+        />
+      ) : null}
+
+      {recordingToReverse ? (
+        <TodoRecordingReversalDialog
+          recording={recordingToReverse.recording}
+          saving={reversingRecordingId === recordingToReverse.recording.id}
+          todoName={recordingToReverse.todoName}
+          onCancel={() =>
+            reversingRecordingId ? undefined : setRecordingToReverse(null)
+          }
+          onConfirm={handleReverseRecording}
         />
       ) : null}
 
