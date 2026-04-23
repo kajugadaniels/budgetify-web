@@ -71,7 +71,7 @@ export default function TodosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recordingExpense, setRecordingExpense] = useState(false);
-  const [doneBusyId, setDoneBusyId] = useState<string | null>(null);
+  const [statusBusyId, setStatusBusyId] = useState<string | null>(null);
   const [recordExpenseBusyId, setRecordExpenseBusyId] = useState<string | null>(
     null,
   );
@@ -307,7 +307,7 @@ export default function TodosPage() {
 
   const totalCount = summary?.totalCount ?? 0;
   const plannedTotal = summary?.plannedTotal ?? 0;
-  const openCount = summary?.openCount ?? 0;
+  const openLifecycleCount = summary?.openCount ?? 0;
   const topPriorityCount = summary?.topPriorityCount ?? 0;
   const withImagesCount = summary?.withImagesCount ?? 0;
   const completedCount = summary?.completedCount ?? 0;
@@ -421,11 +421,16 @@ export default function TodosPage() {
     }
   }
 
-  async function handleToggleDone(entry: TodoResponse) {
+  async function handleToggleStatus(entry: TodoResponse) {
     if (!token) return;
 
-    const nextStatus = entry.status === "COMPLETED" ? "ACTIVE" : "COMPLETED";
-    setDoneBusyId(entry.id);
+    const nextStatus =
+      entry.status === "COMPLETED" ||
+      entry.status === "SKIPPED" ||
+      entry.status === "ARCHIVED"
+        ? "ACTIVE"
+        : "COMPLETED";
+    setStatusBusyId(entry.id);
 
     try {
       await updateTodo(token, entry.id, {
@@ -445,7 +450,7 @@ export default function TodosPage() {
           : "Wishlist item status could not be updated right now.",
       );
     } finally {
-      setDoneBusyId(null);
+      setStatusBusyId(null);
     }
   }
 
@@ -610,7 +615,7 @@ export default function TodosPage() {
 
                   <div className="flex flex-wrap gap-2">
                     <span className="rounded-full border border-primary/14 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary">
-                      {openCount} open
+                      {openLifecycleCount} active or recorded
                     </span>
                     <span className="rounded-full border border-warning/14 bg-warning/8 px-2.5 py-1 text-[11px] font-medium text-warning/88">
                       {topPriorityCount} top priority
@@ -683,13 +688,13 @@ export default function TodosPage() {
             hasActiveFilters={hasActiveBoardFilters}
             priority={selectedPriority}
             search={searchInput}
-              onClear={() => {
-                setSelectedFrequency("ALL");
-                setSelectedPriority("ALL");
-                setSelectedStatus("ALL");
-                setSearchInput("");
-                setSelectedDateFrom("");
-                setSelectedDateTo("");
+            onClear={() => {
+              setSelectedFrequency("ALL");
+              setSelectedPriority("ALL");
+              setSelectedStatus("ALL");
+              setSearchInput("");
+              setSelectedDateFrom("");
+              setSelectedDateTo("");
               setCurrentPage(1);
             }}
             onDateFromChange={setSelectedDateFrom}
@@ -749,7 +754,7 @@ export default function TodosPage() {
               />
             ) : (
               <TodosBoard
-                busyDoneId={doneBusyId}
+                busyDoneId={statusBusyId}
                 busyRecordExpenseId={recordExpenseBusyId}
                 entries={pageEntries}
                 onDelete={setDeleteTarget}
@@ -757,7 +762,7 @@ export default function TodosPage() {
                 onOpenExpense={openLinkedExpense}
                 onOpenGallery={openGallery}
                 onRecordExpense={openExpenseDialog}
-                onToggleDone={handleToggleDone}
+                onToggleDone={handleToggleStatus}
               />
             )}
           </div>
