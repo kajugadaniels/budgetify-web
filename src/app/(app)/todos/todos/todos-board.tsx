@@ -4,24 +4,28 @@ import { TodoPriorityLane } from "./todo-priority-lane";
 interface TodosBoardProps {
   busyDoneId: string | null;
   busyRecordExpenseId: string | null;
+  busyReverseRecordingId: string | null;
   entries: TodoResponse[];
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
   onOpenExpense: (expenseId: string) => void;
   onOpenGallery: (todoId: string, index: number) => void;
   onRecordExpense: (entry: TodoResponse) => void;
+  onReverseRecording: (entry: TodoResponse, recordingId: string) => void;
   onToggleDone: (entry: TodoResponse) => void;
 }
 
 export function TodosBoard({
   busyDoneId,
   busyRecordExpenseId,
+  busyReverseRecordingId,
   entries,
   onDelete,
   onEdit,
   onOpenExpense,
   onOpenGallery,
   onRecordExpense,
+  onReverseRecording,
   onToggleDone,
 }: TodosBoardProps) {
   return (
@@ -43,12 +47,14 @@ export function TodosBoard({
       <TodoPriorityLane
         busyDoneId={busyDoneId}
         busyRecordExpenseId={busyRecordExpenseId}
+        busyReverseRecordingId={busyReverseRecordingId}
         entries={entries}
         onDelete={onDelete}
         onEdit={onEdit}
         onOpenExpense={onOpenExpense}
         onOpenGallery={onOpenGallery}
         onRecordExpense={onRecordExpense}
+        onReverseRecording={onReverseRecording}
         onToggleDone={onToggleDone}
       />
     </div>
