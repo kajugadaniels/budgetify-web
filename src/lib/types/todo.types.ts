@@ -47,6 +47,12 @@ export interface TodoResponse {
   priority: TodoPriority;
   status: TodoStatus;
   frequency: TodoFrequency;
+  defaultExpenseCategory: ExpenseCategory | null;
+  defaultPaymentMethod: ExpensePaymentMethod | null;
+  defaultMobileMoneyChannel: ExpenseMobileMoneyChannel | null;
+  defaultMobileMoneyNetwork: ExpenseMobileMoneyNetwork | null;
+  payee: string | null;
+  expenseNote: string | null;
   startDate: string | null;
   endDate: string | null;
   frequencyDays: number[];
@@ -60,6 +66,7 @@ export interface TodoResponse {
   imageCount: number;
   images: TodoImageResponse[];
   createdBy: CreatedBySummary;
+  responsibleUser: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
 }
@@ -250,6 +257,13 @@ export interface CreateTodoRequest {
   priority: TodoPriority;
   status: TodoStatus;
   frequency: TodoFrequency;
+  defaultExpenseCategory?: ExpenseCategory;
+  defaultPaymentMethod?: ExpensePaymentMethod;
+  defaultMobileMoneyChannel?: ExpenseMobileMoneyChannel;
+  defaultMobileMoneyNetwork?: ExpenseMobileMoneyNetwork;
+  payee?: string;
+  expenseNote?: string;
+  responsibleUserId?: string;
   startDate: string;
   endDate?: string;
   frequencyDays?: number[];
@@ -263,6 +277,13 @@ export interface UpdateTodoRequest {
   priority?: TodoPriority;
   status?: TodoStatus;
   frequency?: TodoFrequency;
+  defaultExpenseCategory?: ExpenseCategory | null;
+  defaultPaymentMethod?: ExpensePaymentMethod | null;
+  defaultMobileMoneyChannel?: ExpenseMobileMoneyChannel | null;
+  defaultMobileMoneyNetwork?: ExpenseMobileMoneyNetwork | null;
+  payee?: string | null;
+  expenseNote?: string | null;
+  responsibleUserId?: string | null;
   startDate?: string;
   endDate?: string;
   frequencyDays?: number[];
