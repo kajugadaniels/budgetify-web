@@ -110,6 +110,8 @@ export const TODOS_ROUTES = {
   create:      BASE,
   byId:        (id: string) => `${BASE}/${id}`,
   recordingsByTodo:  (id: string) => `${BASE}/${id}/recordings`,
+  reverseRecording: (todoId: string, recordingId: string) =>
+    `${BASE}/${todoId}/recordings/${recordingId}/reverse`,
   recordExpense: (id: string) => `${BASE}/${id}/record-expense`,
   images:      (id: string) => `${BASE}/${id}/images`,
   imageById:   (id: string, imageId: string) => `${BASE}/${id}/images/${imageId}`,
