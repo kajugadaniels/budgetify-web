@@ -25,6 +25,7 @@ export type TodoOccurrenceStatus =
   | "SKIPPED"
   | "OVERDUE"
   | "COMPLETED";
+export type TodoRecordingExpenseSource = "GENERATED" | "LINKED_EXISTING";
 
 export interface TodoImageResponse {
   id: string;
@@ -89,11 +90,15 @@ export interface TodoRecordingResponse {
   feeAmount: number;
   totalChargedAmount: number;
   varianceAmount: number;
+  expenseSource: TodoRecordingExpenseSource;
   paymentMethod: ExpensePaymentMethod;
   mobileMoneyChannel: ExpenseMobileMoneyChannel | null;
   mobileMoneyNetwork: ExpenseMobileMoneyNetwork | null;
   recordedAt: string;
   recordedBy: CreatedBySummary;
+  reversedAt: string | null;
+  reversalReason: string | null;
+  reversedBy: CreatedBySummary | null;
   todo: TodoRecordingTodoSummary;
   expense: TodoRecordingExpenseSummary | null;
 }
@@ -248,6 +253,10 @@ export interface CreateTodoRecordingRequest {
 
 export interface CreateTodoExpenseRequest extends CreateExpenseRequest {
   occurrenceDate?: string;
+}
+
+export interface ReverseTodoRecordingRequest {
+  reason?: string;
 }
 
 export interface CreateTodoRequest {
