@@ -197,7 +197,9 @@ export function TodoExpenseDialog({
                   <MiniStat
                     label={recurring ? "Remaining budget" : "Status on save"}
                     value={
-                      recurring ? rwf(Number(entry.remainingAmount ?? 0)) : "Done"
+                      recurring
+                        ? rwf(Number(entry.remainingAmount ?? 0))
+                        : "Recorded"
                     }
                     valueClassName={recurring ? "text-primary" : "text-success"}
                   />
