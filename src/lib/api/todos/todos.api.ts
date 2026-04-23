@@ -46,6 +46,55 @@ function buildTodoMultipartBody(
     formData.append("frequency", body.frequency);
   }
 
+  if (
+    "defaultExpenseCategory" in body &&
+    body.defaultExpenseCategory !== undefined
+  ) {
+    formData.append(
+      "defaultExpenseCategory",
+      body.defaultExpenseCategory ?? "",
+    );
+  }
+
+  if (
+    "defaultPaymentMethod" in body &&
+    body.defaultPaymentMethod !== undefined
+  ) {
+    formData.append("defaultPaymentMethod", body.defaultPaymentMethod ?? "");
+  }
+
+  if (
+    "defaultMobileMoneyChannel" in body &&
+    body.defaultMobileMoneyChannel !== undefined
+  ) {
+    formData.append(
+      "defaultMobileMoneyChannel",
+      body.defaultMobileMoneyChannel ?? "",
+    );
+  }
+
+  if (
+    "defaultMobileMoneyNetwork" in body &&
+    body.defaultMobileMoneyNetwork !== undefined
+  ) {
+    formData.append(
+      "defaultMobileMoneyNetwork",
+      body.defaultMobileMoneyNetwork ?? "",
+    );
+  }
+
+  if ("payee" in body && body.payee !== undefined) {
+    formData.append("payee", body.payee ?? "");
+  }
+
+  if ("expenseNote" in body && body.expenseNote !== undefined) {
+    formData.append("expenseNote", body.expenseNote ?? "");
+  }
+
+  if ("responsibleUserId" in body && body.responsibleUserId !== undefined) {
+    formData.append("responsibleUserId", body.responsibleUserId ?? "");
+  }
+
   if ("startDate" in body && body.startDate !== undefined) {
     formData.append("startDate", body.startDate);
   }
@@ -158,9 +207,12 @@ export async function listTodoRecordings(
   token: string,
   params?: Omit<ListTodosParams, "page" | "limit">,
 ): Promise<TodoRecordingResponse[]> {
-  return apiFetch<TodoRecordingResponse[]>(TODOS_ROUTES.recordingsIndex(params), {
-    token,
-  });
+  return apiFetch<TodoRecordingResponse[]>(
+    TODOS_ROUTES.recordingsIndex(params),
+    {
+      token,
+    },
+  );
 }
 
 export async function listTodoRecordingsForTodo(
