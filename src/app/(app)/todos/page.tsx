@@ -309,10 +309,17 @@ export default function TodosPage() {
   const plannedTotal = summary?.plannedTotal ?? 0;
   const openLifecycleCount = summary?.openCount ?? 0;
   const topPriorityCount = summary?.topPriorityCount ?? 0;
-  const withImagesCount = summary?.withImagesCount ?? 0;
-  const completedCount = summary?.completedCount ?? 0;
   const completionShare = summary?.completionPercentage ?? 0;
-  const imageCoverage = summary?.imageCoveragePercentage ?? 0;
+  const totalRemainingAmount = summary?.totalRemainingAmount ?? 0;
+  const recordedTotalAmount = summary?.recordedTotalAmount ?? 0;
+  const recordedFeeTotalAmount = summary?.recordedFeeTotalAmount ?? 0;
+  const feeBearingRecordingCount = summary?.feeBearingRecordingCount ?? 0;
+  const overdueOccurrenceCount = summary?.overdueOccurrenceCount ?? 0;
+  const dueNext7DaysCount = summary?.dueNext7DaysCount ?? 0;
+  const dueNext7DaysAmount = summary?.next7DaysScheduledAmount ?? 0;
+  const dueNext30DaysCount = summary?.dueNext30DaysCount ?? 0;
+  const dueNext30DaysAmount = summary?.next30DaysScheduledAmount ?? 0;
+  const recurringBudgetBurnDown = summary?.recurringBudgetBurnDown ?? null;
   const latestTodo = summary?.latestTodo ?? null;
   const hasActiveBoardFilters =
     selectedFrequency !== "ALL" ||
@@ -618,6 +625,13 @@ export default function TodosPage() {
                       {openLifecycleCount} active or recorded
                     </span>
                     <span className="rounded-full border border-warning/14 bg-warning/8 px-2.5 py-1 text-[11px] font-medium text-warning/88">
+                      {rwfCompact(totalRemainingAmount)} outstanding
+                    </span>
+                    <span className="rounded-full border border-danger/14 bg-danger/8 px-2.5 py-1 text-[11px] font-medium text-danger/88">
+                      {overdueOccurrenceCount} overdue occurrence
+                      {overdueOccurrenceCount === 1 ? "" : "s"}
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium text-text-secondary">
                       {topPriorityCount} top priority
                     </span>
                   </div>
@@ -645,18 +659,31 @@ export default function TodosPage() {
                 <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
-                      Visual coverage
+                      {recurringBudgetBurnDown?.targetAmount
+                        ? "Recurring budget"
+                        : "Tracking"}
                     </p>
                     <span className="text-[11px] font-medium text-primary">
-                      {imageCoverage}%
+                      {recurringBudgetBurnDown?.targetAmount
+                        ? `${recurringBudgetBurnDown.usagePercentage}% used`
+                        : `${feeBearingRecordingCount} fee-bearing`}
                     </span>
                   </div>
                   <p className="mt-2 text-base font-semibold leading-tight tracking-[-0.04em] text-text-primary">
-                    {withImagesCount} {withImagesCount === 1 ? "item" : "items"} with images
+                    {recurringBudgetBurnDown?.targetAmount
+                      ? `${rwfCompact(recurringBudgetBurnDown.remainingAmount)} remaining`
+                      : `${rwfCompact(recordedTotalAmount)} recorded`}
                   </p>
-                    <p className="mt-1.5 text-xs leading-5 text-text-secondary">
-                      {completedCount} {completedCount === 1 ? "item is" : "items are"} already completed.
-                    </p>
+                  <p className="mt-1.5 text-xs leading-5 text-text-secondary">
+                    {recurringBudgetBurnDown?.targetAmount
+                      ? `${rwfCompact(dueNext7DaysAmount)} due this week across ${dueNext7DaysCount} occurrence${dueNext7DaysCount === 1 ? "" : "s"}.`
+                      : `${rwfCompact(recordedFeeTotalAmount)} fees across ${feeBearingRecordingCount} fee-bearing recording${feeBearingRecordingCount === 1 ? "" : "s"}.`}
+                  </p>
+                  <p className="mt-1 text-[11px] leading-5 text-text-secondary/78">
+                    {rwfCompact(dueNext30DaysAmount)} scheduled over the next 30
+                    days across {dueNext30DaysCount} upcoming occurrence
+                    {dueNext30DaysCount === 1 ? "" : "s"}.
+                  </p>
                 </div>
               </div>
             </div>
