@@ -5,6 +5,7 @@ import { rwf } from "@/lib/utils/currency";
 import { TodoImageCarousel } from "./todo-image-carousel";
 import {
   canRecordTodoExpense,
+  formatTodoResponsibleUserLabel,
   formatTodoFrequencyLabel,
   formatTodoScheduleSummary,
   getOverdueTodoOccurrences,
@@ -124,7 +125,24 @@ export function TodoCard({
             <p className="mt-2 text-xs leading-5 text-text-secondary">
               {formatTodoScheduleSummary(entry)}
             </p>
-            <CreatedByPill creator={entry.createdBy} />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <CreatedByPill creator={entry.createdBy} />
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1">
+                <span className="text-[11px] font-medium text-text-secondary">
+                  Responsible{" "}
+                  <span className="text-text-primary">
+                    {formatTodoResponsibleUserLabel(entry.responsibleUser)}
+                  </span>
+                </span>
+              </div>
+              {entry.payee ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1">
+                  <span className="text-[11px] font-medium text-text-secondary">
+                    Payee <span className="text-text-primary">{entry.payee}</span>
+                  </span>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="shrink-0 rounded-[20px] px-4 py-3 text-right">
