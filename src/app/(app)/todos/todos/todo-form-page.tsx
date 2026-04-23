@@ -7,16 +7,27 @@ import { MAX_TODO_IMAGES } from "@/constant/todos/upload";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
+import { listExpenseCategories } from "@/lib/api/expenses/expenses.api";
+import { getMyPartnership } from "@/lib/api/partnerships/partnerships.api";
 import {
   createTodo,
   deleteTodoImage,
   getTodo,
   updateTodo,
 } from "@/lib/api/todos/todos.api";
-import type { CreateTodoRequest, TodoResponse } from "@/lib/types/todo.types";
+import type { ExpenseCategoryOptionResponse } from "@/lib/types/expense.types";
+import type {
+  CreateTodoRequest,
+  TodoResponse,
+  UpdateTodoRequest,
+} from "@/lib/types/todo.types";
+import { getUserDisplayName } from "@/lib/utils/user-display";
 import { TodoFormWizard } from "./todo-form-dialog";
 import { TodoGalleryDialog } from "./todo-gallery-dialog";
-import type { TodoFormValues } from "./todos-page.types";
+import type {
+  TodoFormValues,
+  TodoResponsibleUserOption,
+} from "./todos-page.types";
 import {
   applyTodoFormPatch,
   createEmptyTodoForm,
@@ -29,7 +40,7 @@ interface TodoFormPageProps {
 }
 
 export function TodoFormPage({ mode }: TodoFormPageProps) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const params = useParams<{ todoId: string }>();
@@ -42,6 +53,14 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
   const [imageBusyKey, setImageBusyKey] = useState<string | null>(null);
   const [loadingEntry, setLoadingEntry] = useState(mode === "edit");
   const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<
+    ExpenseCategoryOptionResponse[]
+  >([]);
+  const [expenseCategoriesError, setExpenseCategoriesError] =
+    useState<string | null>(null);
+  const [responsibleUserOptions, setResponsibleUserOptions] = useState<
+    TodoResponsibleUserOption[]
+  >([]);
   const [retryKey, setRetryKey] = useState(0);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<TodoFormValues>(() => createEmptyTodoForm());
@@ -97,6 +116,89 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
       ignore = true;
     };
   }, [mode, retryKey, token, todoId]);
+
+  useEffect(() => {
+    if (!token || !user) {
+      return;
+    }
+
+    const sessionToken = token;
+    const currentUser = user;
+    let ignore = false;
+
+    async function loadTodoMetadata() {
+      const [categoriesResult, partnershipResult] = await Promise.allSettled([
+        listExpenseCategories(sessionToken),
+        getMyPartnership(sessionToken),
+      ]);
+
+      if (ignore) {
+        return;
+      }
+
+      if (categoriesResult.status === "fulfilled") {
+        setExpenseCategories(categoriesResult.value);
+        setExpenseCategoriesError(null);
+      } else {
+        setExpenseCategories([]);
+        setExpenseCategoriesError(
+          categoriesResult.reason instanceof ApiError
+            ? categoriesResult.reason.message
+            : "Expense categories could not be loaded right now.",
+        );
+      }
+
+      const optionMap = new Map<string, TodoResponsibleUserOption>();
+      const visibleUsers: Array<{
+        id: string;
+        firstName: string | null;
+        lastName: string | null;
+        fullName?: string | null;
+        email?: string | null;
+      }> = [currentUser];
+
+      if (
+        partnershipResult.status === "fulfilled" &&
+        partnershipResult.value?.status === "ACCEPTED"
+      ) {
+        visibleUsers.push(
+          partnershipResult.value.owner,
+          ...(partnershipResult.value.partner
+            ? [partnershipResult.value.partner]
+            : []),
+        );
+      }
+
+      for (const visibleUser of visibleUsers) {
+        if (!visibleUser || optionMap.has(visibleUser.id)) {
+          continue;
+        }
+
+        optionMap.set(visibleUser.id, {
+          id: visibleUser.id,
+          label:
+            visibleUser.id === currentUser.id
+              ? `${getUserDisplayName(visibleUser, "You")} (You)`
+              : getUserDisplayName(visibleUser, "Workspace user"),
+        });
+      }
+
+      setResponsibleUserOptions(Array.from(optionMap.values()));
+      setForm((current) =>
+        mode === "create" && current.responsibleUserId.length === 0
+          ? applyTodoFormPatch(current, {
+              responsibleUserId: currentUser.id,
+            })
+          : current,
+      );
+    }
+
+    void loadTodoMetadata();
+
+    return () => {
+      ignore = true;
+    };
+  }, [mode, token, user]);
 
   useEffect(() => {
     if (
@@ -195,15 +297,120 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
       frequencyDays: form.frequencyDays,
       occurrenceDates: form.occurrenceDates,
     };
+    const responsibleUserId = form.responsibleUserId || user?.id;
+
+    if (!responsibleUserId) {
+      toast.error("Choose who is responsible for this plan item.");
+      return;
+    }
+
+    if (
+      form.defaultPaymentMethod === "MOBILE_MONEY" &&
+      form.defaultMobileMoneyChannel === ""
+    ) {
+      toast.error("Choose a default mobile money type or clear the payment default.");
+      return;
+    }
+
+    if (
+      form.defaultPaymentMethod === "MOBILE_MONEY" &&
+      form.defaultMobileMoneyChannel === "P2P_TRANSFER" &&
+      form.defaultMobileMoneyNetwork === ""
+    ) {
+      toast.error("Choose a default mobile money network for P2P transfers.");
+      return;
+    }
+
+    const trimmedPayee = form.payee.trim();
+    const trimmedExpenseNote = form.expenseNote.trim();
+    const createPayload: CreateTodoRequest = {
+      ...payload,
+      responsibleUserId,
+      ...(form.defaultExpenseCategory
+        ? { defaultExpenseCategory: form.defaultExpenseCategory }
+        : {}),
+      ...(form.defaultPaymentMethod
+        ? { defaultPaymentMethod: form.defaultPaymentMethod }
+        : {}),
+      ...(form.defaultMobileMoneyChannel
+        ? { defaultMobileMoneyChannel: form.defaultMobileMoneyChannel }
+        : {}),
+      ...(form.defaultMobileMoneyNetwork
+        ? { defaultMobileMoneyNetwork: form.defaultMobileMoneyNetwork }
+        : {}),
+      ...(trimmedPayee ? { payee: trimmedPayee } : {}),
+      ...(trimmedExpenseNote ? { expenseNote: trimmedExpenseNote } : {}),
+    };
 
     setSaving(true);
 
     try {
-      if (mode === "edit" && todoId) {
-        await updateTodo(token, todoId, payload, pendingImages);
+      if (mode === "edit" && todoId && editingEntry) {
+        const shouldClearDefaultExpenseCategory =
+          form.defaultExpenseCategory === "" &&
+          editingEntry.defaultExpenseCategory !== null;
+        const shouldClearDefaultPaymentMethod =
+          form.defaultPaymentMethod === "" &&
+          editingEntry.defaultPaymentMethod !== null;
+        const shouldClearDefaultMobileMoneyChannel =
+          form.defaultMobileMoneyChannel === "" &&
+          editingEntry.defaultMobileMoneyChannel !== null;
+        const shouldClearDefaultMobileMoneyNetwork =
+          form.defaultMobileMoneyNetwork === "" &&
+          editingEntry.defaultMobileMoneyNetwork !== null;
+        const shouldClearPayee =
+          trimmedPayee.length === 0 && editingEntry.payee !== null;
+        const shouldClearExpenseNote =
+          trimmedExpenseNote.length === 0 && editingEntry.expenseNote !== null;
+        const updatePayload: UpdateTodoRequest = {
+          ...createPayload,
+          defaultExpenseCategory: form.defaultExpenseCategory
+            ? form.defaultExpenseCategory
+            : shouldClearDefaultExpenseCategory
+              ? null
+              : undefined,
+          defaultPaymentMethod: form.defaultPaymentMethod
+            ? form.defaultPaymentMethod
+            : shouldClearDefaultPaymentMethod
+              ? null
+              : undefined,
+          defaultMobileMoneyChannel: form.defaultMobileMoneyChannel
+            ? form.defaultMobileMoneyChannel
+            : shouldClearDefaultMobileMoneyChannel
+              ? null
+              : undefined,
+          defaultMobileMoneyNetwork: form.defaultMobileMoneyNetwork
+            ? form.defaultMobileMoneyNetwork
+            : shouldClearDefaultMobileMoneyNetwork
+              ? null
+              : undefined,
+          payee:
+            trimmedPayee.length > 0
+              ? trimmedPayee
+              : shouldClearPayee
+                ? null
+                : undefined,
+          expenseNote:
+            trimmedExpenseNote.length > 0
+              ? trimmedExpenseNote
+              : shouldClearExpenseNote
+                ? null
+                : undefined,
+          responsibleUserId:
+            responsibleUserId !== editingEntry.responsibleUser.id
+              ? responsibleUserId
+              : undefined,
+        };
+
+        await updateTodo(
+          token,
+          todoId,
+          updatePayload,
+          pendingImages,
+        );
         toast.success("Plan item updated.");
       } else {
-        await createTodo(token, payload, pendingImages);
+        await createTodo(token, createPayload, pendingImages);
         toast.success("Plan item added.");
       }
 
@@ -285,10 +492,13 @@ export function TodoFormPage({ mode }: TodoFormPageProps) {
         ) : (
           <TodoFormWizard
             editingEntry={editingEntry}
+            expenseCategories={expenseCategories}
+            expenseCategoriesError={expenseCategoriesError}
             form={form}
             imageBusyKey={imageBusyKey}
             mode={mode}
             pendingImages={pendingImages}
+            responsibleUserOptions={responsibleUserOptions}
             saving={saving}
             onAddPendingImages={handleAddPendingImages}
             onBack={handleBack}
