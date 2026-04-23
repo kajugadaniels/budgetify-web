@@ -30,6 +30,10 @@ function buildTodoMultipartBody(
     formData.append("price", String(body.price));
   }
 
+  if ("type" in body && body.type !== undefined) {
+    formData.append("type", body.type);
+  }
+
   if (body.priority !== undefined) {
     formData.append("priority", body.priority);
   }

@@ -2,6 +2,7 @@ const BASE = "/api/v1/todos";
 
 function buildTodoSearchParams(params?: {
   frequency?: string;
+  type?: string;
   priority?: string;
   status?: string;
   search?: string;
@@ -15,6 +16,10 @@ function buildTodoSearchParams(params?: {
 
   if (params?.frequency !== undefined) {
     searchParams.set("frequency", String(params.frequency));
+  }
+
+  if (params?.type !== undefined) {
+    searchParams.set("type", String(params.type));
   }
 
   if (params?.priority !== undefined) {
@@ -56,6 +61,7 @@ function buildTodoSearchParams(params?: {
 export const TODOS_ROUTES = {
   list:        (params?: {
     frequency?: string;
+    type?: string;
     priority?: string;
     status?: string;
     search?: string;
@@ -66,6 +72,7 @@ export const TODOS_ROUTES = {
   }) => `${BASE}${buildTodoSearchParams(params)}`,
   summary:     (params?: {
     frequency?: string;
+    type?: string;
     priority?: string;
     status?: string;
     search?: string;
@@ -74,6 +81,7 @@ export const TODOS_ROUTES = {
   }) => `${BASE}/summary${buildTodoSearchParams(params)}`,
   audit:       (params?: {
     frequency?: string;
+    type?: string;
     priority?: string;
     status?: string;
     search?: string;
@@ -82,6 +90,7 @@ export const TODOS_ROUTES = {
   }) => `${BASE}/audit${buildTodoSearchParams(params)}`,
   upcoming:    (params?: {
     frequency?: string;
+    type?: string;
     priority?: string;
     status?: string;
     search?: string;
@@ -91,6 +100,7 @@ export const TODOS_ROUTES = {
   }) => `${BASE}/upcoming${buildTodoSearchParams(params)}`,
   recordingsIndex: (params?: {
     frequency?: string;
+    type?: string;
     priority?: string;
     status?: string;
     search?: string;

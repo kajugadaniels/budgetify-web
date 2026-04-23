@@ -8,6 +8,10 @@ import type {
 } from "./expense.types";
 
 export type TodoPriority = "TOP_PRIORITY" | "PRIORITY" | "NOT_PRIORITY";
+export type TodoType =
+  | "WISHLIST"
+  | "PLANNED_SPEND"
+  | "RECURRING_OBLIGATION";
 export type TodoFrequency = "ONCE" | "WEEKLY" | "MONTHLY" | "YEARLY";
 export type TodoStatus =
   | "ACTIVE"
@@ -39,6 +43,7 @@ export interface TodoResponse {
   id: string;
   name: string;
   price: number;
+  type: TodoType;
   priority: TodoPriority;
   status: TodoStatus;
   frequency: TodoFrequency;
@@ -89,6 +94,7 @@ export interface TodoRecordingResponse {
 export interface TodoRecordingTodoSummary {
   id: string;
   name: string;
+  type: TodoType;
   frequency: TodoFrequency;
   status: TodoStatus;
 }
@@ -122,6 +128,14 @@ export interface TodoRecurringBudgetBurnDown {
   usagePercentage: number;
 }
 
+export interface TodoTypeBreakdownMetric {
+  type: TodoType;
+  totalCount: number;
+  openCount: number;
+  plannedTotal: number;
+  remainingTotal: number;
+}
+
 export interface TodoSummaryResponse {
   totalCount: number;
   openCount: number;
@@ -149,6 +163,7 @@ export interface TodoSummaryResponse {
   next30DaysScheduledAmount: number;
   recurringBudgetBurnDown: TodoRecurringBudgetBurnDown;
   completionByFrequency: TodoFrequencyCompletionMetric[];
+  typeBreakdown: TodoTypeBreakdownMetric[];
   latestTodo: TodoSummaryLatestTodo | null;
 }
 
@@ -175,6 +190,7 @@ export interface TodoAuditResponse {
   completionPercentage: number;
   recurringBudgetBurnDown: TodoRecurringBudgetBurnDown;
   completionByFrequency: TodoFrequencyCompletionMetric[];
+  typeBreakdown: TodoTypeBreakdownMetric[];
 }
 
 export interface TodoUpcomingItem {
@@ -230,6 +246,7 @@ export interface CreateTodoExpenseRequest extends CreateExpenseRequest {
 export interface CreateTodoRequest {
   name: string;
   price: number;
+  type: TodoType;
   priority: TodoPriority;
   status: TodoStatus;
   frequency: TodoFrequency;
@@ -242,6 +259,7 @@ export interface CreateTodoRequest {
 export interface UpdateTodoRequest {
   name?: string;
   price?: number;
+  type?: TodoType;
   priority?: TodoPriority;
   status?: TodoStatus;
   frequency?: TodoFrequency;
@@ -256,6 +274,7 @@ export interface UpdateTodoRequest {
 
 export interface ListTodosParams {
   frequency?: TodoFrequency;
+  type?: TodoType;
   priority?: TodoPriority;
   status?: TodoStatus;
   search?: string;
