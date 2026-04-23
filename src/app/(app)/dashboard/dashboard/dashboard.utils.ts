@@ -269,6 +269,24 @@ export function sumTodoAmounts(
   }, 0);
 }
 
+function getOpenTodoOccurrenceDates(
+  entry: Pick<TodoResponse, "occurrences" | "occurrenceDates" | "recordedOccurrenceDates">,
+): string[] {
+  if (entry.occurrences.length > 0) {
+    return entry.occurrences
+      .filter(
+        (occurrence) =>
+          occurrence.status === "SCHEDULED" || occurrence.status === "OVERDUE",
+      )
+      .map((occurrence) => occurrence.occurrenceDate)
+      .sort((left, right) => left.localeCompare(right));
+  }
+
+  return entry.occurrenceDates
+    .filter((date) => !entry.recordedOccurrenceDates.includes(date))
+    .sort((left, right) => left.localeCompare(right));
+}
+
 export function getOpenTodoPlannedTotal(summary: TodoSummaryResponse | null): number {
   return summary?.openPlannedTotal ?? 0;
 }
@@ -285,10 +303,7 @@ export function buildDashboardTodoAdviserSummary(
           ? Math.max(Number(entry.remainingAmount), 0)
           : targetAmount;
       const usedAmount = Math.max(targetAmount - remainingAmount, 0);
-      const remainingOccurrenceCount = Math.max(
-        entry.occurrenceDates.length - entry.recordedOccurrenceDates.length,
-        0,
-      );
+      const remainingOccurrenceCount = getOpenTodoOccurrenceDates(entry).length;
 
       return {
         id: entry.id,
@@ -349,8 +364,9 @@ export function buildUpcomingTodoSchedule(
     )
     .forEach((entry) => {
       const remainingDates = entry.occurrenceDates
-        .filter((date) => !entry.recordedOccurrenceDates.includes(date))
-        .sort();
+        .length > 0 || entry.occurrences.length > 0
+        ? getOpenTodoOccurrenceDates(entry)
+        : [];
 
       if (remainingDates.length === 0) {
         return;
