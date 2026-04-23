@@ -13,6 +13,7 @@ import { rwf } from "@/lib/utils/currency";
 import type { TodoExpenseFormValues } from "./todos-page.types";
 import {
   canRecordTodoExpense,
+  formatTodoResponsibleUserLabel,
   formatTodoDate,
   formatTodoFrequencyLabel,
   getOverdueTodoOccurrences,
@@ -113,7 +114,22 @@ export function TodoExpenseDialog({
       (!needsNetwork || form.mobileMoneyNetwork.length > 0)
     : form.paymentMethod.length > 0;
   const canContinueFromStep4 =
-    form.amount.trim().length > 0 && form.date.trim().length > 0;
+    form.label.trim().length > 0 &&
+    form.amount.trim().length > 0 &&
+    form.date.trim().length > 0;
+  const expectedAmount = recurring ? suggestedAmount : Number(entry.price);
+  const parsedAmount = Number(form.amount);
+  const totalChargedAmount =
+    form.amount.trim().length === 0 || Number.isNaN(parsedAmount)
+      ? null
+      : mobileMoney
+        ? quote?.totalAmountRwf ?? null
+        : parsedAmount;
+  const varianceAmount =
+    totalChargedAmount === null ? null : totalChargedAmount - expectedAmount;
+  const paymentLabel =
+    PAYMENT_METHOD_OPTIONS.find((option) => option.value === form.paymentMethod)
+      ?.label ?? "—";
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     if (step < 5) {
@@ -261,6 +277,26 @@ export function TodoExpenseDialog({
                   />
                 </section>
               ) : null}
+
+              <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-3")}>
+                <MiniStat
+                  label="Responsible"
+                  value={formatTodoResponsibleUserLabel(entry.responsibleUser)}
+                />
+                <MiniStat
+                  label="Payee"
+                  value={entry.payee?.trim() || entry.name}
+                />
+                <MiniStat
+                  label="Default payment"
+                  value={
+                    PAYMENT_METHOD_OPTIONS.find(
+                      (option) =>
+                        option.value === entry.defaultPaymentMethod,
+                    )?.label ?? "No default"
+                  }
+                />
+              </section>
 
               {entry.recordings.length > 0 ? (
                 <section className={SECTION_CLASS}>
@@ -413,19 +449,14 @@ export function TodoExpenseDialog({
               <p className={EYEBROW_CLASS}>Amount & date</p>
 
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1.1fr)_minmax(220px,0.9fr)]">
-                <Field label="Amount in RWF">
+                <Field label="Expense label">
                   <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    min={0.01}
-                    value={form.amount}
-                    onChange={(event) => onChange({ amount: event.target.value })}
-                    placeholder="125000"
-                    className={cn(
-                      INPUT_CLASS,
-                      "text-lg font-semibold tabular-nums",
-                    )}
+                    type="text"
+                    value={form.label}
+                    onChange={(event) => onChange({ label: event.target.value })}
+                    placeholder={entry.payee?.trim() || entry.name}
+                    className={INPUT_CLASS}
+                    maxLength={120}
                     required
                   />
                 </Field>
@@ -465,6 +496,35 @@ export function TodoExpenseDialog({
                 </Field>
               </div>
 
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1.1fr)_minmax(220px,0.9fr)]">
+                <Field label="Amount in RWF">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min={0.01}
+                    value={form.amount}
+                    onChange={(event) => onChange({ amount: event.target.value })}
+                    placeholder="125000"
+                    className={cn(
+                      INPUT_CLASS,
+                      "text-lg font-semibold tabular-nums",
+                    )}
+                    required
+                  />
+                </Field>
+
+                <Field label="Note">
+                  <textarea
+                    value={form.note}
+                    onChange={(event) => onChange({ note: event.target.value })}
+                    placeholder={entry.expenseNote ?? "Optional context for this expense"}
+                    className={`${INPUT_CLASS} min-h-[132px] resize-y`}
+                    maxLength={500}
+                  />
+                </Field>
+              </div>
+
               {recurring ? (
                 <p className="text-xs leading-5 text-text-secondary">
                   Default amount is split from the remaining budget across the
@@ -476,7 +536,11 @@ export function TodoExpenseDialog({
 
           {step === 5 ? (
             <>
-              <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-3")}>
+              <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-4")}>
+                <MiniStat
+                  label="Expected"
+                  value={rwf(expectedAmount)}
+                />
                 <MiniStat
                   label="Amount"
                   value={form.amount.trim() ? rwf(Number(form.amount)) : "—"}
@@ -497,21 +561,31 @@ export function TodoExpenseDialog({
                 <MiniStat
                   label="Total charged"
                   value={
-                    mobileMoney
+                    totalChargedAmount === null
                       ? quoteLoading
                         ? "Calculating..."
-                        : quote
-                          ? rwf(quote.totalAmountRwf)
-                          : (quoteError ?? "—")
-                      : form.amount.trim()
-                        ? rwf(Number(form.amount))
-                        : "—"
+                        : (quoteError ?? "—")
+                      : rwf(totalChargedAmount)
                   }
                   valueClassName="text-primary"
                 />
+                <MiniStat
+                  label="Variance"
+                  value={varianceAmount === null ? "—" : rwf(varianceAmount)}
+                  valueClassName={
+                    varianceAmount === null
+                      ? undefined
+                      : varianceAmount > 0
+                        ? "text-danger"
+                        : varianceAmount < 0
+                          ? "text-success"
+                          : undefined
+                  }
+                />
               </section>
 
-              <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-3")}>
+              <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-4")}>
+                <MiniStat label="Label" value={form.label.trim() || "—"} />
                 <MiniStat
                   label="Category"
                   value={
@@ -519,17 +593,14 @@ export function TodoExpenseDialog({
                       ?.label ?? "—"
                   }
                 />
+                <MiniStat label="Payment" value={paymentLabel} />
                 <MiniStat
-                  label="Payment"
-                  value={
-                    PAYMENT_METHOD_OPTIONS.find(
-                      (option) => option.value === form.paymentMethod,
-                    )?.label ?? "—"
-                  }
+                  label="Responsible"
+                  value={formatTodoResponsibleUserLabel(entry.responsibleUser)}
                 />
               </section>
 
-              <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-2")}>
+              <section className={cn(SECTION_CLASS, "grid gap-2.5 sm:grid-cols-3")}>
                 <MiniStat
                   label="Transfer type"
                   value={
@@ -543,6 +614,10 @@ export function TodoExpenseDialog({
                 <MiniStat
                   label={recurring ? "Occurrence date" : "Expense date"}
                   value={form.date ? formatTodoDate(form.date) : "—"}
+                />
+                <MiniStat
+                  label="Note"
+                  value={form.note.trim() || "No note"}
                 />
               </section>
 
