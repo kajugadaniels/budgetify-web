@@ -7,6 +7,7 @@ import type {
   CreateTodoExpenseRequest,
   CreateTodoRequest,
   ListTodosParams,
+  ReverseTodoRecordingRequest,
   TodoRecordingResponse,
   TodoResponse,
   TodoSummaryResponse,
@@ -256,6 +257,22 @@ export async function recordTodoExpense(
     token,
     body,
   });
+}
+
+export async function reverseTodoRecording(
+  token: string,
+  todoId: string,
+  recordingId: string,
+  body: ReverseTodoRecordingRequest,
+): Promise<TodoRecordingResponse> {
+  return apiFetch<TodoRecordingResponse>(
+    TODOS_ROUTES.reverseRecording(todoId, recordingId),
+    {
+      method: "POST",
+      token,
+      body,
+    },
+  );
 }
 
 export async function updateTodo(
