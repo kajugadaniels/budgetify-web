@@ -1,11 +1,15 @@
 "use client";
 
 import { Dialog } from "@/components/ui/dialog";
+import type { LoanResponse } from "@/lib/types/loan.types";
 import { rwf } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
-import type { LoanResponse } from "@/lib/types/loan.types";
 import type { LoanSettlementFormValues } from "./loans-page.types";
-import { formatLoanDate } from "./loans.utils";
+import {
+  formatLoanDate,
+  formatLoanDirection,
+  formatLoanType,
+} from "./loans.utils";
 
 const INPUT_CLASS =
   "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 transition-colors focus:border-primary/60 focus:outline-none";
@@ -36,24 +40,46 @@ export function LoanSettlementDialog({
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="text-2xl font-semibold tracking-heading-md text-text-primary">
-              Settle this loan into expenses
+              Settle this borrowed loan into expenses
             </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-text-secondary">
+              This step is only for money you borrowed and are now paying back.
+              Lent loans will use a dedicated repayment-to-income flow in the
+              next milestone.
+            </p>
           </div>
         </div>
       </div>
 
       <form className="space-y-5" onSubmit={onSubmit}>
-        <div className="">
-          <Field label="Expense date">
-            <input
-              type="date"
-              value={form.date}
-              onChange={(event) => onChange({ date: event.target.value })}
-              className={INPUT_CLASS}
-              required
-            />
-          </Field>
+        <div className="grid gap-3 md:grid-cols-3">
+          <SummaryBlock label="Direction" value={formatLoanDirection(entry.direction)} />
+          <SummaryBlock label="Type" value={formatLoanType(entry.type)} />
+          <SummaryBlock label="Counterparty" value={entry.counterpartyName} />
+          <SummaryBlock label="Issued" value={formatLoanDate(entry.issuedDate)} />
+          <SummaryBlock
+            label="Due"
+            value={entry.dueDate ? formatLoanDate(entry.dueDate) : "No due date"}
+          />
+          <SummaryBlock
+            label="Tracked amount"
+            value={
+              entry.currency === "RWF"
+                ? rwf(Number(entry.amount))
+                : `${entry.currency} ${Number(entry.amount).toLocaleString("en-US")} · ${rwf(Number(entry.amountRwf))}`
+            }
+          />
         </div>
+
+        <Field label="Expense date">
+          <input
+            type="date"
+            value={form.date}
+            onChange={(event) => onChange({ date: event.target.value })}
+            className={INPUT_CLASS}
+            required
+          />
+        </Field>
 
         <Field label="Expense note">
           <textarea
