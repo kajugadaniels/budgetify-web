@@ -6,40 +6,56 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MonthStepper } from "@/components/ui/month-stepper";
-import { buildLoanYearOptions } from "./loans.utils";
-import type { LoanLedgerPaidFilter } from "./loans-page.types";
+import {
+  buildLoanYearOptions,
+  LOAN_DIRECTION_OPTIONS,
+  LOAN_TYPE_OPTIONS,
+} from "./loans.utils";
+import type {
+  LoanLedgerDirectionFilter,
+  LoanLedgerPaidFilter,
+  LoanLedgerTypeFilter,
+} from "./loans-page.types";
 
 interface LoansLedgerFiltersProps {
   dateFrom: string;
   dateTo: string;
+  direction: LoanLedgerDirectionFilter;
   hasActiveFilters: boolean;
   month: number;
   paid: LoanLedgerPaidFilter;
   search: string;
+  type: LoanLedgerTypeFilter;
   year: number;
   onClear: () => void;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
+  onDirectionChange: (value: LoanLedgerDirectionFilter) => void;
   onMonthChange: (value: number) => void;
   onPaidChange: (value: LoanLedgerPaidFilter) => void;
   onSearchChange: (value: string) => void;
+  onTypeChange: (value: LoanLedgerTypeFilter) => void;
   onYearChange: (value: number) => void;
 }
 
 export function LoansLedgerFilters({
   dateFrom,
   dateTo,
+  direction,
   hasActiveFilters,
   month,
   paid,
   search,
+  type,
   year,
   onClear,
   onDateFromChange,
   onDateToChange,
+  onDirectionChange,
   onMonthChange,
   onPaidChange,
   onSearchChange,
+  onTypeChange,
   onYearChange,
 }: LoansLedgerFiltersProps) {
   const yearOptions = buildLoanYearOptions();
@@ -105,6 +121,42 @@ export function LoansLedgerFilters({
                 <SelectItem value="ALL">All states</SelectItem>
                 <SelectItem value="PAID">Paid</SelectItem>
                 <SelectItem value="UNPAID">Unpaid</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={direction}
+              onValueChange={(value) =>
+                onDirectionChange(value as LoanLedgerDirectionFilter)
+              }
+            >
+              <SelectTrigger className="h-11 min-w-[168px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
+                <SelectValue placeholder="Direction" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
+                <SelectItem value="ALL">All directions</SelectItem>
+                {LOAN_DIRECTION_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={type}
+              onValueChange={(value) => onTypeChange(value as LoanLedgerTypeFilter)}
+            >
+              <SelectTrigger className="h-11 min-w-[168px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
+                <SelectItem value="ALL">All types</SelectItem>
+                {LOAN_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
