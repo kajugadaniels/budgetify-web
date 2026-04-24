@@ -525,7 +525,7 @@ export function buildDashboardPartnerActivitySummary(input: {
         amount: Number(entry.amount),
         creator: entry.createdBy,
         currency: "RWF",
-        date: entry.date,
+        date: entry.issuedDate,
         id: entry.id,
         label: entry.label,
         type: "LOAN",
@@ -797,7 +797,7 @@ export function resolveDashboardLoanDateRange(
     return null;
   }
 
-  const timestamps = entries.map((entry) => new Date(entry.date).getTime());
+  const timestamps = entries.map((entry) => new Date(entry.issuedDate).getTime());
   const earliest = Math.min(...timestamps);
   const latest = Math.max(...timestamps);
 
@@ -819,7 +819,7 @@ export function filterLoansByDateRange(
     : Number.POSITIVE_INFINITY;
 
   return entries.filter((entry) => {
-    const entryTimestamp = new Date(entry.date).getTime();
+    const entryTimestamp = new Date(entry.issuedDate).getTime();
 
     return entryTimestamp >= fromTimestamp && entryTimestamp <= toTimestamp;
   });
