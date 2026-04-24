@@ -9,6 +9,14 @@ export type LoanType =
   | "FAMILY"
   | "FRIEND"
   | "OTHER";
+export type LoanStatus =
+  | "ACTIVE"
+  | "PARTIALLY_REPAID"
+  | "SETTLED"
+  | "OVERDUE"
+  | "WRITTEN_OFF"
+  | "CANCELLED"
+  | "ARCHIVED";
 
 export interface LoanResponse {
   id: string;
@@ -22,7 +30,7 @@ export interface LoanResponse {
   amountRwf: number;
   issuedDate: string;
   dueDate: string | null;
-  paid: boolean;
+  status: LoanStatus;
   note: string | null;
   createdBy: CreatedBySummary;
   createdAt: string;
@@ -39,7 +47,7 @@ export interface CreateLoanRequest {
   currency: Currency;
   issuedDate: string;
   dueDate?: string;
-  paid: boolean;
+  status?: LoanStatus;
   note?: string;
 }
 
@@ -53,7 +61,7 @@ export interface UpdateLoanRequest {
   currency?: Currency;
   issuedDate?: string;
   dueDate?: string;
-  paid?: boolean;
+  status?: LoanStatus;
   note?: string;
 }
 
@@ -70,7 +78,7 @@ export interface LoanSettlementResponse {
 export interface ListLoansParams {
   month?: number;
   year?: number;
-  paid?: boolean;
+  status?: LoanStatus;
   direction?: LoanDirection;
   type?: LoanType;
   search?: string;
