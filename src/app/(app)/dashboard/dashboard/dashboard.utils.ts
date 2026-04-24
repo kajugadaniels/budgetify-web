@@ -14,6 +14,7 @@ import type {
   TodoUpcomingResponse,
 } from "@/lib/types/todo.types";
 import type { UserProfileResponse } from "@/lib/types/user.types";
+import { isLoanSettled } from "../../loans/loans/loans.utils";
 
 export const CURRENT_YEAR = new Date().getFullYear();
 
@@ -828,23 +829,23 @@ export function filterLoansByDateRange(
 export function buildDashboardLoanStatusData(
   entries: LoanResponse[],
 ): DashboardLoanStatusDatum[] {
-  const paidCount = entries.filter((entry) => entry.paid).length;
-  const unpaidCount = entries.length - paidCount;
+  const settledCount = entries.filter((entry) => isLoanSettled(entry.status)).length;
+  const activeCount = entries.length - settledCount;
 
   return [
     {
-      description: `${paidCount} ${paidCount === 1 ? "loan is" : "loans are"} fully cleared`,
-      label: "Paid",
+      description: `${settledCount} ${settledCount === 1 ? "loan is" : "loans are"} fully cleared`,
+      label: "Settled",
       tone: "paid",
-      value: paidCount,
+      value: settledCount,
     },
     {
-      description: `${unpaidCount} ${
-        unpaidCount === 1 ? "loan still needs" : "loans still need"
+      description: `${activeCount} ${
+        activeCount === 1 ? "loan still needs" : "loans still need"
       } settlement`,
-      label: "Not paid",
+      label: "Open",
       tone: "unpaid",
-      value: unpaidCount,
+      value: activeCount,
     },
   ];
 }
