@@ -3,6 +3,11 @@
 import { Dialog } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils/cn";
 import type { LoanFormValues } from "./loans-page.types";
+import {
+  formatLoanDirection,
+  LOAN_DIRECTION_OPTIONS,
+  LOAN_TYPE_OPTIONS,
+} from "./loans.utils";
 
 const INPUT_CLASS =
   "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 focus:border-primary/60 focus:outline-none transition-colors";
@@ -54,6 +59,82 @@ export function LoanFormDialog({
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Direction">
+            <div className="flex flex-wrap gap-2">
+              {LOAN_DIRECTION_OPTIONS.map((option) => {
+                const selected = form.direction === option.value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => onChange({ direction: option.value })}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
+                      selected
+                        ? "border-primary bg-primary text-background"
+                        : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+
+          <Field label="Loan type">
+            <select
+              value={form.type}
+              onChange={(event) =>
+                onChange({ type: event.target.value as LoanFormValues["type"] })
+              }
+              className={INPUT_CLASS}
+            >
+              {LOAN_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={form.direction === "LENT" ? "Borrower" : "Lender"}>
+            <input
+              type="text"
+              value={form.counterpartyName}
+              onChange={(event) =>
+                onChange({ counterpartyName: event.target.value })
+              }
+              placeholder={
+                form.direction === "LENT"
+                  ? "Who received the money?"
+                  : "Who gave you the money?"
+              }
+              className={INPUT_CLASS}
+              maxLength={120}
+              required
+            />
+          </Field>
+
+          <Field label="Counterparty contact">
+            <input
+              type="text"
+              value={form.counterpartyContact}
+              onChange={(event) =>
+                onChange({ counterpartyContact: event.target.value })
+              }
+              placeholder="Phone, email, or note"
+              className={INPUT_CLASS}
+              maxLength={120}
+            />
+          </Field>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Amount">
             <input
               type="number"
@@ -66,13 +147,39 @@ export function LoanFormDialog({
             />
           </Field>
 
-          <Field label="Date">
+          <Field label="Currency">
+            <select
+              value={form.currency}
+              onChange={(event) =>
+                onChange({
+                  currency: event.target.value as LoanFormValues["currency"],
+                })
+              }
+              className={INPUT_CLASS}
+            >
+              <option value="RWF">RWF</option>
+              <option value="USD">USD</option>
+            </select>
+          </Field>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Issued date">
             <input
               type="date"
-              value={form.date}
-              onChange={(event) => onChange({ date: event.target.value })}
+              value={form.issuedDate}
+              onChange={(event) => onChange({ issuedDate: event.target.value })}
               className={INPUT_CLASS}
               required
+            />
+          </Field>
+
+          <Field label="Due date">
+            <input
+              type="date"
+              value={form.dueDate}
+              onChange={(event) => onChange({ dueDate: event.target.value })}
+              className={INPUT_CLASS}
             />
           </Field>
         </div>
@@ -123,6 +230,17 @@ export function LoanFormDialog({
             maxLength={500}
           />
         </Field>
+
+        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-text-secondary">
+          <p className="font-medium text-text-primary">
+            {formatLoanDirection(form.direction)} loan
+          </p>
+          <p className="mt-1">
+            {form.direction === "LENT"
+              ? "This is money you gave out and expect to collect back later."
+              : "This is money you received and expect to repay later."}
+          </p>
+        </div>
 
         <div className="flex gap-3 pt-2">
           <button
