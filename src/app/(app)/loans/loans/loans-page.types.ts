@@ -1,10 +1,11 @@
 import type {
   LoanDirection,
   LoanResponse,
+  LoanStatus,
   LoanType,
 } from "@/lib/types/loan.types";
 
-export type LoanLedgerPaidFilter = "ALL" | "PAID" | "UNPAID";
+export type LoanLedgerStatusFilter = "ALL" | LoanStatus;
 export type LoanLedgerDirectionFilter = "ALL" | LoanDirection;
 export type LoanLedgerTypeFilter = "ALL" | LoanType;
 
@@ -18,7 +19,7 @@ export interface LoanFormValues {
   currency: "RWF" | "USD";
   issuedDate: string;
   dueDate: string;
-  paid: boolean;
+  status: LoanStatus;
   note: string;
 }
 
