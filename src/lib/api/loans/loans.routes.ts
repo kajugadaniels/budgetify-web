@@ -4,7 +4,7 @@ export const LOANS_ROUTES = {
   list: (params?: {
     month?: number;
     year?: number;
-    paid?: boolean;
+    status?: "ACTIVE" | "PARTIALLY_REPAID" | "SETTLED" | "OVERDUE" | "WRITTEN_OFF" | "CANCELLED" | "ARCHIVED";
     direction?: "BORROWED" | "LENT";
     type?: "PERSONAL" | "BUSINESS" | "FAMILY" | "FRIEND" | "OTHER";
     search?: string;
@@ -23,8 +23,8 @@ export const LOANS_ROUTES = {
       searchParams.set("year", String(params.year));
     }
 
-    if (params?.paid !== undefined) {
-      searchParams.set("paid", String(params.paid));
+    if (params?.status !== undefined) {
+      searchParams.set("status", params.status);
     }
 
     if (params?.direction !== undefined) {
