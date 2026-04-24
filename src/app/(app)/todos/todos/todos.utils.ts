@@ -13,6 +13,7 @@ import type {
   TodoOccurrenceResponse,
   TodoOccurrenceStatus,
   TodoResponse,
+  TodoSortBy,
   TodoStatus,
   TodoType,
 } from "@/lib/types/todo.types";
@@ -207,11 +208,33 @@ export function applyTodoExpenseFormPatch(
   return merged;
 }
 
-export function sortTodos(entries: TodoResponse[]): TodoResponse[] {
-  return [...entries].sort(
-    (left, right) =>
-      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-  );
+export function sortTodos(
+  entries: TodoResponse[],
+  sortBy: TodoSortBy = "NEXT_OCCURRENCE_ASC",
+): TodoResponse[] {
+  if (sortBy === "CREATED_AT_DESC") {
+    return [...entries].sort(
+      (left, right) =>
+        new Date(right.createdAt).getTime() -
+          new Date(left.createdAt).getTime() ||
+        left.name.localeCompare(right.name),
+    );
+  }
+
+  return [...entries].sort((left, right) => {
+    const leftNextOccurrence = getNextOpenOccurrenceTime(left);
+    const rightNextOccurrence = getNextOpenOccurrenceTime(right);
+
+    if (leftNextOccurrence !== rightNextOccurrence) {
+      return leftNextOccurrence - rightNextOccurrence;
+    }
+
+    return (
+      new Date(right.createdAt).getTime() -
+        new Date(left.createdAt).getTime() ||
+      left.name.localeCompare(right.name)
+    );
+  });
 }
 
 export function formatTodoDate(value: string): string {
@@ -552,6 +575,16 @@ export function getRecordedTodoOccurrences(
   return getTrackedTodoOccurrences(entry).filter(
     (occurrence) => occurrence.status === "RECORDED",
   );
+}
+
+function getNextOpenOccurrenceTime(
+  entry: Pick<TodoResponse, "occurrences" | "occurrenceDates" | "recordedOccurrenceDates">,
+): number {
+  const nextOpenDate = getRemainingOccurrenceDates(entry)[0];
+
+  return nextOpenDate
+    ? parseDateOnly(nextOpenDate).getTime()
+    : Number.POSITIVE_INFINITY;
 }
 
 export function getOverdueTodoOccurrences(

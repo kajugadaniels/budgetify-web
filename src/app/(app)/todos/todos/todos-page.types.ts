@@ -5,17 +5,27 @@ import type {
   ExpensePaymentMethod,
 } from "@/lib/types/expense.types";
 import type {
+  TodoCadenceFilter,
   TodoFrequency,
+  TodoOperationalStateFilter,
   TodoPriority,
   TodoResponse,
+  TodoSortBy,
   TodoStatus,
   TodoType,
 } from "@/lib/types/todo.types";
 
 export type TodoBoardPriorityFilter = TodoPriority | "ALL";
-export type TodoBoardFrequencyFilter = TodoFrequency | "ALL";
+export type TodoBoardCadenceFilter =
+  | TodoCadenceFilter
+  | TodoFrequency
+  | "ALL";
 export type TodoBoardStatusFilter = TodoStatus | "ALL";
 export type TodoBoardTypeFilter = TodoType | "ALL";
+export type TodoBoardOperationalStateFilter =
+  | TodoOperationalStateFilter
+  | "ALL";
+export type TodoBoardSortFilter = TodoSortBy;
 
 export interface TodoFormValues {
   name: string;

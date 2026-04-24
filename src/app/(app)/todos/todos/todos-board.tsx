@@ -1,4 +1,5 @@
 import type { TodoResponse } from "@/lib/types/todo.types";
+import type { TodoBoardSortFilter } from "./todos-page.types";
 import { TodoPriorityLane } from "./todo-priority-lane";
 
 interface TodosBoardProps {
@@ -6,6 +7,7 @@ interface TodosBoardProps {
   busyRecordExpenseId: string | null;
   busyReverseRecordingId: string | null;
   entries: TodoResponse[];
+  sortBy: TodoBoardSortFilter;
   onDelete: (entry: TodoResponse) => void;
   onEdit: (entry: TodoResponse) => void;
   onOpenExpense: (expenseId: string) => void;
@@ -20,6 +22,7 @@ export function TodosBoard({
   busyRecordExpenseId,
   busyReverseRecordingId,
   entries,
+  sortBy,
   onDelete,
   onEdit,
   onOpenExpense,
@@ -33,10 +36,14 @@ export function TodosBoard({
       <div className="flex items-center justify-between gap-3 rounded-[22px] border border-white/8 bg-background-secondary/60 px-4 py-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/60">
-            Newest first
+            {sortBy === "NEXT_OCCURRENCE_ASC"
+              ? "Next occurrence first"
+              : "Newest first"}
           </p>
           <p className="mt-1 text-sm text-text-secondary">
-            Ordered by the date each plan item was created
+            {sortBy === "NEXT_OCCURRENCE_ASC"
+              ? "Ordered by the nearest open occurrence date across the current board"
+              : "Ordered by the date each plan item was created"}
           </p>
         </div>
         <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-text-secondary">

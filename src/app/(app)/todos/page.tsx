@@ -39,8 +39,10 @@ import { TodosBoardFilters } from "./todos/todos-board-filters";
 import { TodosBoardSkeleton } from "./todos/todos-board-skeleton";
 import { TodosHeader } from "./todos/todos-header";
 import type {
-  TodoBoardFrequencyFilter,
+  TodoBoardCadenceFilter,
+  TodoBoardOperationalStateFilter,
   TodoBoardPriorityFilter,
+  TodoBoardSortFilter,
   TodoBoardStatusFilter,
   TodoBoardTypeFilter,
   TodoExpenseDialogState,
@@ -66,10 +68,13 @@ type TodoRecordingReversalState =
     }
   | null;
 
-function resolveFrequencyFilterFromSearchParam(
-  value: string | null,
-): TodoBoardFrequencyFilter {
+function resolveCadenceFilterFromSearchParam(
+  cadenceValue: string | null,
+  legacyFrequencyValue: string | null,
+): TodoBoardCadenceFilter {
+  const value = cadenceValue ?? legacyFrequencyValue;
   return value === "ONCE" ||
+    value === "RECURRING" ||
     value === "WEEKLY" ||
     value === "MONTHLY" ||
     value === "YEARLY"
@@ -85,6 +90,21 @@ function resolveTypeFilterFromSearchParam(
     value === "RECURRING_OBLIGATION"
     ? value
     : "ALL";
+}
+
+function resolveOperationalStateFromSearchParam(
+  value: string | null,
+): TodoBoardOperationalStateFilter {
+  return value === "OVERDUE" ||
+    value === "UPCOMING" ||
+    value === "RECORDED" ||
+    value === "UNRECORDED"
+    ? value
+    : "ALL";
+}
+
+function resolveSortByFromSearchParam(value: string | null): TodoBoardSortFilter {
+  return value === "CREATED_AT_DESC" ? value : "NEXT_OCCURRENCE_ASC";
 }
 
 export default function TodosPage() {
@@ -134,13 +154,28 @@ export default function TodosPage() {
     useState<string | null>(null);
   const [selectedPriority, setSelectedPriority] =
     useState<TodoBoardPriorityFilter>("ALL");
-  const [selectedFrequency, setSelectedFrequency] =
-    useState<TodoBoardFrequencyFilter>(() =>
-      resolveFrequencyFilterFromSearchParam(searchParams.get("frequency")),
+  const [selectedCadence, setSelectedCadence] =
+    useState<TodoBoardCadenceFilter>(() =>
+      resolveCadenceFilterFromSearchParam(
+        searchParams.get("cadence"),
+        searchParams.get("frequency"),
+      ),
     );
   const [selectedType, setSelectedType] = useState<TodoBoardTypeFilter>(() =>
     resolveTypeFilterFromSearchParam(searchParams.get("type")),
   );
+  const [selectedOperationalState, setSelectedOperationalState] =
+    useState<TodoBoardOperationalStateFilter>(() =>
+      resolveOperationalStateFromSearchParam(
+        searchParams.get("operationalState"),
+      ),
+    );
+  const [selectedSortBy, setSelectedSortBy] = useState<TodoBoardSortFilter>(
+    () => resolveSortByFromSearchParam(searchParams.get("sortBy")),
+  );
+  const [hasLinkedExpenseOnly, setHasLinkedExpenseOnly] = useState(false);
+  const [feeBearingOnly, setFeeBearingOnly] = useState(false);
+  const [remainingBudgetLte, setRemainingBudgetLte] = useState("");
   const [selectedStatus, setSelectedStatus] =
     useState<TodoBoardStatusFilter>("ALL");
   const [searchInput, setSearchInput] = useState("");
@@ -158,8 +193,14 @@ export default function TodosPage() {
     appliedSearch,
     selectedDateFrom,
     selectedDateTo,
-    selectedFrequency,
+    selectedCadence,
     selectedType,
+    selectedPriority,
+    selectedStatus,
+    selectedOperationalState,
+    hasLinkedExpenseOnly,
+    feeBearingOnly,
+    remainingBudgetLte,
   ]);
 
   useEffect(() => {
@@ -173,14 +214,32 @@ export default function TodosPage() {
       setError(null);
 
       try {
+        const parsedRemainingBudgetLte = Number(remainingBudgetLte);
         const filters = {
-          frequency:
-            selectedFrequency === "ALL" ? undefined : selectedFrequency,
+          ...(selectedCadence === "ALL"
+            ? {}
+            : selectedCadence === "RECURRING"
+              ? { cadence: "RECURRING" as const }
+              : selectedCadence === "ONCE"
+                ? { cadence: "ONCE" as const }
+                : { frequency: selectedCadence }),
           type: selectedType === "ALL" ? undefined : selectedType,
           priority:
             selectedPriority === "ALL" ? undefined : selectedPriority,
           status:
             selectedStatus === "ALL" ? undefined : selectedStatus,
+          operationalState:
+            selectedOperationalState === "ALL"
+              ? undefined
+              : selectedOperationalState,
+          sortBy: selectedSortBy,
+          hasLinkedExpense: hasLinkedExpenseOnly ? true : undefined,
+          feeBearingOnly: feeBearingOnly ? true : undefined,
+          remainingBudgetLte:
+            remainingBudgetLte.trim().length > 0 &&
+            !Number.isNaN(parsedRemainingBudgetLte)
+              ? parsedRemainingBudgetLte
+              : undefined,
           search: appliedSearch,
           dateFrom: selectedDateFrom || undefined,
           dateTo: selectedDateTo || undefined,
@@ -203,7 +262,7 @@ export default function TodosPage() {
             return;
           }
 
-          setPageEntries(sortTodos(pageResponse.items));
+          setPageEntries(sortTodos(pageResponse.items, selectedSortBy));
           setTotalItems(pageResponse.meta.totalItems);
           setTotalPages(pageResponse.meta.totalPages);
         }
@@ -235,9 +294,14 @@ export default function TodosPage() {
     selectedDateFrom,
     selectedDateTo,
     selectedStatus,
-    selectedFrequency,
+    selectedCadence,
     selectedType,
     selectedPriority,
+    selectedOperationalState,
+    selectedSortBy,
+    hasLinkedExpenseOnly,
+    feeBearingOnly,
+    remainingBudgetLte,
     token,
   ]);
 
@@ -388,10 +452,14 @@ export default function TodosPage() {
     typeBreakdown.find((metric) => metric.type === "RECURRING_OBLIGATION")
       ?.totalCount ?? 0;
   const hasActiveBoardFilters =
-    selectedFrequency !== "ALL" ||
+    selectedCadence !== "ALL" ||
     selectedType !== "ALL" ||
     selectedPriority !== "ALL" ||
     selectedStatus !== "ALL" ||
+    selectedOperationalState !== "ALL" ||
+    hasLinkedExpenseOnly ||
+    feeBearingOnly ||
+    remainingBudgetLte.trim().length > 0 ||
     appliedSearch !== undefined ||
     hasExplicitDateFilter;
 
@@ -822,16 +890,25 @@ export default function TodosPage() {
             dateFrom={selectedDateFrom}
             dateTo={selectedDateTo}
             status={selectedStatus}
-            frequency={selectedFrequency}
+            cadence={selectedCadence}
             hasActiveFilters={hasActiveBoardFilters}
+            hasLinkedExpenseOnly={hasLinkedExpenseOnly}
+            feeBearingOnly={feeBearingOnly}
             priority={selectedPriority}
+            operationalState={selectedOperationalState}
+            remainingBudgetLte={remainingBudgetLte}
+            sortBy={selectedSortBy}
             type={selectedType}
             search={searchInput}
             onClear={() => {
-              setSelectedFrequency("ALL");
+              setSelectedCadence("ALL");
               setSelectedType("ALL");
               setSelectedPriority("ALL");
               setSelectedStatus("ALL");
+              setSelectedOperationalState("ALL");
+              setHasLinkedExpenseOnly(false);
+              setFeeBearingOnly(false);
+              setRemainingBudgetLte("");
               setSearchInput("");
               setSelectedDateFrom("");
               setSelectedDateTo("");
@@ -843,10 +920,12 @@ export default function TodosPage() {
               setSelectedStatus(value);
               setCurrentPage(1);
             }}
-            onFrequencyChange={(value) => {
-              setSelectedFrequency(value);
+            onCadenceChange={(value) => {
+              setSelectedCadence(value);
               setCurrentPage(1);
             }}
+            onHasLinkedExpenseOnlyChange={setHasLinkedExpenseOnly}
+            onFeeBearingOnlyChange={setFeeBearingOnly}
             onTypeChange={(value) => {
               setSelectedType(value);
               setCurrentPage(1);
@@ -855,6 +934,12 @@ export default function TodosPage() {
               setSelectedPriority(value);
               setCurrentPage(1);
             }}
+            onOperationalStateChange={(value) => {
+              setSelectedOperationalState(value);
+              setCurrentPage(1);
+            }}
+            onRemainingBudgetLteChange={setRemainingBudgetLte}
+            onSortByChange={setSelectedSortBy}
             onSearchChange={setSearchInput}
           />
 
@@ -886,10 +971,14 @@ export default function TodosPage() {
                 action={{
                   label: "Clear filters",
                   onClick: () => {
-                    setSelectedFrequency("ALL");
+                    setSelectedCadence("ALL");
                     setSelectedType("ALL");
                     setSelectedPriority("ALL");
                     setSelectedStatus("ALL");
+                    setSelectedOperationalState("ALL");
+                    setHasLinkedExpenseOnly(false);
+                    setFeeBearingOnly(false);
+                    setRemainingBudgetLte("");
                     setSearchInput("");
                     setSelectedDateFrom("");
                     setSelectedDateTo("");
@@ -902,6 +991,7 @@ export default function TodosPage() {
                 busyDoneId={statusBusyId}
                 busyRecordExpenseId={recordExpenseBusyId}
                 busyReverseRecordingId={reversingRecordingId}
+                sortBy={selectedSortBy}
                 entries={pageEntries}
                 onDelete={setDeleteTarget}
                 onEdit={openEditPage}

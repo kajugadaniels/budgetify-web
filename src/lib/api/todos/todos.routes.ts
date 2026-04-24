@@ -2,9 +2,15 @@ const BASE = "/api/v1/todos";
 
 function buildTodoSearchParams(params?: {
   frequency?: string;
+  cadence?: string;
   type?: string;
   priority?: string;
   status?: string;
+  operationalState?: string;
+  sortBy?: string;
+  hasLinkedExpense?: boolean;
+  feeBearingOnly?: boolean;
+  remainingBudgetLte?: number;
   search?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -18,6 +24,10 @@ function buildTodoSearchParams(params?: {
     searchParams.set("frequency", String(params.frequency));
   }
 
+  if (params?.cadence !== undefined) {
+    searchParams.set("cadence", String(params.cadence));
+  }
+
   if (params?.type !== undefined) {
     searchParams.set("type", String(params.type));
   }
@@ -28,6 +38,26 @@ function buildTodoSearchParams(params?: {
 
   if (params?.status !== undefined) {
     searchParams.set("status", String(params.status));
+  }
+
+  if (params?.operationalState !== undefined) {
+    searchParams.set("operationalState", String(params.operationalState));
+  }
+
+  if (params?.sortBy !== undefined) {
+    searchParams.set("sortBy", String(params.sortBy));
+  }
+
+  if (params?.hasLinkedExpense !== undefined) {
+    searchParams.set("hasLinkedExpense", String(params.hasLinkedExpense));
+  }
+
+  if (params?.feeBearingOnly !== undefined) {
+    searchParams.set("feeBearingOnly", String(params.feeBearingOnly));
+  }
+
+  if (params?.remainingBudgetLte !== undefined) {
+    searchParams.set("remainingBudgetLte", String(params.remainingBudgetLte));
   }
 
   if (params?.search !== undefined) {
@@ -61,9 +91,15 @@ function buildTodoSearchParams(params?: {
 export const TODOS_ROUTES = {
   list:        (params?: {
     frequency?: string;
+    cadence?: string;
     type?: string;
     priority?: string;
     status?: string;
+    operationalState?: string;
+    sortBy?: string;
+    hasLinkedExpense?: boolean;
+    feeBearingOnly?: boolean;
+    remainingBudgetLte?: number;
     search?: string;
     dateFrom?: string;
     dateTo?: string;
@@ -72,27 +108,45 @@ export const TODOS_ROUTES = {
   }) => `${BASE}${buildTodoSearchParams(params)}`,
   summary:     (params?: {
     frequency?: string;
+    cadence?: string;
     type?: string;
     priority?: string;
     status?: string;
+    operationalState?: string;
+    sortBy?: string;
+    hasLinkedExpense?: boolean;
+    feeBearingOnly?: boolean;
+    remainingBudgetLte?: number;
     search?: string;
     dateFrom?: string;
     dateTo?: string;
   }) => `${BASE}/summary${buildTodoSearchParams(params)}`,
   audit:       (params?: {
     frequency?: string;
+    cadence?: string;
     type?: string;
     priority?: string;
     status?: string;
+    operationalState?: string;
+    sortBy?: string;
+    hasLinkedExpense?: boolean;
+    feeBearingOnly?: boolean;
+    remainingBudgetLte?: number;
     search?: string;
     dateFrom?: string;
     dateTo?: string;
   }) => `${BASE}/audit${buildTodoSearchParams(params)}`,
   upcoming:    (params?: {
     frequency?: string;
+    cadence?: string;
     type?: string;
     priority?: string;
     status?: string;
+    operationalState?: string;
+    sortBy?: string;
+    hasLinkedExpense?: boolean;
+    feeBearingOnly?: boolean;
+    remainingBudgetLte?: number;
     search?: string;
     dateFrom?: string;
     dateTo?: string;
@@ -100,9 +154,15 @@ export const TODOS_ROUTES = {
   }) => `${BASE}/upcoming${buildTodoSearchParams(params)}`,
   recordingsIndex: (params?: {
     frequency?: string;
+    cadence?: string;
     type?: string;
     priority?: string;
     status?: string;
+    operationalState?: string;
+    sortBy?: string;
+    hasLinkedExpense?: boolean;
+    feeBearingOnly?: boolean;
+    remainingBudgetLte?: number;
     search?: string;
     dateFrom?: string;
     dateTo?: string;

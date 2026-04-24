@@ -26,6 +26,13 @@ export type TodoOccurrenceStatus =
   | "OVERDUE"
   | "COMPLETED";
 export type TodoRecordingExpenseSource = "GENERATED" | "LINKED_EXISTING";
+export type TodoCadenceFilter = "ONCE" | "RECURRING";
+export type TodoOperationalStateFilter =
+  | "OVERDUE"
+  | "UPCOMING"
+  | "RECORDED"
+  | "UNRECORDED";
+export type TodoSortBy = "NEXT_OCCURRENCE_ASC" | "CREATED_AT_DESC";
 
 export interface TodoImageResponse {
   id: string;
@@ -304,9 +311,15 @@ export interface UpdateTodoRequest {
 
 export interface ListTodosParams {
   frequency?: TodoFrequency;
+  cadence?: TodoCadenceFilter;
   type?: TodoType;
   priority?: TodoPriority;
   status?: TodoStatus;
+  operationalState?: TodoOperationalStateFilter;
+  sortBy?: TodoSortBy;
+  hasLinkedExpense?: boolean;
+  feeBearingOnly?: boolean;
+  remainingBudgetLte?: number;
   search?: string;
   dateFrom?: string;
   dateTo?: string;
