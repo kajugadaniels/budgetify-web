@@ -1,7 +1,12 @@
 import type { LoanResponse } from "@/lib/types/loan.types";
 import { rwf } from "@/lib/utils/currency";
 import { CreatedByPill } from "@/components/ui/created-by-pill";
-import { formatLoanDate, formatLoanNote } from "./loans.utils";
+import {
+  formatLoanDate,
+  formatLoanDirection,
+  formatLoanNote,
+  formatLoanType,
+} from "./loans.utils";
 
 interface LoansTableProps {
   busyPaidId: string | null;
@@ -22,10 +27,18 @@ export function LoansTable({
 }: LoansTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[920px] border-separate border-spacing-0">
+      <table className="w-full min-w-[1180px] border-separate border-spacing-0">
         <thead>
           <tr className="text-left">
-            {["Label", "Date", "Paid", "Amount", "Note", "Actions"].map((label) => (
+            {[
+              "Loan",
+              "Issued",
+              "Due",
+              "State",
+              "Amount",
+              "Note",
+              "Actions",
+            ].map((label) => (
               <th
                 key={label}
                 className="px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-secondary/55 md:px-6"
@@ -46,11 +59,23 @@ export function LoansTable({
                   <p className="mt-1 text-xs text-text-secondary/70">
                     Created {formatLoanDate(entry.createdAt)}
                   </p>
+                  <p className="mt-1 text-xs text-text-secondary/70">
+                    {formatLoanDirection(entry.direction)} · {formatLoanType(entry.type)}
+                  </p>
+                  <p className="mt-1 text-xs text-text-secondary/70">
+                    {entry.counterpartyName}
+                    {entry.counterpartyContact
+                      ? ` · ${entry.counterpartyContact}`
+                      : ""}
+                  </p>
                   <CreatedByPill creator={entry.createdBy} />
                 </div>
               </td>
               <td className="border-t border-white/6 px-5 py-4 text-sm text-text-secondary md:px-6">
-                {formatLoanDate(entry.date)}
+                {formatLoanDate(entry.issuedDate)}
+              </td>
+              <td className="border-t border-white/6 px-5 py-4 text-sm text-text-secondary md:px-6">
+                {entry.dueDate ? formatLoanDate(entry.dueDate) : "No due date"}
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <button
@@ -68,7 +93,7 @@ export function LoansTable({
                     ? "Updating..."
                     : entry.paid
                       ? "Paid"
-                      : "Unpaid"}
+                      : "Open"}
                 </button>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
@@ -77,7 +102,12 @@ export function LoansTable({
                     entry.paid ? "text-success" : "text-danger"
                   }`}
                 >
-                  {rwf(Number(entry.amount))}
+                  {entry.currency === "RWF"
+                    ? rwf(Number(entry.amount))
+                    : `${entry.currency} ${Number(entry.amount).toLocaleString("en-US")}`}
+                </p>
+                <p className="mt-1 text-xs text-text-secondary/70">
+                  {rwf(Number(entry.amountRwf))} tracked
                 </p>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
@@ -90,14 +120,18 @@ export function LoansTable({
                   <button
                     type="button"
                     onClick={() => onSendToExpense(entry)}
-                    disabled={entry.paid}
+                    disabled={entry.paid || entry.direction !== "BORROWED"}
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      entry.paid
+                      entry.paid || entry.direction !== "BORROWED"
                         ? "cursor-not-allowed border-success/14 bg-success/8 text-success/65"
                         : "border-primary/25 bg-primary/10 text-primary hover:bg-primary/16"
                     }`}
                   >
-                    {entry.paid ? "Settled" : "Send to expense"}
+                    {entry.paid
+                      ? "Settled"
+                      : entry.direction === "BORROWED"
+                        ? "Send to expense"
+                        : "Income flow soon"}
                   </button>
                   <button
                     type="button"
