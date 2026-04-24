@@ -5,25 +5,28 @@ import {
   formatLoanDate,
   formatLoanDirection,
   formatLoanNote,
+  formatLoanStatus,
   formatLoanType,
+  isLoanSettled,
+  isLoanTerminalStatus,
 } from "./loans.utils";
 
 interface LoansTableProps {
-  busyPaidId: string | null;
+  busyStatusId: string | null;
   entries: LoanResponse[];
   onDelete: (entry: LoanResponse) => void;
   onEdit: (entry: LoanResponse) => void;
   onSendToExpense: (entry: LoanResponse) => void;
-  onTogglePaid: (entry: LoanResponse) => void;
+  onToggleSettled: (entry: LoanResponse) => void;
 }
 
 export function LoansTable({
-  busyPaidId,
+  busyStatusId,
   entries,
   onDelete,
   onEdit,
   onSendToExpense,
-  onTogglePaid,
+  onToggleSettled,
 }: LoansTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -80,26 +83,26 @@ export function LoansTable({
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <button
                   type="button"
-                  onClick={() => onTogglePaid(entry)}
-                  disabled={busyPaidId === entry.id}
-                  aria-pressed={entry.paid}
+                  onClick={() => onToggleSettled(entry)}
+                  disabled={busyStatusId === entry.id}
+                  aria-pressed={isLoanSettled(entry.status)}
                   className={`inline-flex min-w-[104px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition-all ${
-                    entry.paid
+                    isLoanSettled(entry.status)
                       ? "border-success/25 bg-success/12 text-success"
-                      : "border-danger/25 bg-danger/10 text-danger"
+                      : entry.status === "OVERDUE"
+                        ? "border-danger/25 bg-danger/12 text-danger"
+                        : "border-warning/25 bg-warning/10 text-warning"
                   } disabled:cursor-not-allowed disabled:opacity-50`}
                 >
-                  {busyPaidId === entry.id
+                  {busyStatusId === entry.id
                     ? "Updating..."
-                    : entry.paid
-                      ? "Paid"
-                      : "Open"}
+                    : formatLoanStatus(entry.status)}
                 </button>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <p
                   className={`text-sm font-semibold tabular-nums ${
-                    entry.paid ? "text-success" : "text-danger"
+                    isLoanSettled(entry.status) ? "text-success" : "text-danger"
                   }`}
                 >
                   {entry.currency === "RWF"
@@ -118,20 +121,36 @@ export function LoansTable({
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
                 <div className="flex items-center gap-2">
                   <button
-                    type="button"
-                    onClick={() => onSendToExpense(entry)}
-                    disabled={entry.paid || entry.direction !== "BORROWED"}
+                  type="button"
+                  onClick={() => onSendToExpense(entry)}
+                    disabled={
+                      isLoanSettled(entry.status) ||
+                      isLoanTerminalStatus(entry.status) ||
+                      entry.direction !== "BORROWED"
+                    }
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      entry.paid || entry.direction !== "BORROWED"
+                      isLoanSettled(entry.status) ||
+                      isLoanTerminalStatus(entry.status) ||
+                      entry.direction !== "BORROWED"
                         ? "cursor-not-allowed border-success/14 bg-success/8 text-success/65"
                         : "border-primary/25 bg-primary/10 text-primary hover:bg-primary/16"
                     }`}
                   >
-                    {entry.paid
+                    {isLoanSettled(entry.status)
                       ? "Settled"
                       : entry.direction === "BORROWED"
                         ? "Send to expense"
                         : "Income flow soon"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onToggleSettled(entry)}
+                    disabled={
+                      busyStatusId === entry.id || isLoanTerminalStatus(entry.status)
+                    }
+                    className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    {isLoanSettled(entry.status) ? "Reopen" : "Mark settled"}
                   </button>
                   <button
                     type="button"
