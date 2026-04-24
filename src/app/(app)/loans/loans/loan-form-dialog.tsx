@@ -6,16 +6,12 @@ import type { LoanFormValues } from "./loans-page.types";
 import {
   formatLoanDirection,
   LOAN_DIRECTION_OPTIONS,
+  LOAN_STATUS_OPTIONS,
   LOAN_TYPE_OPTIONS,
 } from "./loans.utils";
 
 const INPUT_CLASS =
   "w-full rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/45 focus:border-primary/60 focus:outline-none transition-colors";
-
-const PAID_OPTIONS = [
-  { value: true, label: "Paid" },
-  { value: false, label: "Unpaid" },
-] as const;
 
 interface LoanFormDialogProps {
   form: LoanFormValues;
@@ -184,41 +180,22 @@ export function LoanFormDialog({
           </Field>
         </div>
 
-        <Field label="Payment state">
-          <div className="flex flex-wrap gap-2">
-            {PAID_OPTIONS.map((option) => {
-              const selected = form.paid === option.value;
-
-              return (
-                <button
-                  key={option.label}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => onChange({ paid: option.value })}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
-                    selected
-                      ? option.value
-                        ? "border-success bg-success text-background"
-                        : "border-danger bg-danger text-background"
-                      : "border-border bg-surface-elevated text-text-secondary hover:text-text-primary",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded-full border text-[10px]",
-                      selected
-                        ? "border-background/20 bg-background/15 text-background"
-                        : "border-white/10 bg-white/6 text-transparent",
-                    )}
-                  >
-                    ✓
-                  </span>
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+        <Field label="Lifecycle status">
+          <select
+            value={form.status}
+            onChange={(event) =>
+              onChange({
+                status: event.target.value as LoanFormValues["status"],
+              })
+            }
+            className={INPUT_CLASS}
+          >
+            {LOAN_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <Field label="Note">
