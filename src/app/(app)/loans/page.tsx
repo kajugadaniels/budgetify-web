@@ -29,7 +29,9 @@ import { LoanSettlementDialog } from "./loans/loan-settlement-dialog";
 import type {
   LoanFormDialogState,
   LoanFormValues,
+  LoanLedgerDirectionFilter,
   LoanLedgerPaidFilter,
+  LoanLedgerTypeFilter,
   LoanSettlementDialogState,
   LoanSettlementFormValues,
 } from "./loans/loans-page.types";
@@ -41,6 +43,7 @@ import {
   createLoanFormFromEntry,
   createLoanSettlementFormFromEntry,
   formatLoanDate,
+  formatLoanDirection,
   getCurrentMonthIndex,
   getCurrentYear,
   resolveLoanMonthLabel,
@@ -68,6 +71,10 @@ export default function LoansPage() {
   const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [selectedPaid, setSelectedPaid] =
     useState<LoanLedgerPaidFilter>("ALL");
+  const [selectedDirection, setSelectedDirection] =
+    useState<LoanLedgerDirectionFilter>("ALL");
+  const [selectedType, setSelectedType] =
+    useState<LoanLedgerTypeFilter>("ALL");
   const [searchInput, setSearchInput] = useState("");
   const [selectedDateFrom, setSelectedDateFrom] = useState("");
   const [selectedDateTo, setSelectedDateTo] = useState("");
@@ -103,6 +110,9 @@ export default function LoansPage() {
           year: hasExplicitDateFilter ? undefined : selectedYear,
           paid:
             selectedPaid === "ALL" ? undefined : selectedPaid === "PAID",
+          direction:
+            selectedDirection === "ALL" ? undefined : selectedDirection,
+          type: selectedType === "ALL" ? undefined : selectedType,
           search: appliedSearch,
           dateFrom: selectedDateFrom || undefined,
           dateTo: selectedDateTo || undefined,
@@ -156,8 +166,10 @@ export default function LoansPage() {
     refreshKey,
     selectedDateFrom,
     selectedDateTo,
+    selectedDirection,
     selectedMonth,
     selectedPaid,
+    selectedType,
     selectedYear,
     token,
   ]);
@@ -167,15 +179,20 @@ export default function LoansPage() {
     selectedMonth !== defaultMonth ||
     selectedYear !== defaultYear ||
     selectedPaid !== "ALL" ||
+    selectedDirection !== "ALL" ||
+    selectedType !== "ALL" ||
     appliedSearch !== undefined ||
     hasExplicitDateFilter;
-  const totalLoans = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+  const totalLoans = entries.reduce(
+    (sum, entry) => sum + Number(entry.amountRwf),
+    0,
+  );
   const paidAmount = entries
     .filter((entry) => entry.paid)
-    .reduce((sum, entry) => sum + Number(entry.amount), 0);
+    .reduce((sum, entry) => sum + Number(entry.amountRwf), 0);
   const outstandingAmount = totalLoans - paidAmount;
   const largestLoan = [...entries].sort(
-    (left, right) => Number(right.amount) - Number(left.amount),
+    (left, right) => Number(right.amountRwf) - Number(left.amountRwf),
   )[0];
   const latestLoan = entries[0];
   const paidCount = entries.filter((entry) => entry.paid).length;
@@ -218,6 +235,13 @@ export default function LoansPage() {
       return;
     }
 
+    if (entry.direction !== "BORROWED") {
+      toast.info(
+        "Lent loans will get a dedicated repayment flow in the next milestone.",
+      );
+      return;
+    }
+
     setSettlementForm(createLoanSettlementFormFromEntry(entry));
     setSettlementDialog({ entry });
   }
@@ -241,15 +265,36 @@ export default function LoansPage() {
     if (!token || !formDialog) return;
 
     const amount = Number(form.amount);
-    if (!form.label.trim() || Number.isNaN(amount) || amount <= 0) {
-      toast.error("Enter a label and an amount greater than zero.");
+    if (
+      !form.label.trim() ||
+      !form.counterpartyName.trim() ||
+      !form.issuedDate ||
+      Number.isNaN(amount) ||
+      amount <= 0
+    ) {
+      toast.error(
+        "Enter a label, a counterparty, an issued date, and an amount greater than zero.",
+      );
+      return;
+    }
+
+    if (form.dueDate && form.dueDate < form.issuedDate) {
+      toast.error("Due date must be on or after the issued date.");
       return;
     }
 
     const payload: CreateLoanRequest = {
       label: form.label.trim(),
+      direction: form.direction,
+      type: form.type,
+      counterpartyName: form.counterpartyName.trim(),
+      ...(form.counterpartyContact.trim()
+        ? { counterpartyContact: form.counterpartyContact.trim() }
+        : {}),
       amount,
-      date: form.date,
+      currency: form.currency,
+      issuedDate: form.issuedDate,
+      ...(form.dueDate ? { dueDate: form.dueDate } : {}),
       paid: form.paid,
       ...(form.note.trim() ? { note: form.note.trim() } : {}),
     };
@@ -449,11 +494,13 @@ export default function LoansPage() {
                     <span className="h-1.5 w-1.5 rounded-full bg-warning" />
                   </div>
                   <p className="mt-2 text-base font-semibold tracking-[-0.04em] text-text-primary">
-                    {latestLoan ? formatLoanDate(latestLoan.date) : "No entries yet"}
+                    {latestLoan
+                      ? formatLoanDate(latestLoan.issuedDate)
+                      : "No entries yet"}
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {latestLoan
-                      ? latestLoan.label
+                      ? `${latestLoan.label} · ${formatLoanDirection(latestLoan.direction)}`
                       : `No loans dated in ${selectedMonthLabel}.`}
                   </p>
                 </div>
@@ -472,7 +519,7 @@ export default function LoansPage() {
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {largestLoan
-                      ? `${largestLoan.label} · ${rwf(Number(largestLoan.amount))}`
+                      ? `${largestLoan.label} · ${rwf(Number(largestLoan.amountRwf))}`
                       : "Add loans to track outstanding obligations."}
                   </p>
                 </div>
@@ -501,15 +548,19 @@ export default function LoansPage() {
           <LoansLedgerFilters
             dateFrom={selectedDateFrom}
             dateTo={selectedDateTo}
+            direction={selectedDirection}
             hasActiveFilters={hasActiveFilters}
             month={selectedMonth}
             paid={selectedPaid}
             search={searchInput}
+            type={selectedType}
             year={selectedYear}
             onClear={() => {
               setSelectedMonth(defaultMonth);
               setSelectedYear(defaultYear);
               setSelectedPaid("ALL");
+              setSelectedDirection("ALL");
+              setSelectedType("ALL");
               setSearchInput("");
               setSelectedDateFrom("");
               setSelectedDateTo("");
@@ -517,12 +568,20 @@ export default function LoansPage() {
             }}
             onDateFromChange={setSelectedDateFrom}
             onDateToChange={setSelectedDateTo}
+            onDirectionChange={(value) => {
+              setSelectedDirection(value);
+              setCurrentPage(1);
+            }}
             onMonthChange={handleMonthChange}
             onPaidChange={(value) => {
               setSelectedPaid(value);
               setCurrentPage(1);
             }}
             onSearchChange={setSearchInput}
+            onTypeChange={(value) => {
+              setSelectedType(value);
+              setCurrentPage(1);
+            }}
             onYearChange={(value) => {
               setSelectedYear(value);
               setCurrentPage(1);
@@ -564,6 +623,8 @@ export default function LoansPage() {
                     setSelectedMonth(defaultMonth);
                     setSelectedYear(defaultYear);
                     setSelectedPaid("ALL");
+                    setSelectedDirection("ALL");
+                    setSelectedType("ALL");
                     setSearchInput("");
                     setSelectedDateFrom("");
                     setSelectedDateTo("");
