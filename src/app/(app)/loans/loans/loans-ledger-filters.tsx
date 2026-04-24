@@ -9,11 +9,12 @@ import { MonthStepper } from "@/components/ui/month-stepper";
 import {
   buildLoanYearOptions,
   LOAN_DIRECTION_OPTIONS,
+  LOAN_STATUS_OPTIONS,
   LOAN_TYPE_OPTIONS,
 } from "./loans.utils";
 import type {
   LoanLedgerDirectionFilter,
-  LoanLedgerPaidFilter,
+  LoanLedgerStatusFilter,
   LoanLedgerTypeFilter,
 } from "./loans-page.types";
 
@@ -23,7 +24,7 @@ interface LoansLedgerFiltersProps {
   direction: LoanLedgerDirectionFilter;
   hasActiveFilters: boolean;
   month: number;
-  paid: LoanLedgerPaidFilter;
+  status: LoanLedgerStatusFilter;
   search: string;
   type: LoanLedgerTypeFilter;
   year: number;
@@ -32,7 +33,7 @@ interface LoansLedgerFiltersProps {
   onDateToChange: (value: string) => void;
   onDirectionChange: (value: LoanLedgerDirectionFilter) => void;
   onMonthChange: (value: number) => void;
-  onPaidChange: (value: LoanLedgerPaidFilter) => void;
+  onStatusChange: (value: LoanLedgerStatusFilter) => void;
   onSearchChange: (value: string) => void;
   onTypeChange: (value: LoanLedgerTypeFilter) => void;
   onYearChange: (value: number) => void;
@@ -44,7 +45,7 @@ export function LoansLedgerFilters({
   direction,
   hasActiveFilters,
   month,
-  paid,
+  status,
   search,
   type,
   year,
@@ -53,7 +54,7 @@ export function LoansLedgerFilters({
   onDateToChange,
   onDirectionChange,
   onMonthChange,
-  onPaidChange,
+  onStatusChange,
   onSearchChange,
   onTypeChange,
   onYearChange,
@@ -111,16 +112,21 @@ export function LoansLedgerFilters({
             </Select>
 
             <Select
-              value={paid}
-              onValueChange={(value) => onPaidChange(value as LoanLedgerPaidFilter)}
+              value={status}
+              onValueChange={(value) =>
+                onStatusChange(value as LoanLedgerStatusFilter)
+              }
             >
               <SelectTrigger className="h-11 min-w-[168px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
-                <SelectValue placeholder="Paid" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
-                <SelectItem value="ALL">All states</SelectItem>
-                <SelectItem value="PAID">Paid</SelectItem>
-                <SelectItem value="UNPAID">Unpaid</SelectItem>
+                <SelectItem value="ALL">All statuses</SelectItem>
+                {LOAN_STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
