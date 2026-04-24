@@ -2,12 +2,13 @@ import { MONTH_OPTIONS } from "@/constant/months";
 import type {
   LoanDirection,
   LoanResponse,
+  LoanStatus,
   LoanType,
 } from "@/lib/types/loan.types";
 import type {
   LoanLedgerDirectionFilter,
   LoanFormValues,
-  LoanLedgerPaidFilter,
+  LoanLedgerStatusFilter,
   LoanLedgerTypeFilter,
   LoanSettlementFormValues,
 } from "./loans-page.types";
@@ -29,6 +30,19 @@ export const LOAN_TYPE_OPTIONS: Array<{
   { label: "Family", value: "FAMILY" },
   { label: "Friend", value: "FRIEND" },
   { label: "Other", value: "OTHER" },
+];
+
+export const LOAN_STATUS_OPTIONS: Array<{
+  label: string;
+  value: LoanStatus;
+}> = [
+  { label: "Active", value: "ACTIVE" },
+  { label: "Partially repaid", value: "PARTIALLY_REPAID" },
+  { label: "Settled", value: "SETTLED" },
+  { label: "Overdue", value: "OVERDUE" },
+  { label: "Written off", value: "WRITTEN_OFF" },
+  { label: "Cancelled", value: "CANCELLED" },
+  { label: "Archived", value: "ARCHIVED" },
 ];
 
 export function getTodayString(): string {
@@ -73,7 +87,7 @@ export function createEmptyLoanForm(
     currency: "RWF",
     issuedDate: getMonthDefaultDate(month, year),
     dueDate: "",
-    paid: false,
+    status: "ACTIVE",
     note: "",
   };
 }
@@ -89,7 +103,7 @@ export function createLoanFormFromEntry(entry: LoanResponse): LoanFormValues {
     currency: entry.currency,
     issuedDate: entry.issuedDate.split("T")[0] ?? getTodayString(),
     dueDate: entry.dueDate?.split("T")[0] ?? "",
-    paid: entry.paid,
+    status: entry.status,
     note: entry.note ?? "",
   };
 }
@@ -126,6 +140,13 @@ export function formatLoanType(type: LoanType): string {
   return LOAN_TYPE_OPTIONS.find((option) => option.value === type)?.label ?? "Other";
 }
 
+export function formatLoanStatus(status: LoanStatus): string {
+  return (
+    LOAN_STATUS_OPTIONS.find((option) => option.value === status)?.label ??
+    "Active"
+  );
+}
+
 export function formatLoanDate(value: string): string {
   return new Date(value).toLocaleDateString("en-US", {
     month: "short",
@@ -141,18 +162,29 @@ export function resolveLoanMonthLabel(month: number): string {
 
 export function filterLoanEntries(
   entries: LoanResponse[],
-  paid: LoanLedgerPaidFilter,
+  status: LoanLedgerStatusFilter,
   direction: LoanLedgerDirectionFilter,
   type: LoanLedgerTypeFilter,
 ): LoanResponse[] {
   return entries.filter((entry) => {
-    const matchesPaid =
-      paid === "ALL" ? true : paid === "PAID" ? entry.paid : !entry.paid;
+    const matchesStatus = status === "ALL" ? true : entry.status === status;
     const matchesDirection =
       direction === "ALL" ? true : entry.direction === direction;
     const matchesType = type === "ALL" ? true : entry.type === type;
-    return matchesPaid && matchesDirection && matchesType;
+    return matchesStatus && matchesDirection && matchesType;
   });
+}
+
+export function isLoanSettled(status: LoanStatus): boolean {
+  return status === "SETTLED";
+}
+
+export function isLoanTerminalStatus(status: LoanStatus): boolean {
+  return (
+    status === "CANCELLED" ||
+    status === "WRITTEN_OFF" ||
+    status === "ARCHIVED"
+  );
 }
 
 export function formatLoanNote(note: string | null): string {
