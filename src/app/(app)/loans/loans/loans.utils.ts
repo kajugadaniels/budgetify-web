@@ -1,10 +1,35 @@
 import { MONTH_OPTIONS } from "@/constant/months";
-import type { LoanResponse } from "@/lib/types/loan.types";
 import type {
+  LoanDirection,
+  LoanResponse,
+  LoanType,
+} from "@/lib/types/loan.types";
+import type {
+  LoanLedgerDirectionFilter,
   LoanFormValues,
   LoanLedgerPaidFilter,
+  LoanLedgerTypeFilter,
   LoanSettlementFormValues,
 } from "./loans-page.types";
+
+export const LOAN_DIRECTION_OPTIONS: Array<{
+  label: string;
+  value: LoanDirection;
+}> = [
+  { label: "Borrowed", value: "BORROWED" },
+  { label: "Lent", value: "LENT" },
+];
+
+export const LOAN_TYPE_OPTIONS: Array<{
+  label: string;
+  value: LoanType;
+}> = [
+  { label: "Personal", value: "PERSONAL" },
+  { label: "Business", value: "BUSINESS" },
+  { label: "Family", value: "FAMILY" },
+  { label: "Friend", value: "FRIEND" },
+  { label: "Other", value: "OTHER" },
+];
 
 export function getTodayString(): string {
   return new Date().toISOString().split("T")[0] ?? "";
@@ -40,8 +65,14 @@ export function createEmptyLoanForm(
 ): LoanFormValues {
   return {
     label: "",
+    direction: "BORROWED",
+    type: "OTHER",
+    counterpartyName: "",
+    counterpartyContact: "",
     amount: "",
-    date: getMonthDefaultDate(month, year),
+    currency: "RWF",
+    issuedDate: getMonthDefaultDate(month, year),
+    dueDate: "",
     paid: false,
     note: "",
   };
@@ -50,8 +81,14 @@ export function createEmptyLoanForm(
 export function createLoanFormFromEntry(entry: LoanResponse): LoanFormValues {
   return {
     label: entry.label,
+    direction: entry.direction,
+    type: entry.type,
+    counterpartyName: entry.counterpartyName,
+    counterpartyContact: entry.counterpartyContact ?? "",
     amount: String(entry.amount),
-    date: entry.date.split("T")[0] ?? getTodayString(),
+    currency: entry.currency,
+    issuedDate: entry.issuedDate.split("T")[0] ?? getTodayString(),
+    dueDate: entry.dueDate?.split("T")[0] ?? "",
     paid: entry.paid,
     note: entry.note ?? "",
   };
@@ -68,7 +105,7 @@ export function createLoanSettlementFormFromEntry(
   entry: LoanResponse,
 ): LoanSettlementFormValues {
   return {
-    date: entry.date.split("T")[0] ?? getTodayString(),
+    date: entry.issuedDate.split("T")[0] ?? getTodayString(),
     note: entry.note ?? "",
   };
 }
@@ -76,8 +113,17 @@ export function createLoanSettlementFormFromEntry(
 export function sortLoanEntries(entries: LoanResponse[]): LoanResponse[] {
   return [...entries].sort(
     (left, right) =>
-      new Date(right.date).getTime() - new Date(left.date).getTime(),
+      new Date(right.issuedDate).getTime() -
+      new Date(left.issuedDate).getTime(),
   );
+}
+
+export function formatLoanDirection(direction: LoanDirection): string {
+  return direction === "BORROWED" ? "Borrowed" : "Lent";
+}
+
+export function formatLoanType(type: LoanType): string {
+  return LOAN_TYPE_OPTIONS.find((option) => option.value === type)?.label ?? "Other";
 }
 
 export function formatLoanDate(value: string): string {
@@ -96,11 +142,16 @@ export function resolveLoanMonthLabel(month: number): string {
 export function filterLoanEntries(
   entries: LoanResponse[],
   paid: LoanLedgerPaidFilter,
+  direction: LoanLedgerDirectionFilter,
+  type: LoanLedgerTypeFilter,
 ): LoanResponse[] {
   return entries.filter((entry) => {
-    if (paid === "ALL") return true;
-    if (paid === "PAID") return entry.paid;
-    return !entry.paid;
+    const matchesPaid =
+      paid === "ALL" ? true : paid === "PAID" ? entry.paid : !entry.paid;
+    const matchesDirection =
+      direction === "ALL" ? true : entry.direction === direction;
+    const matchesType = type === "ALL" ? true : entry.type === type;
+    return matchesPaid && matchesDirection && matchesType;
   });
 }
 
