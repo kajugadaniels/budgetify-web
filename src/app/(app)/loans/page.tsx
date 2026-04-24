@@ -30,7 +30,7 @@ import type {
   LoanFormDialogState,
   LoanFormValues,
   LoanLedgerDirectionFilter,
-  LoanLedgerPaidFilter,
+  LoanLedgerStatusFilter,
   LoanLedgerTypeFilter,
   LoanSettlementDialogState,
   LoanSettlementFormValues,
@@ -44,8 +44,11 @@ import {
   createLoanSettlementFormFromEntry,
   formatLoanDate,
   formatLoanDirection,
+  formatLoanStatus,
   getCurrentMonthIndex,
   getCurrentYear,
+  isLoanSettled,
+  isLoanTerminalStatus,
   resolveLoanMonthLabel,
   sortLoanEntries,
 } from "./loans/loans.utils";
@@ -62,15 +65,15 @@ export default function LoansPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [settling, setSettling] = useState(false);
-  const [paidBusyId, setPaidBusyId] = useState<string | null>(null);
+  const [statusBusyId, setStatusBusyId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedYear, setSelectedYear] = useState(defaultYear);
-  const [selectedPaid, setSelectedPaid] =
-    useState<LoanLedgerPaidFilter>("ALL");
+  const [selectedStatus, setSelectedStatus] =
+    useState<LoanLedgerStatusFilter>("ALL");
   const [selectedDirection, setSelectedDirection] =
     useState<LoanLedgerDirectionFilter>("ALL");
   const [selectedType, setSelectedType] =
@@ -108,8 +111,7 @@ export default function LoansPage() {
         const filters = {
           month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
           year: hasExplicitDateFilter ? undefined : selectedYear,
-          paid:
-            selectedPaid === "ALL" ? undefined : selectedPaid === "PAID",
+          status: selectedStatus === "ALL" ? undefined : selectedStatus,
           direction:
             selectedDirection === "ALL" ? undefined : selectedDirection,
           type: selectedType === "ALL" ? undefined : selectedType,
@@ -168,7 +170,7 @@ export default function LoansPage() {
     selectedDateTo,
     selectedDirection,
     selectedMonth,
-    selectedPaid,
+    selectedStatus,
     selectedType,
     selectedYear,
     token,
@@ -178,7 +180,7 @@ export default function LoansPage() {
   const hasActiveFilters =
     selectedMonth !== defaultMonth ||
     selectedYear !== defaultYear ||
-    selectedPaid !== "ALL" ||
+    selectedStatus !== "ALL" ||
     selectedDirection !== "ALL" ||
     selectedType !== "ALL" ||
     appliedSearch !== undefined ||
@@ -187,17 +189,17 @@ export default function LoansPage() {
     (sum, entry) => sum + Number(entry.amountRwf),
     0,
   );
-  const paidAmount = entries
-    .filter((entry) => entry.paid)
+  const settledAmount = entries
+    .filter((entry) => isLoanSettled(entry.status))
     .reduce((sum, entry) => sum + Number(entry.amountRwf), 0);
-  const outstandingAmount = totalLoans - paidAmount;
+  const outstandingAmount = totalLoans - settledAmount;
   const largestLoan = [...entries].sort(
     (left, right) => Number(right.amountRwf) - Number(left.amountRwf),
   )[0];
   const latestLoan = entries[0];
-  const paidCount = entries.filter((entry) => entry.paid).length;
-  const paidShare =
-    totalLoans > 0 ? Math.round((paidAmount / totalLoans) * 100) : 0;
+  const settledCount = entries.filter((entry) => isLoanSettled(entry.status)).length;
+  const statusShare =
+    totalLoans > 0 ? Math.round((settledAmount / totalLoans) * 100) : 0;
 
   function triggerRefresh() {
     setRefreshKey((current) => current + 1);
@@ -230,8 +232,13 @@ export default function LoansPage() {
   }
 
   function openSettlementDialog(entry: LoanResponse) {
-    if (entry.paid) {
+    if (isLoanSettled(entry.status)) {
       toast.info("This loan is already settled.");
+      return;
+    }
+
+    if (isLoanTerminalStatus(entry.status)) {
+      toast.info("Closed loan records cannot be sent to expenses.");
       return;
     }
 
@@ -295,7 +302,7 @@ export default function LoansPage() {
       currency: form.currency,
       issuedDate: form.issuedDate,
       ...(form.dueDate ? { dueDate: form.dueDate } : {}),
-      paid: form.paid,
+      status: form.status,
       ...(form.note.trim() ? { note: form.note.trim() } : {}),
     };
 
@@ -393,7 +400,7 @@ export default function LoansPage() {
       }
 
       closeSettlementDialog();
-      toast.success("Loan sent to expenses and marked as paid.");
+      toast.success("Loan sent to expenses and marked as settled.");
     } catch (settleError) {
       toast.error(
         settleError instanceof ApiError
@@ -405,24 +412,33 @@ export default function LoansPage() {
     }
   }
 
-  async function handleTogglePaid(entry: LoanResponse) {
+  async function handleToggleSettled(entry: LoanResponse) {
     if (!token) return;
 
-    const nextPaid = !entry.paid;
-    setPaidBusyId(entry.id);
+    if (isLoanTerminalStatus(entry.status)) {
+      toast.info("Closed loan records must be reopened from the edit form.");
+      return;
+    }
+
+    const nextStatus = isLoanSettled(entry.status) ? "ACTIVE" : "SETTLED";
+    setStatusBusyId(entry.id);
 
     try {
-      await updateLoan(token, entry.id, { paid: nextPaid });
+      await updateLoan(token, entry.id, { status: nextStatus });
       triggerRefresh();
-      toast.success(nextPaid ? "Loan marked as paid." : "Loan marked as unpaid.");
+      toast.success(
+        nextStatus === "SETTLED"
+          ? "Loan marked as settled."
+          : "Loan moved back to active.",
+      );
     } catch (toggleError) {
       toast.error(
         toggleError instanceof ApiError
           ? toggleError.message
-          : "Loan payment state could not be updated right now.",
+          : "Loan lifecycle state could not be updated right now.",
       );
     } finally {
-      setPaidBusyId(null);
+      setStatusBusyId(null);
     }
   }
 
@@ -469,14 +485,14 @@ export default function LoansPage() {
                     <div className="mt-2 h-1.5 w-[min(220px,52vw)] overflow-hidden rounded-full bg-white/6">
                       <div
                         className="motion-safe:animate-income-sweep h-full rounded-full bg-[linear-gradient(90deg,rgba(228,192,99,0.52),rgba(255,122,122,1),rgba(228,192,99,0.52))] bg-[length:200%_100%]"
-                        style={{ width: `${paidShare}%` }}
+                        style={{ width: `${statusShare}%` }}
                       />
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
                     <span className="rounded-full border border-success/14 bg-success/8 px-2.5 py-1 text-[11px] font-medium text-success">
-                      {rwfCompact(paidAmount)} paid
+                      {rwfCompact(settledAmount)} settled
                     </span>
                     <span className="rounded-full border border-danger/14 bg-danger/8 px-2.5 py-1 text-[11px] font-medium text-danger/84">
                       {rwfCompact(outstandingAmount)} outstanding
@@ -500,7 +516,7 @@ export default function LoansPage() {
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {latestLoan
-                      ? `${latestLoan.label} · ${formatLoanDirection(latestLoan.direction)}`
+                      ? `${latestLoan.label} · ${formatLoanDirection(latestLoan.direction)} · ${formatLoanStatus(latestLoan.status)}`
                       : `No loans dated in ${selectedMonthLabel}.`}
                   </p>
                 </div>
@@ -508,14 +524,14 @@ export default function LoansPage() {
                 <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
-                      Settled
+                      Lifecycle
                     </p>
                     <span className="text-[11px] font-medium text-warning/88">
-                      {paidShare}%
+                      {statusShare}%
                     </span>
                   </div>
                   <p className="mt-2 text-base font-semibold leading-tight tracking-[-0.04em] text-text-primary">
-                    {paidCount} {paidCount === 1 ? "loan" : "loans"} paid
+                    {settledCount} {settledCount === 1 ? "loan" : "loans"} settled
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {largestLoan
@@ -551,14 +567,14 @@ export default function LoansPage() {
             direction={selectedDirection}
             hasActiveFilters={hasActiveFilters}
             month={selectedMonth}
-            paid={selectedPaid}
+            status={selectedStatus}
             search={searchInput}
             type={selectedType}
             year={selectedYear}
             onClear={() => {
               setSelectedMonth(defaultMonth);
               setSelectedYear(defaultYear);
-              setSelectedPaid("ALL");
+              setSelectedStatus("ALL");
               setSelectedDirection("ALL");
               setSelectedType("ALL");
               setSearchInput("");
@@ -573,8 +589,8 @@ export default function LoansPage() {
               setCurrentPage(1);
             }}
             onMonthChange={handleMonthChange}
-            onPaidChange={(value) => {
-              setSelectedPaid(value);
+            onStatusChange={(value) => {
+              setSelectedStatus(value);
               setCurrentPage(1);
             }}
             onSearchChange={setSearchInput}
@@ -622,7 +638,7 @@ export default function LoansPage() {
                   onClick: () => {
                     setSelectedMonth(defaultMonth);
                     setSelectedYear(defaultYear);
-                    setSelectedPaid("ALL");
+                    setSelectedStatus("ALL");
                     setSelectedDirection("ALL");
                     setSelectedType("ALL");
                     setSearchInput("");
@@ -635,12 +651,12 @@ export default function LoansPage() {
             </div>
           ) : (
             <LoansTable
-              busyPaidId={paidBusyId}
+              busyStatusId={statusBusyId}
               entries={pageEntries}
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
               onSendToExpense={openSettlementDialog}
-              onTogglePaid={handleTogglePaid}
+              onToggleSettled={handleToggleSettled}
             />
           )}
 
