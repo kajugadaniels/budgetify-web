@@ -5,6 +5,8 @@ export const LOANS_ROUTES = {
     month?: number;
     year?: number;
     paid?: boolean;
+    direction?: "BORROWED" | "LENT";
+    type?: "PERSONAL" | "BUSINESS" | "FAMILY" | "FRIEND" | "OTHER";
     search?: string;
     dateFrom?: string;
     dateTo?: string;
@@ -23,6 +25,14 @@ export const LOANS_ROUTES = {
 
     if (params?.paid !== undefined) {
       searchParams.set("paid", String(params.paid));
+    }
+
+    if (params?.direction !== undefined) {
+      searchParams.set("direction", params.direction);
+    }
+
+    if (params?.type !== undefined) {
+      searchParams.set("type", params.type);
     }
 
     if (params?.search !== undefined) {
