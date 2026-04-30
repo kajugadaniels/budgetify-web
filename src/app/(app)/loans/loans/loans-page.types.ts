@@ -1,4 +1,5 @@
 import type {
+  LoanTransactionType,
   LoanDirection,
   LoanResponse,
   LoanStatus,
@@ -28,11 +29,23 @@ export interface LoanSettlementFormValues {
   note: string;
 }
 
+export interface LoanTransactionFormValues {
+  type: LoanTransactionType;
+  amount: string;
+  currency: "RWF" | "USD";
+  date: string;
+  note: string;
+}
+
 export type LoanFormDialogState =
   | { mode: "create" }
   | { mode: "edit"; entry: LoanResponse }
   | null;
 
 export type LoanSettlementDialogState =
+  | { entry: LoanResponse }
+  | null;
+
+export type LoanTransactionsDialogState =
   | { entry: LoanResponse }
   | null;
