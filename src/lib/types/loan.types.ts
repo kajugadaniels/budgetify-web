@@ -17,6 +17,14 @@ export type LoanStatus =
   | "WRITTEN_OFF"
   | "CANCELLED"
   | "ARCHIVED";
+export type LoanTransactionType =
+  | "DISBURSEMENT"
+  | "REPAYMENT"
+  | "INTEREST_CHARGE"
+  | "INTEREST_PAYMENT"
+  | "ADJUSTMENT"
+  | "WRITE_OFF"
+  | "REVERSAL";
 
 export interface LoanResponse {
   id: string;
@@ -73,6 +81,30 @@ export interface SendLoanToExpenseRequest {
 export interface LoanSettlementResponse {
   loan: LoanResponse;
   expense: ExpenseResponse;
+}
+
+export interface LoanTransactionResponse {
+  id: string;
+  loanId: string;
+  type: LoanTransactionType;
+  amount: number;
+  currency: Currency;
+  amountRwf: number;
+  date: string;
+  note: string | null;
+  reversalOfTransactionId: string | null;
+  recordedBy: CreatedBySummary;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLoanTransactionRequest {
+  type: LoanTransactionType;
+  amount: number;
+  currency: Currency;
+  date: string;
+  note?: string;
+  reversalOfTransactionId?: string;
 }
 
 export interface ListLoansParams {
