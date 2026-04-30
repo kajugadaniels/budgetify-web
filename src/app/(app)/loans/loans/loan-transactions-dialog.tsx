@@ -11,6 +11,7 @@ import type { LoanTransactionFormValues } from "./loans-page.types";
 import {
   formatLoanDate,
   formatLoanBalanceEffect,
+  formatLoanRepaymentAllocation,
   formatLoanStatus,
   formatLoanTransactionType,
   LOAN_BALANCE_EFFECT_OPTIONS,
@@ -218,6 +219,11 @@ export function LoanTransactionsDialog({
             </p>
             <p className="mt-1 text-sm text-text-secondary">
               Append a new audited movement to this loan.
+            </p>
+            <p className="mt-2 text-xs text-text-secondary/75">
+              Repayments default to{" "}
+              {formatLoanRepaymentAllocation(entry.repaymentAllocation).toLowerCase()}{" "}
+              unless you enter explicit principal and interest portions below.
             </p>
           </div>
 
