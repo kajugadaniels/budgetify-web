@@ -3,6 +3,7 @@ import type {
   LoanDirection,
   LoanResponse,
   LoanStatus,
+  LoanTransactionType,
   LoanType,
 } from "@/lib/types/loan.types";
 import type {
@@ -10,6 +11,7 @@ import type {
   LoanFormValues,
   LoanLedgerStatusFilter,
   LoanLedgerTypeFilter,
+  LoanTransactionFormValues,
   LoanSettlementFormValues,
 } from "./loans-page.types";
 
@@ -43,6 +45,19 @@ export const LOAN_STATUS_OPTIONS: Array<{
   { label: "Written off", value: "WRITTEN_OFF" },
   { label: "Cancelled", value: "CANCELLED" },
   { label: "Archived", value: "ARCHIVED" },
+];
+
+export const LOAN_TRANSACTION_TYPE_OPTIONS: Array<{
+  label: string;
+  value: LoanTransactionType;
+}> = [
+  { label: "Disbursement", value: "DISBURSEMENT" },
+  { label: "Repayment", value: "REPAYMENT" },
+  { label: "Interest charge", value: "INTEREST_CHARGE" },
+  { label: "Interest payment", value: "INTEREST_PAYMENT" },
+  { label: "Adjustment", value: "ADJUSTMENT" },
+  { label: "Write off", value: "WRITE_OFF" },
+  { label: "Reversal", value: "REVERSAL" },
 ];
 
 export function getTodayString(): string {
@@ -115,6 +130,16 @@ export function createEmptyLoanSettlementForm(): LoanSettlementFormValues {
   };
 }
 
+export function createEmptyLoanTransactionForm(): LoanTransactionFormValues {
+  return {
+    type: "REPAYMENT",
+    amount: "",
+    currency: "RWF",
+    date: getTodayString(),
+    note: "",
+  };
+}
+
 export function createLoanSettlementFormFromEntry(
   entry: LoanResponse,
 ): LoanSettlementFormValues {
@@ -144,6 +169,13 @@ export function formatLoanStatus(status: LoanStatus): string {
   return (
     LOAN_STATUS_OPTIONS.find((option) => option.value === status)?.label ??
     "Active"
+  );
+}
+
+export function formatLoanTransactionType(type: LoanTransactionType): string {
+  return (
+    LOAN_TRANSACTION_TYPE_OPTIONS.find((option) => option.value === type)
+      ?.label ?? "Transaction"
   );
 }
 
