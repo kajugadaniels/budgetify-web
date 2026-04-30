@@ -12,6 +12,7 @@ import type {
   LoanFormValues,
   LoanLedgerStatusFilter,
   LoanLedgerTypeFilter,
+  LoanTransactionFinancialFlowFormValues,
   LoanTransactionFormValues,
   LoanSettlementFormValues,
 } from "./loans-page.types";
@@ -135,6 +136,7 @@ export function createLoanFormFromEntry(entry: LoanResponse): LoanFormValues {
 export function createEmptyLoanSettlementForm(): LoanSettlementFormValues {
   return {
     date: getTodayString(),
+    label: "",
     note: "",
   };
 }
@@ -157,7 +159,16 @@ export function createLoanSettlementFormFromEntry(
 ): LoanSettlementFormValues {
   return {
     date: entry.issuedDate.split("T")[0] ?? getTodayString(),
+    label: "",
     note: entry.note ?? "",
+  };
+}
+
+export function createEmptyLoanTransactionFinancialFlowForm(): LoanTransactionFinancialFlowFormValues {
+  return {
+    date: getTodayString(),
+    label: "",
+    note: "",
   };
 }
 
@@ -193,6 +204,47 @@ export function formatLoanTransactionType(type: LoanTransactionType): string {
 
 export function formatLoanBalanceEffect(effect: LoanBalanceEffect): string {
   return effect === "INCREASE" ? "Increase" : "Decrease";
+}
+
+export function canLoanTransactionCreateExpense(
+  entry: LoanResponse,
+  transaction: {
+    type: LoanTransactionType;
+    balanceEffect: LoanBalanceEffect;
+    linkedExpense: unknown | null;
+  },
+): boolean {
+  if (transaction.linkedExpense !== null) {
+    return false;
+  }
+
+  return (
+    (entry.direction === "LENT" && transaction.type === "DISBURSEMENT") ||
+    (entry.direction === "BORROWED" &&
+      transaction.balanceEffect === "DECREASE" &&
+      (transaction.type === "REPAYMENT" ||
+        transaction.type === "INTEREST_PAYMENT"))
+  );
+}
+
+export function canLoanTransactionCreateIncome(
+  entry: LoanResponse,
+  transaction: {
+    type: LoanTransactionType;
+    balanceEffect: LoanBalanceEffect;
+    linkedIncome: unknown | null;
+  },
+): boolean {
+  if (transaction.linkedIncome !== null) {
+    return false;
+  }
+
+  return (
+    entry.direction === "LENT" &&
+    transaction.balanceEffect === "DECREASE" &&
+    (transaction.type === "REPAYMENT" ||
+      transaction.type === "INTEREST_PAYMENT")
+  );
 }
 
 export function formatLoanDate(value: string): string {
