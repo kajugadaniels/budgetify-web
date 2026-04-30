@@ -15,12 +15,15 @@ import {
   listLoanTransactions,
   listLoansPage,
   sendLoanToExpense,
+  sendLoanTransactionToExpense,
+  sendLoanTransactionToIncome,
   updateLoan,
 } from "@/lib/api/loans/loans.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
 import type {
   CreateLoanTransactionRequest,
   CreateLoanRequest,
+  LinkLoanTransactionFinancialRecordRequest,
   LoanResponse,
   LoanTransactionResponse,
   SendLoanToExpenseRequest,
@@ -30,6 +33,7 @@ import { LoanFormDialog } from "./loans/loan-form-dialog";
 import { LoansHeader } from "./loans/loans-header";
 import { LoansLedgerFilters } from "./loans/loans-ledger-filters";
 import { LoanSettlementDialog } from "./loans/loan-settlement-dialog";
+import { LoanTransactionFinancialFlowDialog } from "./loans/loan-transaction-financial-flow-dialog";
 import { LoanTransactionsDialog } from "./loans/loan-transactions-dialog";
 import type {
   LoanFormDialogState,
@@ -37,6 +41,8 @@ import type {
   LoanLedgerDirectionFilter,
   LoanLedgerStatusFilter,
   LoanLedgerTypeFilter,
+  LoanTransactionFinancialFlowDialogState,
+  LoanTransactionFinancialFlowFormValues,
   LoanTransactionFormValues,
   LoanTransactionsDialogState,
   LoanSettlementDialogState,
@@ -47,6 +53,7 @@ import { LoansTableSkeleton } from "./loans/loans-table-skeleton";
 import {
   createEmptyLoanForm,
   createEmptyLoanSettlementForm,
+  createEmptyLoanTransactionFinancialFlowForm,
   createEmptyLoanTransactionForm,
   createLoanFormFromEntry,
   createLoanSettlementFormFromEntry,
@@ -75,6 +82,7 @@ export default function LoansPage() {
   const [settling, setSettling] = useState(false);
   const [transactionSaving, setTransactionSaving] = useState(false);
   const [transactionLoading, setTransactionLoading] = useState(false);
+  const [transactionLinkSavingId, setTransactionLinkSavingId] = useState<string | null>(null);
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -96,12 +104,18 @@ export default function LoansPage() {
     useState<LoanSettlementDialogState>(null);
   const [transactionsDialog, setTransactionsDialog] =
     useState<LoanTransactionsDialogState>(null);
+  const [transactionFinancialFlowDialog, setTransactionFinancialFlowDialog] =
+    useState<LoanTransactionFinancialFlowDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<LoanResponse | null>(null);
   const [form, setForm] = useState<LoanFormValues>(() => createEmptyLoanForm());
   const [settlementForm, setSettlementForm] =
     useState<LoanSettlementFormValues>(() => createEmptyLoanSettlementForm());
   const [transactionForm, setTransactionForm] =
     useState<LoanTransactionFormValues>(() => createEmptyLoanTransactionForm());
+  const [transactionFinancialFlowForm, setTransactionFinancialFlowForm] =
+    useState<LoanTransactionFinancialFlowFormValues>(() =>
+      createEmptyLoanTransactionFinancialFlowForm(),
+    );
   const [transactions, setTransactions] = useState<LoanTransactionResponse[]>([]);
   const deferredSearch = useDeferredValue(searchInput);
   const appliedSearch =
@@ -260,13 +274,6 @@ export default function LoansPage() {
       return;
     }
 
-    if (entry.direction !== "BORROWED") {
-      toast.info(
-        "Lent loans will get a dedicated repayment flow in the next milestone.",
-      );
-      return;
-    }
-
     setSettlementForm(createLoanSettlementFormFromEntry(entry));
     setSettlementDialog({ entry });
   }
@@ -274,6 +281,20 @@ export default function LoansPage() {
   function closeSettlementDialog() {
     setSettlementDialog(null);
     setSettlementForm(createEmptyLoanSettlementForm());
+  }
+
+  function openTransactionFinancialFlowDialog(
+    entry: LoanResponse,
+    transactionId: string,
+    target: "expense" | "income",
+  ) {
+    setTransactionFinancialFlowForm(createEmptyLoanTransactionFinancialFlowForm());
+    setTransactionFinancialFlowDialog({ entry, transactionId, target });
+  }
+
+  function closeTransactionFinancialFlowDialog() {
+    setTransactionFinancialFlowDialog(null);
+    setTransactionFinancialFlowForm(createEmptyLoanTransactionFinancialFlowForm());
   }
 
   async function openTransactionsDialog(entry: LoanResponse) {
@@ -302,6 +323,7 @@ export default function LoansPage() {
     setTransactionsDialog(null);
     setTransactionForm(createEmptyLoanTransactionForm());
     setTransactions([]);
+    closeTransactionFinancialFlowDialog();
   }
 
   function updateForm(next: Partial<LoanFormValues>) {
@@ -314,6 +336,12 @@ export default function LoansPage() {
 
   function updateTransactionForm(next: Partial<LoanTransactionFormValues>) {
     setTransactionForm((current) => ({ ...current, ...next }));
+  }
+
+  function updateTransactionFinancialFlowForm(
+    next: Partial<LoanTransactionFinancialFlowFormValues>,
+  ) {
+    setTransactionFinancialFlowForm((current) => ({ ...current, ...next }));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -430,6 +458,9 @@ export default function LoansPage() {
 
     const payload: SendLoanToExpenseRequest = {
       date: settlementForm.date,
+      ...(settlementForm.label.trim()
+        ? { label: settlementForm.label.trim() }
+        : {}),
       ...(settlementForm.note.trim()
         ? { note: settlementForm.note.trim() }
         : {}),
@@ -450,7 +481,11 @@ export default function LoansPage() {
       }
 
       closeSettlementDialog();
-      toast.success("Loan sent to expenses and marked as settled.");
+      toast.success(
+        settlementDialog.entry.direction === "BORROWED"
+          ? "Loan repayment sent to expenses and marked as settled."
+          : "Loan disbursement sent to expenses.",
+      );
     } catch (settleError) {
       toast.error(
         settleError instanceof ApiError
@@ -459,6 +494,70 @@ export default function LoansPage() {
       );
     } finally {
       setSettling(false);
+    }
+  }
+
+  async function handleSendTransactionToFinancialLedger(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!token || !transactionFinancialFlowDialog) return;
+
+    if (!transactionFinancialFlowForm.date) {
+      toast.error("Choose the date for the linked financial record.");
+      return;
+    }
+
+    const payload: LinkLoanTransactionFinancialRecordRequest = {
+      date: transactionFinancialFlowForm.date,
+      ...(transactionFinancialFlowForm.label.trim()
+        ? { label: transactionFinancialFlowForm.label.trim() }
+        : {}),
+      ...(transactionFinancialFlowForm.note.trim()
+        ? { note: transactionFinancialFlowForm.note.trim() }
+        : {}),
+    };
+
+    setTransactionLinkSavingId(transactionFinancialFlowDialog.transactionId);
+
+    try {
+      if (transactionFinancialFlowDialog.target === "expense") {
+        await sendLoanTransactionToExpense(
+          token,
+          transactionFinancialFlowDialog.entry.id,
+          transactionFinancialFlowDialog.transactionId,
+          payload,
+        );
+      } else {
+        await sendLoanTransactionToIncome(
+          token,
+          transactionFinancialFlowDialog.entry.id,
+          transactionFinancialFlowDialog.transactionId,
+          payload,
+        );
+      }
+
+      const nextTransactions = await listLoanTransactions(
+        token,
+        transactionFinancialFlowDialog.entry.id,
+      );
+      setTransactions(nextTransactions);
+      triggerRefresh();
+      closeTransactionFinancialFlowDialog();
+      toast.success(
+        transactionFinancialFlowDialog.target === "expense"
+          ? "Loan transaction linked to expenses."
+          : "Loan transaction linked to income.",
+      );
+    } catch (linkError) {
+      toast.error(
+        linkError instanceof ApiError
+          ? linkError.message
+          : "The loan transaction could not be linked right now.",
+      );
+    } finally {
+      setTransactionLinkSavingId(null);
     }
   }
 
@@ -724,7 +823,7 @@ export default function LoansPage() {
             <div className="px-5 pb-5 md:px-6 md:pb-6">
               <EmptyState
                 title="No loans recorded yet"
-                description="Add the borrowed amounts you need to track, then keep payment status current from the ledger."
+                description="Add borrowed or lent amounts you need to track, then record the real cash flows from the ledger."
                 action={{
                   label: "Add loan",
                   onClick: openCreateDialog,
@@ -803,10 +902,44 @@ export default function LoansPage() {
           form={transactionForm}
           loading={transactionLoading}
           saving={transactionSaving}
+          linkingId={transactionLinkSavingId}
           transactions={transactions}
           onChange={updateTransactionForm}
+          onCreateExpenseFlow={(transaction) =>
+            openTransactionFinancialFlowDialog(
+              transactionsDialog.entry,
+              transaction.id,
+              "expense",
+            )
+          }
+          onCreateIncomeFlow={(transaction) =>
+            openTransactionFinancialFlowDialog(
+              transactionsDialog.entry,
+              transaction.id,
+              "income",
+            )
+          }
           onClose={closeTransactionsDialog}
           onSubmit={handleCreateTransaction}
+        />
+      ) : null}
+
+      {transactionFinancialFlowDialog ? (
+        <LoanTransactionFinancialFlowDialog
+          entry={transactionFinancialFlowDialog.entry}
+          transaction={
+            transactions.find(
+              (transaction) =>
+                transaction.id ===
+                transactionFinancialFlowDialog.transactionId,
+            )!
+          }
+          target={transactionFinancialFlowDialog.target}
+          form={transactionFinancialFlowForm}
+          saving={transactionLinkSavingId !== null}
+          onChange={updateTransactionFinancialFlowForm}
+          onClose={closeTransactionFinancialFlowDialog}
+          onSubmit={handleSendTransactionToFinancialLedger}
         />
       ) : null}
 
