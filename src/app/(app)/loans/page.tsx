@@ -8,17 +8,21 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
 import {
+  createLoanTransaction,
   createLoan,
   deleteLoan,
   listLoans,
+  listLoanTransactions,
   listLoansPage,
   sendLoanToExpense,
   updateLoan,
 } from "@/lib/api/loans/loans.api";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants/pagination";
 import type {
+  CreateLoanTransactionRequest,
   CreateLoanRequest,
   LoanResponse,
+  LoanTransactionResponse,
   SendLoanToExpenseRequest,
 } from "@/lib/types/loan.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
@@ -26,12 +30,15 @@ import { LoanFormDialog } from "./loans/loan-form-dialog";
 import { LoansHeader } from "./loans/loans-header";
 import { LoansLedgerFilters } from "./loans/loans-ledger-filters";
 import { LoanSettlementDialog } from "./loans/loan-settlement-dialog";
+import { LoanTransactionsDialog } from "./loans/loan-transactions-dialog";
 import type {
   LoanFormDialogState,
   LoanFormValues,
   LoanLedgerDirectionFilter,
   LoanLedgerStatusFilter,
   LoanLedgerTypeFilter,
+  LoanTransactionFormValues,
+  LoanTransactionsDialogState,
   LoanSettlementDialogState,
   LoanSettlementFormValues,
 } from "./loans/loans-page.types";
@@ -40,6 +47,7 @@ import { LoansTableSkeleton } from "./loans/loans-table-skeleton";
 import {
   createEmptyLoanForm,
   createEmptyLoanSettlementForm,
+  createEmptyLoanTransactionForm,
   createLoanFormFromEntry,
   createLoanSettlementFormFromEntry,
   formatLoanDate,
@@ -65,6 +73,8 @@ export default function LoansPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [settling, setSettling] = useState(false);
+  const [transactionSaving, setTransactionSaving] = useState(false);
+  const [transactionLoading, setTransactionLoading] = useState(false);
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,10 +94,15 @@ export default function LoansPage() {
   const [formDialog, setFormDialog] = useState<LoanFormDialogState>(null);
   const [settlementDialog, setSettlementDialog] =
     useState<LoanSettlementDialogState>(null);
+  const [transactionsDialog, setTransactionsDialog] =
+    useState<LoanTransactionsDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<LoanResponse | null>(null);
   const [form, setForm] = useState<LoanFormValues>(() => createEmptyLoanForm());
   const [settlementForm, setSettlementForm] =
     useState<LoanSettlementFormValues>(() => createEmptyLoanSettlementForm());
+  const [transactionForm, setTransactionForm] =
+    useState<LoanTransactionFormValues>(() => createEmptyLoanTransactionForm());
+  const [transactions, setTransactions] = useState<LoanTransactionResponse[]>([]);
   const deferredSearch = useDeferredValue(searchInput);
   const appliedSearch =
     deferredSearch.trim().length >= 3 ? deferredSearch.trim() : undefined;
@@ -258,12 +273,44 @@ export default function LoansPage() {
     setSettlementForm(createEmptyLoanSettlementForm());
   }
 
+  async function openTransactionsDialog(entry: LoanResponse) {
+    if (!token) return;
+
+    setTransactionsDialog({ entry });
+    setTransactionForm(createEmptyLoanTransactionForm());
+    setTransactions([]);
+    setTransactionLoading(true);
+
+    try {
+      const nextTransactions = await listLoanTransactions(token, entry.id);
+      setTransactions(nextTransactions);
+    } catch (loadError) {
+      toast.error(
+        loadError instanceof ApiError
+          ? loadError.message
+          : "Loan transactions could not be loaded right now.",
+      );
+    } finally {
+      setTransactionLoading(false);
+    }
+  }
+
+  function closeTransactionsDialog() {
+    setTransactionsDialog(null);
+    setTransactionForm(createEmptyLoanTransactionForm());
+    setTransactions([]);
+  }
+
   function updateForm(next: Partial<LoanFormValues>) {
     setForm((current) => ({ ...current, ...next }));
   }
 
   function updateSettlementForm(next: Partial<LoanSettlementFormValues>) {
     setSettlementForm((current) => ({ ...current, ...next }));
+  }
+
+  function updateTransactionForm(next: Partial<LoanTransactionFormValues>) {
+    setTransactionForm((current) => ({ ...current, ...next }));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -409,6 +456,52 @@ export default function LoansPage() {
       );
     } finally {
       setSettling(false);
+    }
+  }
+
+  async function handleCreateTransaction(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!token || !transactionsDialog) return;
+
+    const amount = Number(transactionForm.amount);
+    if (!transactionForm.date || Number.isNaN(amount) || amount <= 0) {
+      toast.error("Enter a valid transaction date and amount greater than zero.");
+      return;
+    }
+
+    const payload: CreateLoanTransactionRequest = {
+      type: transactionForm.type,
+      amount,
+      currency: transactionForm.currency,
+      date: transactionForm.date,
+      ...(transactionForm.note.trim()
+        ? { note: transactionForm.note.trim() }
+        : {}),
+    };
+
+    setTransactionSaving(true);
+
+    try {
+      await createLoanTransaction(token, transactionsDialog.entry.id, payload);
+      const nextTransactions = await listLoanTransactions(
+        token,
+        transactionsDialog.entry.id,
+      );
+      setTransactions(nextTransactions);
+      setTransactionForm(createEmptyLoanTransactionForm());
+      triggerRefresh();
+      toast.success("Loan transaction recorded.");
+    } catch (saveError) {
+      toast.error(
+        saveError instanceof ApiError
+          ? saveError.message
+          : "Loan transaction could not be recorded right now.",
+      );
+    } finally {
+      setTransactionSaving(false);
     }
   }
 
@@ -656,6 +749,7 @@ export default function LoansPage() {
               onDelete={setDeleteTarget}
               onEdit={openEditDialog}
               onSendToExpense={openSettlementDialog}
+              onTransactions={openTransactionsDialog}
               onToggleSettled={handleToggleSettled}
             />
           )}
@@ -690,6 +784,19 @@ export default function LoansPage() {
           onChange={updateSettlementForm}
           onClose={closeSettlementDialog}
           onSubmit={handleSendToExpense}
+        />
+      ) : null}
+
+      {transactionsDialog ? (
+        <LoanTransactionsDialog
+          entry={transactionsDialog.entry}
+          form={transactionForm}
+          loading={transactionLoading}
+          saving={transactionSaving}
+          transactions={transactions}
+          onChange={updateTransactionForm}
+          onClose={closeTransactionsDialog}
+          onSubmit={handleCreateTransaction}
         />
       ) : null}
 
