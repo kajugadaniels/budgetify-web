@@ -7,6 +7,7 @@ export type IncomeCategory =
   | "DIVIDENDS"
   | "RENTAL"
   | "SIDE_HUSTLE"
+  | "LOAN_RECOVERY"
   | "OTHER";
 
 export type IncomeAllocationStatus =
@@ -34,6 +35,30 @@ export interface IncomeResponse {
   createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
+  linkedLoan: {
+    loanId: string;
+    loanLabel: string;
+    loanDirection: "BORROWED" | "LENT";
+    loanStatus:
+      | "ACTIVE"
+      | "PARTIALLY_REPAID"
+      | "SETTLED"
+      | "OVERDUE"
+      | "WRITTEN_OFF"
+      | "CANCELLED"
+      | "ARCHIVED";
+    counterpartyName: string;
+    transactionId: string;
+    transactionType:
+      | "DISBURSEMENT"
+      | "REPAYMENT"
+      | "INTEREST_CHARGE"
+      | "INTEREST_PAYMENT"
+      | "ADJUSTMENT"
+      | "WRITE_OFF"
+      | "REVERSAL";
+    transactionDate: string;
+  } | null;
 }
 
 export interface IncomeSummaryResponse {
