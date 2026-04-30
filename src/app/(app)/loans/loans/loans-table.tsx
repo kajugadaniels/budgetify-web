@@ -108,11 +108,14 @@ export function LoansTable({
                   }`}
                 >
                   {entry.currency === "RWF"
-                    ? rwf(Number(entry.amount))
-                    : `${entry.currency} ${Number(entry.amount).toLocaleString("en-US")}`}
+                    ? rwf(Number(entry.totalOutstanding))
+                    : `${entry.currency} ${Number(entry.totalOutstanding).toLocaleString("en-US")}`}
                 </p>
                 <p className="mt-1 text-xs text-text-secondary/70">
-                  {rwf(Number(entry.amountRwf))} tracked
+                  {rwf(Number(entry.totalOutstandingRwf))} outstanding
+                </p>
+                <p className="mt-1 text-xs text-text-secondary/70">
+                  Principal {rwf(Number(entry.principalOutstandingRwf))} · Interest {rwf(Number(entry.interestOutstandingRwf))}
                 </p>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
