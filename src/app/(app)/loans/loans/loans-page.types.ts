@@ -27,6 +27,7 @@ export interface LoanFormValues {
 
 export interface LoanSettlementFormValues {
   date: string;
+  label: string;
   note: string;
 }
 
@@ -41,6 +42,12 @@ export interface LoanTransactionFormValues {
   note: string;
 }
 
+export interface LoanTransactionFinancialFlowFormValues {
+  date: string;
+  label: string;
+  note: string;
+}
+
 export type LoanFormDialogState =
   | { mode: "create" }
   | { mode: "edit"; entry: LoanResponse }
@@ -52,4 +59,12 @@ export type LoanSettlementDialogState =
 
 export type LoanTransactionsDialogState =
   | { entry: LoanResponse }
+  | null;
+
+export type LoanTransactionFinancialFlowDialogState =
+  | {
+      entry: LoanResponse;
+      transactionId: string;
+      target: "expense" | "income";
+    }
   | null;
