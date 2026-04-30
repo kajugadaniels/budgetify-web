@@ -1,5 +1,6 @@
 import { MONTH_OPTIONS } from "@/constant/months";
 import type {
+  LoanBalanceEffect,
   LoanDirection,
   LoanResponse,
   LoanStatus,
@@ -58,6 +59,14 @@ export const LOAN_TRANSACTION_TYPE_OPTIONS: Array<{
   { label: "Adjustment", value: "ADJUSTMENT" },
   { label: "Write off", value: "WRITE_OFF" },
   { label: "Reversal", value: "REVERSAL" },
+];
+
+export const LOAN_BALANCE_EFFECT_OPTIONS: Array<{
+  label: string;
+  value: LoanBalanceEffect;
+}> = [
+  { label: "Increase balance", value: "INCREASE" },
+  { label: "Decrease balance", value: "DECREASE" },
 ];
 
 export function getTodayString(): string {
@@ -134,7 +143,10 @@ export function createEmptyLoanTransactionForm(): LoanTransactionFormValues {
   return {
     type: "REPAYMENT",
     amount: "",
+    principalAmount: "",
+    interestAmount: "",
     currency: "RWF",
+    balanceEffect: "DECREASE",
     date: getTodayString(),
     note: "",
   };
@@ -177,6 +189,10 @@ export function formatLoanTransactionType(type: LoanTransactionType): string {
     LOAN_TRANSACTION_TYPE_OPTIONS.find((option) => option.value === type)
       ?.label ?? "Transaction"
   );
+}
+
+export function formatLoanBalanceEffect(effect: LoanBalanceEffect): string {
+  return effect === "INCREASE" ? "Increase" : "Decrease";
 }
 
 export function formatLoanDate(value: string): string {
