@@ -381,6 +381,7 @@ export default function LoansPage() {
       issuedDate: form.issuedDate,
       ...(form.dueDate ? { dueDate: form.dueDate } : {}),
       status: form.status,
+      repaymentAllocation: form.repaymentAllocation,
       ...(form.note.trim() ? { note: form.note.trim() } : {}),
     };
 
