@@ -25,6 +25,7 @@ export type LoanTransactionType =
   | "ADJUSTMENT"
   | "WRITE_OFF"
   | "REVERSAL";
+export type LoanBalanceEffect = "INCREASE" | "DECREASE";
 
 export interface LoanResponse {
   id: string;
@@ -36,6 +37,20 @@ export interface LoanResponse {
   amount: number;
   currency: Currency;
   amountRwf: number;
+  originalPrincipal: number;
+  originalPrincipalRwf: number;
+  principalRepaid: number;
+  principalRepaidRwf: number;
+  principalOutstanding: number;
+  principalOutstandingRwf: number;
+  interestCharged: number;
+  interestChargedRwf: number;
+  interestPaid: number;
+  interestPaidRwf: number;
+  interestOutstanding: number;
+  interestOutstandingRwf: number;
+  totalOutstanding: number;
+  totalOutstandingRwf: number;
   issuedDate: string;
   dueDate: string | null;
   status: LoanStatus;
@@ -87,9 +102,14 @@ export interface LoanTransactionResponse {
   id: string;
   loanId: string;
   type: LoanTransactionType;
+  balanceEffect: LoanBalanceEffect;
   amount: number;
   currency: Currency;
   amountRwf: number;
+  principalAmount: number;
+  principalAmountRwf: number;
+  interestAmount: number;
+  interestAmountRwf: number;
   date: string;
   note: string | null;
   reversalOfTransactionId: string | null;
@@ -101,7 +121,10 @@ export interface LoanTransactionResponse {
 export interface CreateLoanTransactionRequest {
   type: LoanTransactionType;
   amount: number;
+  principalAmount?: number;
+  interestAmount?: number;
   currency: Currency;
+  balanceEffect?: LoanBalanceEffect;
   date: string;
   note?: string;
   reversalOfTransactionId?: string;
