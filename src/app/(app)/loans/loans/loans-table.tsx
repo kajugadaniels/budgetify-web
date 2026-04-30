@@ -17,6 +17,7 @@ interface LoansTableProps {
   onDelete: (entry: LoanResponse) => void;
   onEdit: (entry: LoanResponse) => void;
   onSendToExpense: (entry: LoanResponse) => void;
+  onTransactions: (entry: LoanResponse) => void;
   onToggleSettled: (entry: LoanResponse) => void;
 }
 
@@ -26,6 +27,7 @@ export function LoansTable({
   onDelete,
   onEdit,
   onSendToExpense,
+  onTransactions,
   onToggleSettled,
 }: LoansTableProps) {
   return (
@@ -158,6 +160,13 @@ export function LoansTable({
                     className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
                   >
                     Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onTransactions(entry)}
+                    className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    Transactions
                   </button>
                   <button
                     type="button"
