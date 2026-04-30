@@ -1,6 +1,7 @@
 import type { CreatedBySummary } from "./created-by.types";
 import type { Currency } from "./currency.types";
 import type { ExpenseResponse } from "./expense.types";
+import type { IncomeResponse } from "./income.types";
 
 export type LoanDirection = "BORROWED" | "LENT";
 export type LoanType =
@@ -90,6 +91,7 @@ export interface UpdateLoanRequest {
 
 export interface SendLoanToExpenseRequest {
   date: string;
+  label?: string;
   note?: string;
 }
 
@@ -113,6 +115,26 @@ export interface LoanTransactionResponse {
   date: string;
   note: string | null;
   reversalOfTransactionId: string | null;
+  linkedExpense: {
+    id: string;
+    label: string;
+    amount: number;
+    currency: Currency;
+    amountRwf: number;
+    totalAmountRwf: number;
+    category: "LOAN";
+    date: string;
+  } | null;
+  linkedIncome: {
+    id: string;
+    label: string;
+    amount: number;
+    currency: Currency;
+    amountRwf: number;
+    category: "LOAN_RECOVERY";
+    received: boolean;
+    date: string;
+  } | null;
   recordedBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
@@ -128,6 +150,17 @@ export interface CreateLoanTransactionRequest {
   date: string;
   note?: string;
   reversalOfTransactionId?: string;
+}
+
+export interface LinkLoanTransactionFinancialRecordRequest {
+  date: string;
+  label?: string;
+  note?: string;
+}
+
+export interface LoanIncomeFlowResponse {
+  loan: LoanResponse;
+  income: IncomeResponse;
 }
 
 export interface ListLoansParams {
