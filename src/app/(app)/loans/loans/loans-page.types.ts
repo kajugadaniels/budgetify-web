@@ -2,6 +2,7 @@ import type {
   LoanBalanceEffect,
   LoanTransactionType,
   LoanDirection,
+  LoanRepaymentAllocation,
   LoanResponse,
   LoanStatus,
   LoanType,
@@ -22,6 +23,7 @@ export interface LoanFormValues {
   issuedDate: string;
   dueDate: string;
   status: LoanStatus;
+  repaymentAllocation: LoanRepaymentAllocation;
   note: string;
 }
 
