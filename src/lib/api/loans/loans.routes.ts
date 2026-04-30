@@ -60,5 +60,6 @@ export const LOANS_ROUTES = {
   },
   create: BASE,
   byId: (id: string) => `${BASE}/${id}`,
+  transactions: (id: string) => `${BASE}/${id}/transactions`,
   sendToExpense: (id: string) => `${BASE}/${id}/send-to-expense`,
 } as const;
