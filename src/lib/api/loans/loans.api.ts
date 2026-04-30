@@ -3,6 +3,7 @@ import { collectPaginatedItems } from "../pagination";
 import type {
   CreateLoanTransactionRequest,
   CreateLoanRequest,
+  LinkLoanTransactionFinancialRecordRequest,
   ListLoansParams,
   LoanSettlementResponse,
   LoanResponse,
@@ -92,4 +93,36 @@ export async function createLoanTransaction(
     token,
     body,
   });
+}
+
+export async function sendLoanTransactionToExpense(
+  token: string,
+  loanId: string,
+  transactionId: string,
+  body: LinkLoanTransactionFinancialRecordRequest,
+): Promise<LoanTransactionResponse> {
+  return apiFetch<LoanTransactionResponse>(
+    LOANS_ROUTES.transactionToExpense(loanId, transactionId),
+    {
+      method: "POST",
+      token,
+      body,
+    },
+  );
+}
+
+export async function sendLoanTransactionToIncome(
+  token: string,
+  loanId: string,
+  transactionId: string,
+  body: LinkLoanTransactionFinancialRecordRequest,
+): Promise<LoanTransactionResponse> {
+  return apiFetch<LoanTransactionResponse>(
+    LOANS_ROUTES.transactionToIncome(loanId, transactionId),
+    {
+      method: "POST",
+      token,
+      body,
+    },
+  );
 }
