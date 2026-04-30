@@ -2,6 +2,7 @@ import { MONTH_OPTIONS } from "@/constant/months";
 import type {
   LoanBalanceEffect,
   LoanDirection,
+  LoanRepaymentAllocation,
   LoanResponse,
   LoanStatus,
   LoanTransactionType,
@@ -70,6 +71,14 @@ export const LOAN_BALANCE_EFFECT_OPTIONS: Array<{
   { label: "Decrease balance", value: "DECREASE" },
 ];
 
+export const LOAN_REPAYMENT_ALLOCATION_OPTIONS: Array<{
+  label: string;
+  value: LoanRepaymentAllocation;
+}> = [
+  { label: "Interest first", value: "INTEREST_FIRST" },
+  { label: "Principal first", value: "PRINCIPAL_FIRST" },
+];
+
 export function getTodayString(): string {
   return new Date().toISOString().split("T")[0] ?? "";
 }
@@ -113,6 +122,7 @@ export function createEmptyLoanForm(
     issuedDate: getMonthDefaultDate(month, year),
     dueDate: "",
     status: "ACTIVE",
+    repaymentAllocation: "INTEREST_FIRST",
     note: "",
   };
 }
@@ -129,6 +139,7 @@ export function createLoanFormFromEntry(entry: LoanResponse): LoanFormValues {
     issuedDate: entry.issuedDate.split("T")[0] ?? getTodayString(),
     dueDate: entry.dueDate?.split("T")[0] ?? "",
     status: entry.status,
+    repaymentAllocation: entry.repaymentAllocation,
     note: entry.note ?? "",
   };
 }
@@ -204,6 +215,14 @@ export function formatLoanTransactionType(type: LoanTransactionType): string {
 
 export function formatLoanBalanceEffect(effect: LoanBalanceEffect): string {
   return effect === "INCREASE" ? "Increase" : "Decrease";
+}
+
+export function formatLoanRepaymentAllocation(
+  allocation: LoanRepaymentAllocation,
+): string {
+  return allocation === "PRINCIPAL_FIRST"
+    ? "Principal first"
+    : "Interest first";
 }
 
 export function canLoanTransactionCreateExpense(
