@@ -6,6 +6,7 @@ import type { LoanFormValues } from "./loans-page.types";
 import {
   formatLoanDirection,
   LOAN_DIRECTION_OPTIONS,
+  LOAN_REPAYMENT_ALLOCATION_OPTIONS,
   LOAN_STATUS_OPTIONS,
   LOAN_TYPE_OPTIONS,
 } from "./loans.utils";
@@ -198,6 +199,25 @@ export function LoanFormDialog({
           </select>
         </Field>
 
+        <Field label="Repayment allocation">
+          <select
+            value={form.repaymentAllocation}
+            onChange={(event) =>
+              onChange({
+                repaymentAllocation:
+                  event.target.value as LoanFormValues["repaymentAllocation"],
+              })
+            }
+            className={INPUT_CLASS}
+          >
+            {LOAN_REPAYMENT_ALLOCATION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
         <Field label="Note">
           <textarea
             value={form.note}
@@ -216,6 +236,12 @@ export function LoanFormDialog({
             {form.direction === "LENT"
               ? "This is money you gave out and expect to collect back later."
               : "This is money you received and expect to repay later."}
+          </p>
+          <p className="mt-2 text-xs text-text-secondary/80">
+            General repayments will apply{" "}
+            {form.repaymentAllocation === "PRINCIPAL_FIRST"
+              ? "principal before interest."
+              : "interest before principal."}
           </p>
         </div>
 
