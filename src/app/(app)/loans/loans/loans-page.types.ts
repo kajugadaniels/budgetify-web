@@ -1,4 +1,5 @@
 import type {
+  LoanBalanceEffect,
   LoanTransactionType,
   LoanDirection,
   LoanResponse,
@@ -32,7 +33,10 @@ export interface LoanSettlementFormValues {
 export interface LoanTransactionFormValues {
   type: LoanTransactionType;
   amount: string;
+  principalAmount: string;
+  interestAmount: string;
   currency: "RWF" | "USD";
+  balanceEffect: LoanBalanceEffect;
   date: string;
   note: string;
 }
