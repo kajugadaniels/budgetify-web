@@ -31,6 +31,8 @@ export function LoanSettlementDialog({
   onClose,
   onSubmit,
 }: LoanSettlementDialogProps) {
+  const isBorrowed = entry.direction === "BORROWED";
+
   return (
     <Dialog onClose={onClose} className="sm:max-w-2xl">
       <div className="mb-6 space-y-3">
@@ -40,12 +42,14 @@ export function LoanSettlementDialog({
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="text-2xl font-semibold tracking-heading-md text-text-primary">
-              Settle this borrowed loan into expenses
+              {isBorrowed
+                ? "Settle this borrowed loan into expenses"
+                : "Record this lending disbursement as an expense"}
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-text-secondary">
-              This step is only for money you borrowed and are now paying back.
-              Lent loans will use a dedicated repayment-to-income flow in the
-              next milestone.
+              {isBorrowed
+                ? "This records the money you are paying back on a borrowed loan as an expense and settles the principal in the loan ledger."
+                : "This records the original money you lent out as an expense while keeping it linked to the loan disbursement in the ledger."}
             </p>
           </div>
         </div>
@@ -78,6 +82,17 @@ export function LoanSettlementDialog({
             onChange={(event) => onChange({ date: event.target.value })}
             className={INPUT_CLASS}
             required
+          />
+        </Field>
+
+        <Field label="Expense label override">
+          <input
+            type="text"
+            value={form.label}
+            onChange={(event) => onChange({ label: event.target.value })}
+            placeholder="Leave blank to use the generated loan-aware label"
+            className={INPUT_CLASS}
+            maxLength={120}
           />
         </Field>
 
