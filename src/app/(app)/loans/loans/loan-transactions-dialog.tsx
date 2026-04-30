@@ -10,8 +10,10 @@ import { cn } from "@/lib/utils/cn";
 import type { LoanTransactionFormValues } from "./loans-page.types";
 import {
   formatLoanDate,
+  formatLoanBalanceEffect,
   formatLoanStatus,
   formatLoanTransactionType,
+  LOAN_BALANCE_EFFECT_OPTIONS,
   LOAN_TRANSACTION_TYPE_OPTIONS,
 } from "./loans.utils";
 
@@ -55,6 +57,45 @@ export function LoanTransactionsDialog({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_320px]">
         <section className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <SummaryCard
+              label="Principal outstanding"
+              value={
+                entry.currency === "RWF"
+                  ? rwf(entry.principalOutstanding)
+                  : `${entry.currency} ${entry.principalOutstanding.toLocaleString("en-US")}`
+              }
+              subValue={rwf(entry.principalOutstandingRwf)}
+            />
+            <SummaryCard
+              label="Interest outstanding"
+              value={
+                entry.currency === "RWF"
+                  ? rwf(entry.interestOutstanding)
+                  : `${entry.currency} ${entry.interestOutstanding.toLocaleString("en-US")}`
+              }
+              subValue={rwf(entry.interestOutstandingRwf)}
+            />
+            <SummaryCard
+              label="Total outstanding"
+              value={
+                entry.currency === "RWF"
+                  ? rwf(entry.totalOutstanding)
+                  : `${entry.currency} ${entry.totalOutstanding.toLocaleString("en-US")}`
+              }
+              subValue={rwf(entry.totalOutstandingRwf)}
+            />
+            <SummaryCard
+              label="Interest charged"
+              value={
+                entry.currency === "RWF"
+                  ? rwf(entry.interestCharged)
+                  : `${entry.currency} ${entry.interestCharged.toLocaleString("en-US")}`
+              }
+              subValue={rwf(entry.interestChargedRwf)}
+            />
+          </div>
+
           <div className="rounded-2xl border border-white/8 bg-white/[0.03]">
             <div className="border-b border-white/8 px-4 py-3">
               <p className="text-sm font-semibold text-text-primary">
@@ -83,10 +124,16 @@ export function LoanTransactionsDialog({
                             {formatLoanTransactionType(transaction.type)}
                           </p>
                           <p className="mt-1 text-xs text-text-secondary/70">
-                            {formatLoanDate(transaction.date)} · recorded by{" "}
+                            {formatLoanDate(transaction.date)} ·{" "}
+                            {formatLoanBalanceEffect(transaction.balanceEffect)} ·
+                            {" "}recorded by{" "}
                             {transaction.recordedBy.firstName ??
                               transaction.recordedBy.lastName ??
                               "User"}
+                          </p>
+                          <p className="mt-1 text-xs text-text-secondary/70">
+                            Principal {rwf(transaction.principalAmountRwf)} ·
+                            Interest {rwf(transaction.interestAmountRwf)}
                           </p>
                         </div>
                         <div className="text-right">
@@ -139,6 +186,28 @@ export function LoanTransactionsDialog({
             </select>
           </Field>
 
+          <Field label="Balance effect">
+            <select
+              value={form.balanceEffect}
+              onChange={(event) =>
+                onChange({
+                  balanceEffect:
+                    event.target.value as LoanTransactionFormValues["balanceEffect"],
+                })
+              }
+              className={INPUT_CLASS}
+              disabled={
+                form.type !== "ADJUSTMENT" && form.type !== "REVERSAL"
+              }
+            >
+              {LOAN_BALANCE_EFFECT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Amount">
               <input
@@ -165,6 +234,34 @@ export function LoanTransactionsDialog({
                 <option value="RWF">RWF</option>
                 <option value="USD">USD</option>
               </select>
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Principal portion">
+              <input
+                type="number"
+                value={form.principalAmount}
+                onChange={(event) =>
+                  onChange({ principalAmount: event.target.value })
+                }
+                min={0}
+                className={INPUT_CLASS}
+                placeholder="Defaults by transaction type"
+              />
+            </Field>
+
+            <Field label="Interest portion">
+              <input
+                type="number"
+                value={form.interestAmount}
+                onChange={(event) =>
+                  onChange({ interestAmount: event.target.value })
+                }
+                min={0}
+                className={INPUT_CLASS}
+                placeholder="Defaults by transaction type"
+              />
             </Field>
           </div>
 
@@ -224,5 +321,25 @@ function Field({
       </span>
       {children}
     </label>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  subValue,
+}: {
+  label: string;
+  value: string;
+  subValue: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-secondary/55">
+        {label}
+      </p>
+      <p className="mt-3 text-sm font-semibold text-text-primary">{value}</p>
+      <p className="mt-1 text-xs text-text-secondary/70">{subValue} tracked</p>
+    </div>
   );
 }
