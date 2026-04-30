@@ -335,13 +335,13 @@ export default function DashboardPage() {
             fullValue={rwf(totalActiveSavings)}
             description={`All-time balance across savings buckets · ${rwfCompact(totalSavingsDeposited)} deposited · ${rwfCompact(totalSavingsWithdrawn)} withdrawn`}
           />
-          <DashboardSummaryCard
+          {/* <DashboardSummaryCard
             label="Available money now"
             tone={moneyStillHave >= 0 ? "income" : "expense"}
             compactValue={rwfCompact(moneyStillHave)}
             fullValue={rwf(moneyStillHave)}
             description="All received income minus expenses and current savings balance"
-          />
+          /> */}
           <DashboardSummaryCard
             label="Todo amount"
             tone="todo"
