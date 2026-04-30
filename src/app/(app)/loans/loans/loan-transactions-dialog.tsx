@@ -25,9 +25,12 @@ interface LoanTransactionsDialogProps {
   form: LoanTransactionFormValues;
   loading: boolean;
   saving: boolean;
+  linkingId: string | null;
   transactions: LoanTransactionResponse[];
   onChange: (next: Partial<LoanTransactionFormValues>) => void;
   onClose: () => void;
+  onCreateExpenseFlow: (transaction: LoanTransactionResponse) => void;
+  onCreateIncomeFlow: (transaction: LoanTransactionResponse) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }
 
@@ -36,9 +39,12 @@ export function LoanTransactionsDialog({
   form,
   loading,
   saving,
+  linkingId,
   transactions,
   onChange,
   onClose,
+  onCreateExpenseFlow,
+  onCreateIncomeFlow,
   onSubmit,
 }: LoanTransactionsDialogProps) {
   return (
@@ -150,6 +156,53 @@ export function LoanTransactionsDialog({
                       <p className="text-sm text-text-secondary">
                         {transaction.note ?? "No note"}
                       </p>
+                      <div className="flex flex-wrap gap-2">
+                        {transaction.linkedExpense ? (
+                          <span className="rounded-full border border-primary/16 bg-primary/8 px-3 py-1 text-xs font-medium text-primary">
+                            Linked expense · {transaction.linkedExpense.label}
+                          </span>
+                        ) : (
+                          ((entry.direction === "LENT" &&
+                            transaction.type === "DISBURSEMENT") ||
+                            (entry.direction === "BORROWED" &&
+                              transaction.balanceEffect === "DECREASE" &&
+                              (transaction.type === "REPAYMENT" ||
+                                transaction.type === "INTEREST_PAYMENT"))) && (
+                            <button
+                              type="button"
+                              onClick={() => onCreateExpenseFlow(transaction)}
+                              disabled={linkingId === transaction.id}
+                              className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/16 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {linkingId === transaction.id
+                                ? "Linking..."
+                                : "Send to expense"}
+                            </button>
+                          )
+                        )}
+
+                        {transaction.linkedIncome ? (
+                          <span className="rounded-full border border-success/16 bg-success/8 px-3 py-1 text-xs font-medium text-success">
+                            Linked income · {transaction.linkedIncome.label}
+                          </span>
+                        ) : (
+                          entry.direction === "LENT" &&
+                          transaction.balanceEffect === "DECREASE" &&
+                          (transaction.type === "REPAYMENT" ||
+                            transaction.type === "INTEREST_PAYMENT") && (
+                            <button
+                              type="button"
+                              onClick={() => onCreateIncomeFlow(transaction)}
+                              disabled={linkingId === transaction.id}
+                              className="rounded-full border border-success/20 bg-success/10 px-3 py-1 text-xs font-medium text-success transition-colors hover:bg-success/16 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {linkingId === transaction.id
+                                ? "Linking..."
+                                : "Send to income"}
+                            </button>
+                          )
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
