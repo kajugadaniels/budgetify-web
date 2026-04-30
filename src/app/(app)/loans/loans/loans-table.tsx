@@ -130,13 +130,11 @@ export function LoansTable({
                   onClick={() => onSendToExpense(entry)}
                     disabled={
                       isLoanSettled(entry.status) ||
-                      isLoanTerminalStatus(entry.status) ||
-                      entry.direction !== "BORROWED"
+                      isLoanTerminalStatus(entry.status)
                     }
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                       isLoanSettled(entry.status) ||
-                      isLoanTerminalStatus(entry.status) ||
-                      entry.direction !== "BORROWED"
+                      isLoanTerminalStatus(entry.status)
                         ? "cursor-not-allowed border-success/14 bg-success/8 text-success/65"
                         : "border-primary/25 bg-primary/10 text-primary hover:bg-primary/16"
                     }`}
@@ -144,8 +142,8 @@ export function LoansTable({
                     {isLoanSettled(entry.status)
                       ? "Settled"
                       : entry.direction === "BORROWED"
-                        ? "Send to expense"
-                        : "Income flow soon"}
+                        ? "Send repayment to expense"
+                        : "Send disbursement to expense"}
                   </button>
                   <button
                     type="button"
