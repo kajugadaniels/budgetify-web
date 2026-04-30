@@ -55,6 +55,7 @@ export interface ExpenseResponse {
   date: string;
   note: string | null;
   linkedTodo: ExpenseLinkedTodoSummary | null;
+  linkedLoan: ExpenseLinkedLoanSummary | null;
   createdBy: CreatedBySummary;
   createdAt: string;
   updatedAt: string;
@@ -65,6 +66,31 @@ export interface ExpenseLinkedTodoSummary {
   todoName: string;
   recordingId: string;
   occurrenceDate: string;
+}
+
+export interface ExpenseLinkedLoanSummary {
+  loanId: string;
+  loanLabel: string;
+  loanDirection: "BORROWED" | "LENT";
+  loanStatus:
+    | "ACTIVE"
+    | "PARTIALLY_REPAID"
+    | "SETTLED"
+    | "OVERDUE"
+    | "WRITTEN_OFF"
+    | "CANCELLED"
+    | "ARCHIVED";
+  counterpartyName: string;
+  transactionId: string;
+  transactionType:
+    | "DISBURSEMENT"
+    | "REPAYMENT"
+    | "INTEREST_CHARGE"
+    | "INTEREST_PAYMENT"
+    | "ADJUSTMENT"
+    | "WRITE_OFF"
+    | "REVERSAL";
+  transactionDate: string;
 }
 
 export interface CreateExpenseRequest {
