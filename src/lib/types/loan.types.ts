@@ -27,6 +27,7 @@ export type LoanTransactionType =
   | "WRITE_OFF"
   | "REVERSAL";
 export type LoanBalanceEffect = "INCREASE" | "DECREASE";
+export type LoanRepaymentAllocation = "INTEREST_FIRST" | "PRINCIPAL_FIRST";
 
 export interface LoanResponse {
   id: string;
@@ -38,6 +39,7 @@ export interface LoanResponse {
   amount: number;
   currency: Currency;
   amountRwf: number;
+  repaymentAllocation: LoanRepaymentAllocation;
   originalPrincipal: number;
   originalPrincipalRwf: number;
   principalRepaid: number;
@@ -72,6 +74,7 @@ export interface CreateLoanRequest {
   issuedDate: string;
   dueDate?: string;
   status?: LoanStatus;
+  repaymentAllocation?: LoanRepaymentAllocation;
   note?: string;
 }
 
@@ -86,6 +89,7 @@ export interface UpdateLoanRequest {
   issuedDate?: string;
   dueDate?: string;
   status?: LoanStatus;
+  repaymentAllocation?: LoanRepaymentAllocation;
   note?: string;
 }
 
