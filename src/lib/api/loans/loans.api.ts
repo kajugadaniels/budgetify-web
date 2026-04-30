@@ -1,10 +1,12 @@
 import { apiFetch } from "../client";
 import { collectPaginatedItems } from "../pagination";
 import type {
+  CreateLoanTransactionRequest,
   CreateLoanRequest,
   ListLoansParams,
   LoanSettlementResponse,
   LoanResponse,
+  LoanTransactionResponse,
   SendLoanToExpenseRequest,
   UpdateLoanRequest,
 } from "../../types/loan.types";
@@ -65,6 +67,27 @@ export async function sendLoanToExpense(
   body: SendLoanToExpenseRequest,
 ): Promise<LoanSettlementResponse> {
   return apiFetch<LoanSettlementResponse>(LOANS_ROUTES.sendToExpense(id), {
+    method: "POST",
+    token,
+    body,
+  });
+}
+
+export async function listLoanTransactions(
+  token: string,
+  id: string,
+): Promise<LoanTransactionResponse[]> {
+  return apiFetch<LoanTransactionResponse[]>(LOANS_ROUTES.transactions(id), {
+    token,
+  });
+}
+
+export async function createLoanTransaction(
+  token: string,
+  id: string,
+  body: CreateLoanTransactionRequest,
+): Promise<LoanTransactionResponse> {
+  return apiFetch<LoanTransactionResponse>(LOANS_ROUTES.transactions(id), {
     method: "POST",
     token,
     body,
