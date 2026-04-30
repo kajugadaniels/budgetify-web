@@ -206,8 +206,11 @@ export default function LoansPage() {
   );
   const settledAmount = entries
     .filter((entry) => isLoanSettled(entry.status))
-    .reduce((sum, entry) => sum + Number(entry.amountRwf), 0);
-  const outstandingAmount = totalLoans - settledAmount;
+    .reduce((sum, entry) => sum + Number(entry.principalRepaidRwf + entry.interestPaidRwf), 0);
+  const outstandingAmount = entries.reduce(
+    (sum, entry) => sum + Number(entry.totalOutstandingRwf),
+    0,
+  );
   const largestLoan = [...entries].sort(
     (left, right) => Number(right.amountRwf) - Number(left.amountRwf),
   )[0];
@@ -475,7 +478,14 @@ export default function LoansPage() {
     const payload: CreateLoanTransactionRequest = {
       type: transactionForm.type,
       amount,
+      ...(transactionForm.principalAmount.trim()
+        ? { principalAmount: Number(transactionForm.principalAmount) }
+        : {}),
+      ...(transactionForm.interestAmount.trim()
+        ? { interestAmount: Number(transactionForm.interestAmount) }
+        : {}),
       currency: transactionForm.currency,
+      balanceEffect: transactionForm.balanceEffect,
       date: transactionForm.date,
       ...(transactionForm.note.trim()
         ? { note: transactionForm.note.trim() }
@@ -585,7 +595,7 @@ export default function LoansPage() {
 
                   <div className="flex flex-wrap gap-2">
                     <span className="rounded-full border border-success/14 bg-success/8 px-2.5 py-1 text-[11px] font-medium text-success">
-                      {rwfCompact(settledAmount)} settled
+                      {rwfCompact(settledAmount)} recovered
                     </span>
                     <span className="rounded-full border border-danger/14 bg-danger/8 px-2.5 py-1 text-[11px] font-medium text-danger/84">
                       {rwfCompact(outstandingAmount)} outstanding
@@ -628,7 +638,7 @@ export default function LoansPage() {
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
                     {largestLoan
-                      ? `${largestLoan.label} · ${rwf(Number(largestLoan.amountRwf))}`
+                      ? `${largestLoan.label} · ${rwf(Number(largestLoan.totalOutstandingRwf))}`
                       : "Add loans to track outstanding obligations."}
                   </p>
                 </div>
