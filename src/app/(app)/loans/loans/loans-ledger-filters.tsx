@@ -9,11 +9,15 @@ import { MonthStepper } from "@/components/ui/month-stepper";
 import {
   buildLoanYearOptions,
   LOAN_DIRECTION_OPTIONS,
+  LOAN_OPERATIONAL_FILTER_OPTIONS,
+  LOAN_SORT_OPTIONS,
   LOAN_STATUS_OPTIONS,
   LOAN_TYPE_OPTIONS,
 } from "./loans.utils";
 import type {
   LoanLedgerDirectionFilter,
+  LoanLedgerOperationalFilter,
+  LoanLedgerSortFilter,
   LoanLedgerStatusFilter,
   LoanLedgerTypeFilter,
 } from "./loans-page.types";
@@ -24,19 +28,27 @@ interface LoansLedgerFiltersProps {
   direction: LoanLedgerDirectionFilter;
   hasActiveFilters: boolean;
   month: number;
+  operationalFilter: LoanLedgerOperationalFilter;
   status: LoanLedgerStatusFilter;
   search: string;
+  sortBy: LoanLedgerSortFilter;
   type: LoanLedgerTypeFilter;
   year: number;
+  minOutstandingRwf: string;
+  maxOutstandingRwf: string;
   onClear: () => void;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onDirectionChange: (value: LoanLedgerDirectionFilter) => void;
+  onOperationalFilterChange: (value: LoanLedgerOperationalFilter) => void;
   onMonthChange: (value: number) => void;
   onStatusChange: (value: LoanLedgerStatusFilter) => void;
   onSearchChange: (value: string) => void;
+  onSortByChange: (value: LoanLedgerSortFilter) => void;
   onTypeChange: (value: LoanLedgerTypeFilter) => void;
   onYearChange: (value: number) => void;
+  onMinOutstandingRwfChange: (value: string) => void;
+  onMaxOutstandingRwfChange: (value: string) => void;
 }
 
 export function LoansLedgerFilters({
@@ -45,19 +57,27 @@ export function LoansLedgerFilters({
   direction,
   hasActiveFilters,
   month,
+  operationalFilter,
   status,
   search,
+  sortBy,
   type,
   year,
+  minOutstandingRwf,
+  maxOutstandingRwf,
   onClear,
   onDateFromChange,
   onDateToChange,
   onDirectionChange,
+  onOperationalFilterChange,
   onMonthChange,
   onStatusChange,
   onSearchChange,
+  onSortByChange,
   onTypeChange,
   onYearChange,
+  onMinOutstandingRwfChange,
+  onMaxOutstandingRwfChange,
 }: LoansLedgerFiltersProps) {
   const yearOptions = buildLoanYearOptions();
 
@@ -165,6 +185,59 @@ export function LoansLedgerFilters({
                 ))}
               </SelectContent>
             </Select>
+
+            <Select
+              value={operationalFilter}
+              onValueChange={(value) =>
+                onOperationalFilterChange(value as LoanLedgerOperationalFilter)
+              }
+            >
+              <SelectTrigger className="h-11 min-w-[190px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
+                <SelectValue placeholder="Operational state" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
+                <SelectItem value="ALL">All operations</SelectItem>
+                {LOAN_OPERATIONAL_FILTER_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={sortBy}
+              onValueChange={(value) => onSortByChange(value as LoanLedgerSortFilter)}
+            >
+              <SelectTrigger className="h-11 min-w-[180px] rounded-full border-white/10 bg-background-secondary px-4 text-sm text-text-primary hover:bg-background-secondary/90 focus-visible:border-primary/40 focus-visible:ring-primary/20">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border border-white/10 bg-background-secondary text-text-primary">
+                {LOAN_SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <input
+              type="number"
+              min="0"
+              value={minOutstandingRwf}
+              onChange={(event) => onMinOutstandingRwfChange(event.target.value)}
+              placeholder="Min outstanding"
+              className="h-11 min-w-[160px] rounded-full border border-white/10 bg-background-secondary px-4 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary/55 focus:border-primary/35"
+            />
+
+            <input
+              type="number"
+              min="0"
+              value={maxOutstandingRwf}
+              onChange={(event) => onMaxOutstandingRwfChange(event.target.value)}
+              placeholder="Max outstanding"
+              className="h-11 min-w-[160px] rounded-full border border-white/10 bg-background-secondary px-4 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary/55 focus:border-primary/35"
+            />
 
             {hasActiveFilters ? (
               <button
