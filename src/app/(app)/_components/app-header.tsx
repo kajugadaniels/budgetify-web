@@ -17,8 +17,8 @@ export function AppHeader() {
   )[0]?.toUpperCase() ?? "B";
 
   return (
-    <header className="md:hidden fixed top-0 left-0 right-0 z-30 glass-elevated border-b border-border h-14 flex items-center justify-between px-4">
-      <span className="text-text-primary font-semibold text-base tracking-heading-sm">
+    <header className="md:hidden fixed top-0 left-0 right-0 z-30 glass-elevated border-b border-border h-14 flex items-center justify-between pl-16 pr-4">
+      <span className="truncate text-text-primary font-semibold text-base tracking-heading-sm">
         {title}
       </span>
       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 border border-primary/30">
