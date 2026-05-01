@@ -41,7 +41,6 @@ export function LoansTable({
               "Due",
               "State",
               "Amount",
-              "Note",
               "Actions",
             ].map((label) => (
               <th
@@ -63,15 +62,6 @@ export function LoansTable({
                   </p>
                   <p className="mt-1 text-xs text-text-secondary/70">
                     Created {formatLoanDate(entry.createdAt)}
-                  </p>
-                  <p className="mt-1 text-xs text-text-secondary/70">
-                    {formatLoanDirection(entry.direction)} · {formatLoanType(entry.type)}
-                  </p>
-                  <p className="mt-1 text-xs text-text-secondary/70">
-                    {entry.counterpartyName}
-                    {entry.counterpartyContact
-                      ? ` · ${entry.counterpartyContact}`
-                      : ""}
                   </p>
                   <CreatedByPill creator={entry.createdBy} />
                 </div>
@@ -116,11 +106,6 @@ export function LoansTable({
                 </p>
                 <p className="mt-1 text-xs text-text-secondary/70">
                   Principal {rwf(Number(entry.principalOutstandingRwf))} · Interest {rwf(Number(entry.interestOutstandingRwf))}
-                </p>
-              </td>
-              <td className="border-t border-white/6 px-5 py-4 md:px-6">
-                <p className="max-w-[260px] truncate text-sm text-text-secondary">
-                  {formatLoanNote(entry.note)}
                 </p>
               </td>
               <td className="border-t border-white/6 px-5 py-4 md:px-6">
