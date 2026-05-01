@@ -15,6 +15,7 @@ import type {
   LoanLedgerTypeFilter,
   LoanTransactionFinancialFlowFormValues,
   LoanTransactionFormValues,
+  LoanTransactionReversalFormValues,
   LoanSettlementFormValues,
 } from "./loans-page.types";
 
@@ -60,7 +61,6 @@ export const LOAN_TRANSACTION_TYPE_OPTIONS: Array<{
   { label: "Interest payment", value: "INTEREST_PAYMENT" },
   { label: "Adjustment", value: "ADJUSTMENT" },
   { label: "Write off", value: "WRITE_OFF" },
-  { label: "Reversal", value: "REVERSAL" },
 ];
 
 export const LOAN_BALANCE_EFFECT_OPTIONS: Array<{
@@ -183,6 +183,13 @@ export function createEmptyLoanTransactionFinancialFlowForm(): LoanTransactionFi
   };
 }
 
+export function createEmptyLoanTransactionReversalForm(): LoanTransactionReversalFormValues {
+  return {
+    date: getTodayString(),
+    note: "",
+  };
+}
+
 export function sortLoanEntries(entries: LoanResponse[]): LoanResponse[] {
   return [...entries].sort(
     (left, right) =>
@@ -230,10 +237,16 @@ export function canLoanTransactionCreateExpense(
   transaction: {
     type: LoanTransactionType;
     balanceEffect: LoanBalanceEffect;
+    isReversed: boolean;
+    reversalOfTransactionId: string | null;
     linkedExpense: unknown | null;
   },
 ): boolean {
-  if (transaction.linkedExpense !== null) {
+  if (
+    transaction.linkedExpense !== null ||
+    transaction.isReversed ||
+    transaction.reversalOfTransactionId !== null
+  ) {
     return false;
   }
 
@@ -251,10 +264,16 @@ export function canLoanTransactionCreateIncome(
   transaction: {
     type: LoanTransactionType;
     balanceEffect: LoanBalanceEffect;
+    isReversed: boolean;
+    reversalOfTransactionId: string | null;
     linkedIncome: unknown | null;
   },
 ): boolean {
-  if (transaction.linkedIncome !== null) {
+  if (
+    transaction.linkedIncome !== null ||
+    transaction.isReversed ||
+    transaction.reversalOfTransactionId !== null
+  ) {
     return false;
   }
 
@@ -263,6 +282,18 @@ export function canLoanTransactionCreateIncome(
     transaction.balanceEffect === "DECREASE" &&
     (transaction.type === "REPAYMENT" ||
       transaction.type === "INTEREST_PAYMENT")
+  );
+}
+
+export function canReverseLoanTransaction(transaction: {
+  type: LoanTransactionType;
+  isReversed: boolean;
+  reversalOfTransactionId: string | null;
+}): boolean {
+  return (
+    transaction.type !== "REVERSAL" &&
+    transaction.reversalOfTransactionId === null &&
+    !transaction.isReversed
   );
 }
 
