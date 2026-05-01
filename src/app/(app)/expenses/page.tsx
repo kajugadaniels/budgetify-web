@@ -422,19 +422,29 @@ export default function ExpensesPage() {
     totalSpent > 0 && summary.data
       ? Math.round((summary.data.largestExpenseRwf / totalSpent) * 100)
       : 0;
-  const recentDailyExpenses = useMemo(() => {
+  const monthlyDailyExpenses = useMemo(() => {
     const totals = new Map<string, number>();
     for (const entry of entries) {
       const day = (entry.date.split("T")[0] ?? entry.date) as string;
-      totals.set(day, (totals.get(day) ?? 0) + (entry.totalAmountRwf ?? 0));
+      totals.set(day, (totals.get(day) ?? 0) + Number(entry.totalAmountRwf ?? 0));
     }
 
-    return Array.from(totals.entries())
-      .sort(([a], [b]) => (a < b ? 1 : -1))
-      .slice(0, 3)
-      .reverse();
-  }, [entries]);
-  const maxRecentDailyTotal = recentDailyExpenses.reduce(
+    const today = new Date();
+    const isCurrentMonth =
+      selectedMonth === today.getMonth() &&
+      selectedYear === today.getFullYear();
+    const visibleDays = isCurrentMonth
+      ? today.getDate()
+      : new Date(selectedYear, selectedMonth + 1, 0).getDate();
+
+    return Array.from({ length: visibleDays }, (_, index) => {
+      const date = new Date(selectedYear, selectedMonth, index + 1);
+      const isoDay = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+      return [isoDay, totals.get(isoDay) ?? 0] as const;
+    });
+  }, [entries, selectedMonth, selectedYear]);
+  const maxMonthlyDailyTotal = monthlyDailyExpenses.reduce(
     (max, [, value]) => Math.max(max, value),
     0,
   );
@@ -671,27 +681,34 @@ export default function ExpensesPage() {
 
             <div className="relative z-10 grid gap-3 lg:grid-cols-[minmax(0,1.16fr)_280px]">
               <div className="relative overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
-                {recentDailyExpenses.length > 0 && maxRecentDailyTotal > 0 ? (
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-4 bottom-3 top-[55%] z-0 flex items-end gap-2 opacity-[0.22]"
-                  >
-                    {recentDailyExpenses.map(([day, value]) => {
-                      const heightPct = Math.max(
-                        10,
-                        Math.round((value / maxRecentDailyTotal) * 100),
-                      );
+                <div
+                  aria-label={`${selectedMonthLabel} ${selectedYear} daily expense chart`}
+                  className="pointer-events-none absolute inset-x-5 bottom-4 top-[58%] z-0 flex items-end gap-1.5 opacity-55"
+                >
+                  {monthlyDailyExpenses.map(([day, value]) => {
+                    const ratio =
+                      maxMonthlyDailyTotal > 0 ? value / maxMonthlyDailyTotal : 0;
+                    const heightPct =
+                      value === 0 ? 5 : Math.max(18, Math.round(ratio * 100));
 
-                      return (
-                        <div
-                          key={day}
-                          className="flex-1 rounded-t-xl bg-[linear-gradient(180deg,rgba(255,122,122,0.85)_0%,rgba(255,122,122,0.05)_100%)] transition-[height] duration-700 ease-out"
-                          style={{ height: `${heightPct}%` }}
-                        />
-                      );
-                    })}
-                  </div>
-                ) : null}
+                    return (
+                      <div
+                        key={day}
+                        className={`relative min-w-1 flex-1 rounded-t-md transition-[height,background-color,opacity] duration-700 ease-out ${
+                          value > 0
+                            ? "bg-[linear-gradient(180deg,rgba(255,122,122,0.96)_0%,rgba(228,192,99,0.5)_56%,rgba(255,122,122,0.12)_100%)]"
+                            : "bg-white/10"
+                        }`}
+                        style={{ height: `${heightPct}%` }}
+                        title={`${formatExpenseDate(day)}: ${rwf(value)}`}
+                      >
+                        {value > 0 ? (
+                          <span className="absolute inset-x-0 top-0 h-px bg-danger/75" />
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
 
                 <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1.5">
