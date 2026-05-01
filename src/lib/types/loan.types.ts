@@ -119,6 +119,8 @@ export interface LoanTransactionResponse {
   date: string;
   note: string | null;
   reversalOfTransactionId: string | null;
+  isReversed: boolean;
+  reversedByTransactionId: string | null;
   linkedExpense: {
     id: string;
     label: string;
@@ -153,12 +155,16 @@ export interface CreateLoanTransactionRequest {
   balanceEffect?: LoanBalanceEffect;
   date: string;
   note?: string;
-  reversalOfTransactionId?: string;
 }
 
 export interface LinkLoanTransactionFinancialRecordRequest {
   date: string;
   label?: string;
+  note?: string;
+}
+
+export interface ReverseLoanTransactionRequest {
+  date: string;
   note?: string;
 }
 
