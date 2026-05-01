@@ -9,6 +9,9 @@ import { rwf } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 import type { LoanTransactionFormValues } from "./loans-page.types";
 import {
+  canLoanTransactionCreateExpense,
+  canLoanTransactionCreateIncome,
+  canReverseLoanTransaction,
   formatLoanDate,
   formatLoanBalanceEffect,
   formatLoanRepaymentAllocation,
@@ -32,6 +35,7 @@ interface LoanTransactionsDialogProps {
   onClose: () => void;
   onCreateExpenseFlow: (transaction: LoanTransactionResponse) => void;
   onCreateIncomeFlow: (transaction: LoanTransactionResponse) => void;
+  onReverse: (transaction: LoanTransactionResponse) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }
 
@@ -46,6 +50,7 @@ export function LoanTransactionsDialog({
   onClose,
   onCreateExpenseFlow,
   onCreateIncomeFlow,
+  onReverse,
   onSubmit,
 }: LoanTransactionsDialogProps) {
   return (
@@ -138,6 +143,11 @@ export function LoanTransactionsDialog({
                               transaction.recordedBy.lastName ??
                               "User"}
                           </p>
+                          {transaction.isReversed ? (
+                            <p className="mt-1 text-xs font-medium text-danger/80">
+                              Reversed by another ledger entry
+                            </p>
+                          ) : null}
                           <p className="mt-1 text-xs text-text-secondary/70">
                             Principal {rwf(transaction.principalAmountRwf)} ·
                             Interest {rwf(transaction.interestAmountRwf)}
@@ -162,47 +172,57 @@ export function LoanTransactionsDialog({
                           <span className="rounded-full border border-primary/16 bg-primary/8 px-3 py-1 text-xs font-medium text-primary">
                             Linked expense · {transaction.linkedExpense.label}
                           </span>
-                        ) : (
-                          ((entry.direction === "LENT" &&
-                            transaction.type === "DISBURSEMENT") ||
-                            (entry.direction === "BORROWED" &&
-                              transaction.balanceEffect === "DECREASE" &&
-                              (transaction.type === "REPAYMENT" ||
-                                transaction.type === "INTEREST_PAYMENT"))) && (
-                            <button
-                              type="button"
-                              onClick={() => onCreateExpenseFlow(transaction)}
-                              disabled={linkingId === transaction.id}
-                              className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/16 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {linkingId === transaction.id
-                                ? "Linking..."
-                                : "Send to expense"}
-                            </button>
-                          )
-                        )}
+                        ) : canLoanTransactionCreateExpense(entry, transaction) ? (
+                          <button
+                            type="button"
+                            onClick={() => onCreateExpenseFlow(transaction)}
+                            disabled={linkingId === transaction.id}
+                            className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/16 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {linkingId === transaction.id
+                              ? "Linking..."
+                              : "Send to expense"}
+                          </button>
+                        ) : null}
 
                         {transaction.linkedIncome ? (
                           <span className="rounded-full border border-success/16 bg-success/8 px-3 py-1 text-xs font-medium text-success">
                             Linked income · {transaction.linkedIncome.label}
                           </span>
-                        ) : (
-                          entry.direction === "LENT" &&
-                          transaction.balanceEffect === "DECREASE" &&
-                          (transaction.type === "REPAYMENT" ||
-                            transaction.type === "INTEREST_PAYMENT") && (
-                            <button
-                              type="button"
-                              onClick={() => onCreateIncomeFlow(transaction)}
-                              disabled={linkingId === transaction.id}
-                              className="rounded-full border border-success/20 bg-success/10 px-3 py-1 text-xs font-medium text-success transition-colors hover:bg-success/16 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {linkingId === transaction.id
-                                ? "Linking..."
-                                : "Send to income"}
-                            </button>
-                          )
-                        )}
+                        ) : canLoanTransactionCreateIncome(entry, transaction) ? (
+                          <button
+                            type="button"
+                            onClick={() => onCreateIncomeFlow(transaction)}
+                            disabled={linkingId === transaction.id}
+                            className="rounded-full border border-success/20 bg-success/10 px-3 py-1 text-xs font-medium text-success transition-colors hover:bg-success/16 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {linkingId === transaction.id
+                              ? "Linking..."
+                              : "Send to income"}
+                          </button>
+                        ) : null}
+
+                        {canReverseLoanTransaction(transaction) ? (
+                          <button
+                            type="button"
+                            onClick={() => onReverse(transaction)}
+                            className="rounded-full border border-danger/20 bg-danger/10 px-3 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger/16"
+                          >
+                            Reverse
+                          </button>
+                        ) : null}
+
+                        {transaction.reversalOfTransactionId ? (
+                          <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-text-secondary">
+                            Reversal entry
+                          </span>
+                        ) : null}
+
+                        {transaction.isReversed ? (
+                          <span className="rounded-full border border-danger/16 bg-danger/8 px-3 py-1 text-xs font-medium text-danger">
+                            Reversed
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   ))}
