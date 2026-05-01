@@ -48,6 +48,8 @@ import type {
   LoanFormDialogState,
   LoanFormValues,
   LoanLedgerDirectionFilter,
+  LoanLedgerOperationalFilter,
+  LoanLedgerSortFilter,
   LoanLedgerStatusFilter,
   LoanLedgerTypeFilter,
   LoanTransactionFinancialFlowDialogState,
@@ -76,7 +78,6 @@ import {
   isLoanSettled,
   isLoanTerminalStatus,
   resolveLoanMonthLabel,
-  sortLoanEntries,
 } from "./loans/loans.utils";
 
 export default function LoansPage() {
@@ -110,6 +111,12 @@ export default function LoansPage() {
     useState<LoanLedgerDirectionFilter>("ALL");
   const [selectedType, setSelectedType] =
     useState<LoanLedgerTypeFilter>("ALL");
+  const [selectedOperationalFilter, setSelectedOperationalFilter] =
+    useState<LoanLedgerOperationalFilter>("ALL");
+  const [selectedSortBy, setSelectedSortBy] =
+    useState<LoanLedgerSortFilter>("ISSUED_DESC");
+  const [minOutstandingRwf, setMinOutstandingRwf] = useState("");
+  const [maxOutstandingRwf, setMaxOutstandingRwf] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [selectedDateFrom, setSelectedDateFrom] = useState("");
   const [selectedDateTo, setSelectedDateTo] = useState("");
@@ -145,7 +152,15 @@ export default function LoansPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedSearch, selectedDateFrom, selectedDateTo]);
+  }, [
+    appliedSearch,
+    maxOutstandingRwf,
+    minOutstandingRwf,
+    selectedDateFrom,
+    selectedDateTo,
+    selectedOperationalFilter,
+    selectedSortBy,
+  ]);
 
   useEffect(() => {
     if (!token) return;
@@ -157,6 +172,8 @@ export default function LoansPage() {
       setError(null);
 
       try {
+        const parsedMinOutstanding = Number(minOutstandingRwf);
+        const parsedMaxOutstanding = Number(maxOutstandingRwf);
         const filters = {
           month: hasExplicitDateFilter ? undefined : selectedMonth + 1,
           year: hasExplicitDateFilter ? undefined : selectedYear,
@@ -167,6 +184,22 @@ export default function LoansPage() {
           search: appliedSearch,
           dateFrom: selectedDateFrom || undefined,
           dateTo: selectedDateTo || undefined,
+          operationalFilter:
+            selectedOperationalFilter === "ALL"
+              ? undefined
+              : selectedOperationalFilter,
+          sortBy:
+            selectedSortBy === "ISSUED_DESC" ? undefined : selectedSortBy,
+          minOutstandingRwf:
+            minOutstandingRwf.trim().length === 0 ||
+            !Number.isFinite(parsedMinOutstanding)
+              ? undefined
+              : parsedMinOutstanding,
+          maxOutstandingRwf:
+            maxOutstandingRwf.trim().length === 0 ||
+            !Number.isFinite(parsedMaxOutstanding)
+              ? undefined
+              : parsedMaxOutstanding,
         };
 
         const [summaryResponse, pageResponse, reportSummary, reportAudit, reportAging] = await Promise.all([
@@ -182,14 +215,14 @@ export default function LoansPage() {
         ]);
 
         if (!ignore) {
-          setEntries(sortLoanEntries(summaryResponse));
+          setEntries(summaryResponse);
 
           if (pageResponse.meta.totalPages < currentPage) {
             setCurrentPage(pageResponse.meta.totalPages);
             return;
           }
 
-          setPageEntries(sortLoanEntries(pageResponse.items));
+          setPageEntries(pageResponse.items);
           setLoanSummary(reportSummary);
           setLoanAudit(reportAudit);
           setLoanAging(reportAging);
@@ -224,10 +257,14 @@ export default function LoansPage() {
     selectedDateFrom,
     selectedDateTo,
     selectedDirection,
+    selectedOperationalFilter,
+    selectedSortBy,
     selectedMonth,
     selectedStatus,
     selectedType,
     selectedYear,
+    minOutstandingRwf,
+    maxOutstandingRwf,
     token,
   ]);
 
@@ -238,6 +275,10 @@ export default function LoansPage() {
     selectedStatus !== "ALL" ||
     selectedDirection !== "ALL" ||
     selectedType !== "ALL" ||
+    selectedOperationalFilter !== "ALL" ||
+    selectedSortBy !== "ISSUED_DESC" ||
+    minOutstandingRwf.trim().length > 0 ||
+    maxOutstandingRwf.trim().length > 0 ||
     appliedSearch !== undefined ||
     hasExplicitDateFilter;
   const totalLoans = entries.reduce(
@@ -870,16 +911,24 @@ export default function LoansPage() {
             direction={selectedDirection}
             hasActiveFilters={hasActiveFilters}
             month={selectedMonth}
+            operationalFilter={selectedOperationalFilter}
             status={selectedStatus}
             search={searchInput}
+            sortBy={selectedSortBy}
             type={selectedType}
             year={selectedYear}
+            minOutstandingRwf={minOutstandingRwf}
+            maxOutstandingRwf={maxOutstandingRwf}
             onClear={() => {
               setSelectedMonth(defaultMonth);
               setSelectedYear(defaultYear);
               setSelectedStatus("ALL");
               setSelectedDirection("ALL");
               setSelectedType("ALL");
+              setSelectedOperationalFilter("ALL");
+              setSelectedSortBy("ISSUED_DESC");
+              setMinOutstandingRwf("");
+              setMaxOutstandingRwf("");
               setSearchInput("");
               setSelectedDateFrom("");
               setSelectedDateTo("");
@@ -891,18 +940,34 @@ export default function LoansPage() {
               setSelectedDirection(value);
               setCurrentPage(1);
             }}
+            onOperationalFilterChange={(value) => {
+              setSelectedOperationalFilter(value);
+              setCurrentPage(1);
+            }}
             onMonthChange={handleMonthChange}
             onStatusChange={(value) => {
               setSelectedStatus(value);
               setCurrentPage(1);
             }}
             onSearchChange={setSearchInput}
+            onSortByChange={(value) => {
+              setSelectedSortBy(value);
+              setCurrentPage(1);
+            }}
             onTypeChange={(value) => {
               setSelectedType(value);
               setCurrentPage(1);
             }}
             onYearChange={(value) => {
               setSelectedYear(value);
+              setCurrentPage(1);
+            }}
+            onMinOutstandingRwfChange={(value) => {
+              setMinOutstandingRwf(value);
+              setCurrentPage(1);
+            }}
+            onMaxOutstandingRwfChange={(value) => {
+              setMaxOutstandingRwf(value);
               setCurrentPage(1);
             }}
           />
