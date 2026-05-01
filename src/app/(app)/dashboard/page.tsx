@@ -274,7 +274,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <div className="mx-auto flex max-w-none flex-col gap-6">
           <div className="glass-panel h-[120px] animate-pulse rounded-[32px]" />
           <div className="glass-panel h-[88px] animate-pulse rounded-[28px]" />
           <div className="glass-panel h-[480px] animate-pulse rounded-[36px]" />
@@ -319,7 +319,7 @@ export default function DashboardPage() {
 
   return (
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+      <div className="mx-auto flex max-w-none flex-col gap-6">
         <section className="glass-panel rounded-[32px] p-6 md:p-7">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
