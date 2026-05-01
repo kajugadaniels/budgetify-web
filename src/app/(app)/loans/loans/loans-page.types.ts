@@ -2,8 +2,10 @@ import type {
   LoanBalanceEffect,
   LoanTransactionType,
   LoanDirection,
+  LoanOperationalFilter,
   LoanRepaymentAllocation,
   LoanResponse,
+  LoanSortOption,
   LoanStatus,
   LoanType,
 } from "@/lib/types/loan.types";
@@ -11,6 +13,8 @@ import type {
 export type LoanLedgerStatusFilter = "ALL" | LoanStatus;
 export type LoanLedgerDirectionFilter = "ALL" | LoanDirection;
 export type LoanLedgerTypeFilter = "ALL" | LoanType;
+export type LoanLedgerOperationalFilter = "ALL" | LoanOperationalFilter;
+export type LoanLedgerSortFilter = LoanSortOption;
 
 export interface LoanFormValues {
   label: string;
