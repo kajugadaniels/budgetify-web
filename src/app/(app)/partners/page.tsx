@@ -174,7 +174,7 @@ export default function PartnersPage() {
   if (loading) {
     return (
       <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <div className="mx-auto flex max-w-none flex-col gap-6">
           <div className="glass-panel h-52 animate-pulse rounded-[34px]" />
           <div className="glass-panel h-[420px] animate-pulse rounded-[34px]" />
         </div>
@@ -205,7 +205,7 @@ export default function PartnersPage() {
 
   return (
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <div className="mx-auto flex max-w-none flex-col gap-6">
         <section className="relative overflow-hidden rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(199,191,167,0.18),transparent_34%),linear-gradient(145deg,rgba(16,20,25,0.98),rgba(10,12,15,0.98))] p-6 shadow-[0_26px_80px_rgba(0,0,0,0.34)] md:p-8">
           <div className="absolute -right-14 top-10 h-40 w-40 rounded-full bg-primary/12 blur-3xl" />
           <div className="absolute left-10 top-0 h-px w-48 bg-gradient-to-r from-transparent via-white/18 to-transparent" />
