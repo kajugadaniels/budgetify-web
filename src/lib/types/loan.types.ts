@@ -100,14 +100,14 @@ export interface UpdateLoanRequest {
   direction?: LoanDirection;
   type?: LoanType;
   counterpartyName?: string;
-  counterpartyContact?: string;
+  counterpartyContact?: string | null;
   amount?: number;
   currency?: Currency;
   issuedDate?: string;
   dueDate?: string | null;
   status?: LoanStatus;
   repaymentAllocation?: LoanRepaymentAllocation;
-  note?: string;
+  note?: string | null;
 }
 
 export interface SendLoanToExpenseRequest {
