@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -422,6 +422,22 @@ export default function ExpensesPage() {
     totalSpent > 0 && summary.data
       ? Math.round((summary.data.largestExpenseRwf / totalSpent) * 100)
       : 0;
+  const recentDailyExpenses = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const entry of entries) {
+      const day = (entry.date.split("T")[0] ?? entry.date) as string;
+      totals.set(day, (totals.get(day) ?? 0) + (entry.totalAmountRwf ?? 0));
+    }
+
+    return Array.from(totals.entries())
+      .sort(([a], [b]) => (a < b ? 1 : -1))
+      .slice(0, 3)
+      .reverse();
+  }, [entries]);
+  const maxRecentDailyTotal = recentDailyExpenses.reduce(
+    (max, [, value]) => Math.max(max, value),
+    0,
+  );
 
   function triggerRefresh() {
     setRefreshKey((current) => current + 1);
@@ -654,8 +670,30 @@ export default function ExpensesPage() {
             </div>
 
             <div className="relative z-10 grid gap-3 lg:grid-cols-[minmax(0,1.16fr)_280px]">
-              <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="relative overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
+                {recentDailyExpenses.length > 0 && maxRecentDailyTotal > 0 ? (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-4 bottom-3 top-[55%] z-0 flex items-end gap-2 opacity-[0.22]"
+                  >
+                    {recentDailyExpenses.map(([day, value]) => {
+                      const heightPct = Math.max(
+                        10,
+                        Math.round((value / maxRecentDailyTotal) * 100),
+                      );
+
+                      return (
+                        <div
+                          key={day}
+                          className="flex-1 rounded-t-xl bg-[linear-gradient(180deg,rgba(255,122,122,0.85)_0%,rgba(255,122,122,0.05)_100%)] transition-[height] duration-700 ease-out"
+                          style={{ height: `${heightPct}%` }}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1.5">
                     <span className="inline-flex items-center gap-2 rounded-full border border-danger/15 bg-danger/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-danger/80">
                       <span className="motion-safe:animate-income-glow h-1.5 w-1.5 rounded-full bg-danger" />
@@ -676,7 +714,7 @@ export default function ExpensesPage() {
                   </div>
                 </div>
 
-                <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+                <div className="relative z-10 mt-5 flex flex-wrap items-end justify-between gap-4">
                   <div>
                     <p className="text-[clamp(1.85rem,3.5vw,2.9rem)] font-semibold leading-none tracking-[-0.055em] text-white transition-transform duration-500 ease-out group-hover:translate-x-1">
                       {rwfCompact(totalSpent)}
