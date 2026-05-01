@@ -146,6 +146,85 @@ export interface LoanTransactionResponse {
   updatedAt: string;
 }
 
+export interface LoanDirectionExposure {
+  direction: LoanDirection;
+  loanCount: number;
+  originalPrincipalRwf: number;
+  principalOutstandingRwf: number;
+  interestOutstandingRwf: number;
+  totalOutstandingRwf: number;
+}
+
+export interface LoanStatusBreakdown {
+  status: LoanStatus;
+  loanCount: number;
+  totalOutstandingRwf: number;
+}
+
+export interface LoanSummaryResponse {
+  totalLoanCount: number;
+  activeLoanCount: number;
+  settledLoanCount: number;
+  overdueLoanCount: number;
+  borrowedOutstandingRwf: number;
+  lentOutstandingRwf: number;
+  interestPayableOutstandingRwf: number;
+  interestReceivableOutstandingRwf: number;
+  repaymentsThisPeriodRwf: number;
+  interestEarnedThisPeriodRwf: number;
+  interestPaidThisPeriodRwf: number;
+  linkedExpenseCount: number;
+  linkedIncomeCount: number;
+  reversedTransactionCount: number;
+  exposureByDirection: LoanDirectionExposure[];
+  statusBreakdown: LoanStatusBreakdown[];
+  latestTransaction: {
+    id: string;
+    loanLabel: string;
+    amountRwf: number;
+    date: string;
+  } | null;
+}
+
+export interface LoanAuditResponse {
+  periodStartDate: string | null;
+  periodEndDate: string | null;
+  loanCount: number;
+  transactionCount: number;
+  reversedTransactionCount: number;
+  originalPrincipalRwf: number;
+  principalRepaidRwf: number;
+  principalOutstandingRwf: number;
+  interestChargedRwf: number;
+  interestPaidRwf: number;
+  interestOutstandingRwf: number;
+  totalOutstandingRwf: number;
+  linkedExpenseCount: number;
+  linkedIncomeCount: number;
+  unlinkedEligibleTransactionCount: number;
+  exposureByDirection: LoanDirectionExposure[];
+  statusBreakdown: LoanStatusBreakdown[];
+}
+
+export interface LoanAgingResponse {
+  asOfDate: string;
+  overdueLoanCount: number;
+  overdueOutstandingRwf: number;
+  buckets: Array<{
+    bucket: string;
+    loanCount: number;
+    principalOutstandingRwf: number;
+    interestOutstandingRwf: number;
+    totalOutstandingRwf: number;
+  }>;
+  byDirection: Array<{
+    direction: LoanDirection;
+    overdueLoanCount: number;
+    overdueOutstandingRwf: number;
+    buckets: LoanAgingResponse["buckets"];
+  }>;
+}
+
 export interface CreateLoanTransactionRequest {
   type: LoanTransactionType;
   amount: number;
