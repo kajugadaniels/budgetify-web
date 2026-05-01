@@ -595,15 +595,11 @@ export default function LoansPage() {
       direction: form.direction,
       type: form.type,
       counterpartyName: form.counterpartyName.trim(),
-      ...(form.counterpartyContact.trim()
-        ? { counterpartyContact: form.counterpartyContact.trim() }
-        : {}),
       amount,
       currency: form.currency,
       issuedDate: form.issuedDate,
       status: form.status,
       repaymentAllocation: form.repaymentAllocation,
-      ...(form.note.trim() ? { note: form.note.trim() } : {}),
     };
 
     setSaving(true);
@@ -612,7 +608,9 @@ export default function LoansPage() {
       if (formDialog.mode === "edit") {
         const payload: UpdateLoanRequest = {
           ...payloadBase,
+          counterpartyContact: form.counterpartyContact.trim() || null,
           dueDate: form.dueDate ? form.dueDate : null,
+          note: form.note.trim() || null,
         };
         await updateLoan(token, formDialog.entry.id, payload);
         toast.success("Loan updated.");
@@ -620,7 +618,11 @@ export default function LoansPage() {
       } else {
         const payload: CreateLoanRequest = {
           ...payloadBase,
+          ...(form.counterpartyContact.trim()
+            ? { counterpartyContact: form.counterpartyContact.trim() }
+            : {}),
           ...(form.dueDate ? { dueDate: form.dueDate } : {}),
+          ...(form.note.trim() ? { note: form.note.trim() } : {}),
         };
         await createLoan(token, payload);
         toast.success("Loan added.");
