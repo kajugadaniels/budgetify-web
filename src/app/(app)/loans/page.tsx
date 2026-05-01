@@ -14,6 +14,7 @@ import {
   listLoans,
   listLoanTransactions,
   listLoansPage,
+  reverseLoanTransaction,
   sendLoanToExpense,
   sendLoanTransactionToExpense,
   sendLoanTransactionToIncome,
@@ -26,6 +27,7 @@ import type {
   LinkLoanTransactionFinancialRecordRequest,
   LoanResponse,
   LoanTransactionResponse,
+  ReverseLoanTransactionRequest,
   SendLoanToExpenseRequest,
 } from "@/lib/types/loan.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
@@ -34,6 +36,7 @@ import { LoansHeader } from "./loans/loans-header";
 import { LoansLedgerFilters } from "./loans/loans-ledger-filters";
 import { LoanSettlementDialog } from "./loans/loan-settlement-dialog";
 import { LoanTransactionFinancialFlowDialog } from "./loans/loan-transaction-financial-flow-dialog";
+import { LoanTransactionReversalDialog } from "./loans/loan-transaction-reversal-dialog";
 import { LoanTransactionsDialog } from "./loans/loan-transactions-dialog";
 import type {
   LoanFormDialogState,
@@ -44,6 +47,8 @@ import type {
   LoanTransactionFinancialFlowDialogState,
   LoanTransactionFinancialFlowFormValues,
   LoanTransactionFormValues,
+  LoanTransactionReversalDialogState,
+  LoanTransactionReversalFormValues,
   LoanTransactionsDialogState,
   LoanSettlementDialogState,
   LoanSettlementFormValues,
@@ -55,6 +60,7 @@ import {
   createEmptyLoanSettlementForm,
   createEmptyLoanTransactionFinancialFlowForm,
   createEmptyLoanTransactionForm,
+  createEmptyLoanTransactionReversalForm,
   createLoanFormFromEntry,
   createLoanSettlementFormFromEntry,
   formatLoanDate,
@@ -106,6 +112,8 @@ export default function LoansPage() {
     useState<LoanTransactionsDialogState>(null);
   const [transactionFinancialFlowDialog, setTransactionFinancialFlowDialog] =
     useState<LoanTransactionFinancialFlowDialogState>(null);
+  const [transactionReversalDialog, setTransactionReversalDialog] =
+    useState<LoanTransactionReversalDialogState>(null);
   const [deleteTarget, setDeleteTarget] = useState<LoanResponse | null>(null);
   const [form, setForm] = useState<LoanFormValues>(() => createEmptyLoanForm());
   const [settlementForm, setSettlementForm] =
@@ -115,6 +123,10 @@ export default function LoansPage() {
   const [transactionFinancialFlowForm, setTransactionFinancialFlowForm] =
     useState<LoanTransactionFinancialFlowFormValues>(() =>
       createEmptyLoanTransactionFinancialFlowForm(),
+    );
+  const [transactionReversalForm, setTransactionReversalForm] =
+    useState<LoanTransactionReversalFormValues>(() =>
+      createEmptyLoanTransactionReversalForm(),
     );
   const [transactions, setTransactions] = useState<LoanTransactionResponse[]>([]);
   const deferredSearch = useDeferredValue(searchInput);
@@ -297,6 +309,19 @@ export default function LoansPage() {
     setTransactionFinancialFlowForm(createEmptyLoanTransactionFinancialFlowForm());
   }
 
+  function openTransactionReversalDialog(
+    entry: LoanResponse,
+    transactionId: string,
+  ) {
+    setTransactionReversalForm(createEmptyLoanTransactionReversalForm());
+    setTransactionReversalDialog({ entry, transactionId });
+  }
+
+  function closeTransactionReversalDialog() {
+    setTransactionReversalDialog(null);
+    setTransactionReversalForm(createEmptyLoanTransactionReversalForm());
+  }
+
   async function openTransactionsDialog(entry: LoanResponse) {
     if (!token) return;
 
@@ -324,6 +349,7 @@ export default function LoansPage() {
     setTransactionForm(createEmptyLoanTransactionForm());
     setTransactions([]);
     closeTransactionFinancialFlowDialog();
+    closeTransactionReversalDialog();
   }
 
   function updateForm(next: Partial<LoanFormValues>) {
@@ -342,6 +368,12 @@ export default function LoansPage() {
     next: Partial<LoanTransactionFinancialFlowFormValues>,
   ) {
     setTransactionFinancialFlowForm((current) => ({ ...current, ...next }));
+  }
+
+  function updateTransactionReversalForm(
+    next: Partial<LoanTransactionReversalFormValues>,
+  ) {
+    setTransactionReversalForm((current) => ({ ...current, ...next }));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -556,6 +588,54 @@ export default function LoansPage() {
         linkError instanceof ApiError
           ? linkError.message
           : "The loan transaction could not be linked right now.",
+      );
+    } finally {
+      setTransactionLinkSavingId(null);
+    }
+  }
+
+  async function handleReverseTransaction(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!token || !transactionReversalDialog) return;
+
+    if (!transactionReversalForm.date) {
+      toast.error("Choose the reversal date for this correction.");
+      return;
+    }
+
+    const payload: ReverseLoanTransactionRequest = {
+      date: transactionReversalForm.date,
+      ...(transactionReversalForm.note.trim()
+        ? { note: transactionReversalForm.note.trim() }
+        : {}),
+    };
+
+    setTransactionLinkSavingId(transactionReversalDialog.transactionId);
+
+    try {
+      await reverseLoanTransaction(
+        token,
+        transactionReversalDialog.entry.id,
+        transactionReversalDialog.transactionId,
+        payload,
+      );
+
+      const nextTransactions = await listLoanTransactions(
+        token,
+        transactionReversalDialog.entry.id,
+      );
+      setTransactions(nextTransactions);
+      triggerRefresh();
+      closeTransactionReversalDialog();
+      toast.success("Loan transaction reversed.");
+    } catch (reverseError) {
+      toast.error(
+        reverseError instanceof ApiError
+          ? reverseError.message
+          : "The loan transaction could not be reversed right now.",
       );
     } finally {
       setTransactionLinkSavingId(null);
@@ -920,6 +1000,12 @@ export default function LoansPage() {
               "income",
             )
           }
+          onReverse={(transaction) =>
+            openTransactionReversalDialog(
+              transactionsDialog.entry,
+              transaction.id,
+            )
+          }
           onClose={closeTransactionsDialog}
           onSubmit={handleCreateTransaction}
         />
@@ -941,6 +1027,23 @@ export default function LoansPage() {
           onChange={updateTransactionFinancialFlowForm}
           onClose={closeTransactionFinancialFlowDialog}
           onSubmit={handleSendTransactionToFinancialLedger}
+        />
+      ) : null}
+
+      {transactionReversalDialog ? (
+        <LoanTransactionReversalDialog
+          entry={transactionReversalDialog.entry}
+          transaction={
+            transactions.find(
+              (transaction) =>
+                transaction.id === transactionReversalDialog.transactionId,
+            )!
+          }
+          form={transactionReversalForm}
+          saving={transactionLinkSavingId !== null}
+          onChange={updateTransactionReversalForm}
+          onClose={closeTransactionReversalDialog}
+          onSubmit={handleReverseTransaction}
         />
       ) : null}
 
