@@ -8,6 +8,7 @@ import type {
   LoanSettlementResponse,
   LoanResponse,
   LoanTransactionResponse,
+  ReverseLoanTransactionRequest,
   SendLoanToExpenseRequest,
   UpdateLoanRequest,
 } from "../../types/loan.types";
@@ -119,6 +120,22 @@ export async function sendLoanTransactionToIncome(
 ): Promise<LoanTransactionResponse> {
   return apiFetch<LoanTransactionResponse>(
     LOANS_ROUTES.transactionToIncome(loanId, transactionId),
+    {
+      method: "POST",
+      token,
+      body,
+    },
+  );
+}
+
+export async function reverseLoanTransaction(
+  token: string,
+  loanId: string,
+  transactionId: string,
+  body: ReverseLoanTransactionRequest,
+): Promise<LoanTransactionResponse> {
+  return apiFetch<LoanTransactionResponse>(
+    LOANS_ROUTES.reverseTransaction(loanId, transactionId),
     {
       method: "POST",
       token,
