@@ -11,6 +11,9 @@ import {
   createLoanTransaction,
   createLoan,
   deleteLoan,
+  getLoanAging,
+  getLoanAudit,
+  getLoanSummary,
   listLoans,
   listLoanTransactions,
   listLoansPage,
@@ -25,7 +28,10 @@ import type {
   CreateLoanTransactionRequest,
   CreateLoanRequest,
   LinkLoanTransactionFinancialRecordRequest,
+  LoanAgingResponse,
+  LoanAuditResponse,
   LoanResponse,
+  LoanSummaryResponse,
   LoanTransactionResponse,
   ReverseLoanTransactionRequest,
   SendLoanToExpenseRequest,
@@ -63,7 +69,6 @@ import {
   createEmptyLoanTransactionReversalForm,
   createLoanFormFromEntry,
   createLoanSettlementFormFromEntry,
-  formatLoanDate,
   formatLoanDirection,
   formatLoanStatus,
   getCurrentMonthIndex,
@@ -82,6 +87,9 @@ export default function LoansPage() {
 
   const [entries, setEntries] = useState<LoanResponse[]>([]);
   const [pageEntries, setPageEntries] = useState<LoanResponse[]>([]);
+  const [loanSummary, setLoanSummary] = useState<LoanSummaryResponse | null>(null);
+  const [loanAudit, setLoanAudit] = useState<LoanAuditResponse | null>(null);
+  const [loanAging, setLoanAging] = useState<LoanAgingResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -161,13 +169,16 @@ export default function LoansPage() {
           dateTo: selectedDateTo || undefined,
         };
 
-        const [summaryResponse, pageResponse] = await Promise.all([
+        const [summaryResponse, pageResponse, reportSummary, reportAudit, reportAging] = await Promise.all([
           listLoans(sessionToken, filters),
           listLoansPage(sessionToken, {
             ...filters,
             page: currentPage,
             limit: DEFAULT_PAGE_SIZE,
           }),
+          getLoanSummary(sessionToken, filters),
+          getLoanAudit(sessionToken, filters),
+          getLoanAging(sessionToken, filters),
         ]);
 
         if (!ignore) {
@@ -179,6 +190,9 @@ export default function LoansPage() {
           }
 
           setPageEntries(sortLoanEntries(pageResponse.items));
+          setLoanSummary(reportSummary);
+          setLoanAudit(reportAudit);
+          setLoanAging(reportAging);
           setTotalItems(pageResponse.meta.totalItems);
           setTotalPages(pageResponse.meta.totalPages);
         }
@@ -237,11 +251,17 @@ export default function LoansPage() {
     (sum, entry) => sum + Number(entry.totalOutstandingRwf),
     0,
   );
-  const largestLoan = [...entries].sort(
-    (left, right) => Number(right.amountRwf) - Number(left.amountRwf),
-  )[0];
+  const reportedOutstandingAmount =
+    loanAudit?.totalOutstandingRwf ?? outstandingAmount;
+  const reportedBorrowedOutstanding = loanSummary?.borrowedOutstandingRwf ?? 0;
+  const reportedLentOutstanding = loanSummary?.lentOutstandingRwf ?? 0;
+  const reportedInterestExposure =
+    (loanSummary?.interestPayableOutstandingRwf ?? 0) +
+    (loanSummary?.interestReceivableOutstandingRwf ?? 0);
+  const reportedUnlinkedTransactions =
+    loanAudit?.unlinkedEligibleTransactionCount ?? 0;
+  const reportedOverdueOutstanding = loanAging?.overdueOutstandingRwf ?? 0;
   const latestLoan = entries[0];
-  const settledCount = entries.filter((entry) => isLoanSettled(entry.status)).length;
   const statusShare =
     totalLoans > 0 ? Math.round((settledAmount / totalLoans) * 100) : 0;
 
@@ -778,7 +798,7 @@ export default function LoansPage() {
                       {rwfCompact(settledAmount)} recovered
                     </span>
                     <span className="rounded-full border border-danger/14 bg-danger/8 px-2.5 py-1 text-[11px] font-medium text-danger/84">
-                      {rwfCompact(outstandingAmount)} outstanding
+                      {rwfCompact(reportedOutstandingAmount)} outstanding
                     </span>
                   </div>
                 </div>
@@ -788,19 +808,16 @@ export default function LoansPage() {
                 <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-secondary/56">
-                      Latest
+                      Exposure
                     </p>
                     <span className="h-1.5 w-1.5 rounded-full bg-warning" />
                   </div>
                   <p className="mt-2 text-base font-semibold tracking-[-0.04em] text-text-primary">
-                    {latestLoan
-                      ? formatLoanDate(latestLoan.issuedDate)
-                      : "No entries yet"}
+                    {rwfCompact(reportedBorrowedOutstanding)} owed
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
-                    {latestLoan
-                      ? `${latestLoan.label} · ${formatLoanDirection(latestLoan.direction)} · ${formatLoanStatus(latestLoan.status)}`
-                      : `No loans dated in ${selectedMonthLabel}.`}
+                    {rwfCompact(reportedLentOutstanding)} collectible ·{" "}
+                    {rwfCompact(reportedInterestExposure)} interest exposure
                   </p>
                 </div>
 
@@ -814,12 +831,15 @@ export default function LoansPage() {
                     </span>
                   </div>
                   <p className="mt-2 text-base font-semibold leading-tight tracking-[-0.04em] text-text-primary">
-                    {settledCount} {settledCount === 1 ? "loan" : "loans"} settled
+                    {loanSummary?.overdueLoanCount ?? 0} overdue ·{" "}
+                    {reportedUnlinkedTransactions} unlinked
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-text-secondary">
-                    {largestLoan
-                      ? `${largestLoan.label} · ${rwf(Number(largestLoan.totalOutstandingRwf))}`
-                      : "Add loans to track outstanding obligations."}
+                    {reportedOverdueOutstanding > 0
+                      ? `${rwf(reportedOverdueOutstanding)} overdue exposure`
+                      : latestLoan
+                        ? `${latestLoan.label} · ${formatLoanDirection(latestLoan.direction)} · ${formatLoanStatus(latestLoan.status)}`
+                        : "Add loans to track outstanding obligations."}
                   </p>
                 </div>
               </div>
