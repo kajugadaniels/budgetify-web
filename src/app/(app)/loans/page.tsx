@@ -35,6 +35,7 @@ import type {
   LoanTransactionResponse,
   ReverseLoanTransactionRequest,
   SendLoanToExpenseRequest,
+  UpdateLoanRequest,
 } from "@/lib/types/loan.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import { LoanFormDialog } from "./loans/loan-form-dialog";
@@ -589,7 +590,7 @@ export default function LoansPage() {
       return;
     }
 
-    const payload: CreateLoanRequest = {
+    const payloadBase = {
       label: form.label.trim(),
       direction: form.direction,
       type: form.type,
@@ -600,7 +601,6 @@ export default function LoansPage() {
       amount,
       currency: form.currency,
       issuedDate: form.issuedDate,
-      ...(form.dueDate ? { dueDate: form.dueDate } : {}),
       status: form.status,
       repaymentAllocation: form.repaymentAllocation,
       ...(form.note.trim() ? { note: form.note.trim() } : {}),
@@ -610,10 +610,18 @@ export default function LoansPage() {
 
     try {
       if (formDialog.mode === "edit") {
+        const payload: UpdateLoanRequest = {
+          ...payloadBase,
+          dueDate: form.dueDate ? form.dueDate : null,
+        };
         await updateLoan(token, formDialog.entry.id, payload);
         toast.success("Loan updated.");
         triggerRefresh();
       } else {
+        const payload: CreateLoanRequest = {
+          ...payloadBase,
+          ...(form.dueDate ? { dueDate: form.dueDate } : {}),
+        };
         await createLoan(token, payload);
         toast.success("Loan added.");
 
