@@ -677,28 +677,39 @@ export default function ExpensesPage() {
               <div className="relative overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-4 transition-transform duration-300 ease-out group-hover:-translate-y-0.5">
                 <div
                   aria-label={`${selectedMonthLabel} ${selectedYear} daily expense chart`}
-                  className="pointer-events-none absolute inset-x-5 bottom-4 top-[58%] z-0 flex items-end gap-1.5 opacity-55"
+                  className="absolute inset-x-5 bottom-3 top-[52%] z-0 flex items-end gap-1 opacity-70"
                 >
                   {monthlyDailyExpenses.map(([day, value]) => {
                     const ratio =
                       maxMonthlyDailyTotal > 0 ? value / maxMonthlyDailyTotal : 0;
                     const heightPct =
                       value === 0 ? 5 : Math.max(18, Math.round(ratio * 100));
+                    const dayNumber = Number(day.slice(-2));
 
                     return (
                       <div
                         key={day}
-                        className={`relative min-w-1 flex-1 rounded-t-md transition-[height,background-color,opacity] duration-700 ease-out ${
-                          value > 0
-                            ? "bg-[linear-gradient(180deg,rgba(255,122,122,0.96)_0%,rgba(228,192,99,0.5)_56%,rgba(255,122,122,0.12)_100%)]"
-                            : "bg-white/10"
-                        }`}
-                        style={{ height: `${heightPct}%` }}
-                        title={`${formatExpenseDate(day)}: ${rwf(value)}`}
+                        className="group/day relative flex h-full min-w-1 flex-1 flex-col items-center justify-end gap-1"
                       >
-                        {value > 0 ? (
-                          <span className="absolute inset-x-0 top-0 h-px bg-danger/75" />
-                        ) : null}
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 min-w-max -translate-x-1/2 rounded-full border border-white/10 bg-background/95 px-2.5 py-1 text-[10px] font-semibold text-text-primary opacity-0 shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-opacity duration-150 group-hover/day:opacity-100">
+                          {rwf(value)}
+                        </div>
+                        <div
+                          className={`relative w-full rounded-t-md transition-[height,background-color,opacity] duration-700 ease-out group-hover/day:opacity-100 ${
+                            value > 0
+                              ? "bg-[linear-gradient(180deg,rgba(255,122,122,0.96)_0%,rgba(228,192,99,0.5)_56%,rgba(255,122,122,0.12)_100%)]"
+                              : "bg-white/10"
+                          }`}
+                          style={{ height: `${heightPct}%` }}
+                          title={`${formatExpenseDate(day)}: ${rwf(value)}`}
+                        >
+                          {value > 0 ? (
+                            <span className="absolute inset-x-0 top-0 h-px bg-danger/75" />
+                          ) : null}
+                        </div>
+                        <span className="text-[8px] font-semibold leading-none text-text-secondary/70">
+                          {dayNumber}
+                        </span>
                       </div>
                     );
                   })}
