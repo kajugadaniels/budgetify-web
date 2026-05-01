@@ -104,7 +104,7 @@ export interface UpdateLoanRequest {
   amount?: number;
   currency?: Currency;
   issuedDate?: string;
-  dueDate?: string;
+  dueDate?: string | null;
   status?: LoanStatus;
   repaymentAllocation?: LoanRepaymentAllocation;
   note?: string;
