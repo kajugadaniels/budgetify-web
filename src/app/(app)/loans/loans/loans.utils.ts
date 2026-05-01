@@ -2,8 +2,10 @@ import { MONTH_OPTIONS } from "@/constant/months";
 import type {
   LoanBalanceEffect,
   LoanDirection,
+  LoanOperationalFilter,
   LoanRepaymentAllocation,
   LoanResponse,
+  LoanSortOption,
   LoanStatus,
   LoanTransactionType,
   LoanType,
@@ -49,6 +51,33 @@ export const LOAN_STATUS_OPTIONS: Array<{
   { label: "Written off", value: "WRITTEN_OFF" },
   { label: "Cancelled", value: "CANCELLED" },
   { label: "Archived", value: "ARCHIVED" },
+];
+
+export const LOAN_OPERATIONAL_FILTER_OPTIONS: Array<{
+  label: string;
+  value: LoanOperationalFilter;
+}> = [
+  { label: "Due in 7 days", value: "DUE_SOON" },
+  { label: "Overdue", value: "OVERDUE" },
+  { label: "Outstanding balance", value: "OUTSTANDING" },
+  { label: "Linked to expense", value: "HAS_LINKED_EXPENSE" },
+  { label: "Linked to income", value: "HAS_LINKED_INCOME" },
+  { label: "Needs financial link", value: "UNLINKED_ELIGIBLE" },
+  { label: "Interest-bearing", value: "HAS_INTEREST" },
+];
+
+export const LOAN_SORT_OPTIONS: Array<{
+  label: string;
+  value: LoanSortOption;
+}> = [
+  { label: "Newest issued", value: "ISSUED_DESC" },
+  { label: "Oldest issued", value: "ISSUED_ASC" },
+  { label: "Due date soonest", value: "DUE_ASC" },
+  { label: "Due date latest", value: "DUE_DESC" },
+  { label: "Largest outstanding", value: "OUTSTANDING_DESC" },
+  { label: "Smallest outstanding", value: "OUTSTANDING_ASC" },
+  { label: "Counterparty A-Z", value: "COUNTERPARTY_ASC" },
+  { label: "Latest activity", value: "LATEST_ACTIVITY_DESC" },
 ];
 
 export const LOAN_TRANSACTION_TYPE_OPTIONS: Array<{
