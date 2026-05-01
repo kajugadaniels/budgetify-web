@@ -672,7 +672,7 @@ export default function ExpensesPage() {
 
   return (
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-6">
         <ExpensesHeader canCreate={canManageCategories} onCreate={openCreateDialog} />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
