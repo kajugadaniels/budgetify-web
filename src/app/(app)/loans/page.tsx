@@ -80,6 +80,43 @@ import {
   resolveLoanMonthLabel,
 } from "./loans/loans.utils";
 
+const LOAN_QUERY_STATUS_FILTERS = [
+  "ACTIVE",
+  "PARTIALLY_REPAID",
+  "SETTLED",
+  "OVERDUE",
+  "WRITTEN_OFF",
+  "CANCELLED",
+  "ARCHIVED",
+] as const;
+const LOAN_QUERY_DIRECTION_FILTERS = ["BORROWED", "LENT"] as const;
+const LOAN_QUERY_TYPE_FILTERS = [
+  "PERSONAL",
+  "BUSINESS",
+  "FAMILY",
+  "FRIEND",
+  "OTHER",
+] as const;
+const LOAN_QUERY_OPERATIONAL_FILTERS = [
+  "DUE_SOON",
+  "OVERDUE",
+  "OUTSTANDING",
+  "HAS_LINKED_EXPENSE",
+  "HAS_LINKED_INCOME",
+  "UNLINKED_ELIGIBLE",
+  "HAS_INTEREST",
+] as const;
+const LOAN_QUERY_SORT_FILTERS = [
+  "ISSUED_DESC",
+  "ISSUED_ASC",
+  "DUE_ASC",
+  "DUE_DESC",
+  "OUTSTANDING_DESC",
+  "OUTSTANDING_ASC",
+  "COUNTERPARTY_ASC",
+  "LATEST_ACTIVITY_DESC",
+] as const;
+
 export default function LoansPage() {
   const { token } = useAuth();
   const toast = useToast();
@@ -149,6 +186,97 @@ export default function LoansPage() {
     deferredSearch.trim().length >= 3 ? deferredSearch.trim() : undefined;
   const hasExplicitDateFilter =
     selectedDateFrom.length > 0 || selectedDateTo.length > 0;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const month = Number(params.get("month"));
+    const year = Number(params.get("year"));
+    const status = params.get("status");
+    const direction = params.get("direction");
+    const type = params.get("type");
+    const operationalFilter = params.get("operationalFilter");
+    const sortBy = params.get("sortBy");
+    const search = params.get("search");
+    const dateFrom = params.get("dateFrom");
+    const dateTo = params.get("dateTo");
+    const minOutstanding = params.get("minOutstandingRwf");
+    const maxOutstanding = params.get("maxOutstandingRwf");
+
+    if (month >= 1 && month <= 12) {
+      setSelectedMonth(month - 1);
+    }
+
+    if (year >= 2000 && year <= 2100) {
+      setSelectedYear(year);
+    }
+
+    if (
+      status !== null &&
+      LOAN_QUERY_STATUS_FILTERS.includes(
+        status as (typeof LOAN_QUERY_STATUS_FILTERS)[number],
+      )
+    ) {
+      setSelectedStatus(status as LoanLedgerStatusFilter);
+    }
+
+    if (
+      direction !== null &&
+      LOAN_QUERY_DIRECTION_FILTERS.includes(
+        direction as (typeof LOAN_QUERY_DIRECTION_FILTERS)[number],
+      )
+    ) {
+      setSelectedDirection(direction as LoanLedgerDirectionFilter);
+    }
+
+    if (
+      type !== null &&
+      LOAN_QUERY_TYPE_FILTERS.includes(
+        type as (typeof LOAN_QUERY_TYPE_FILTERS)[number],
+      )
+    ) {
+      setSelectedType(type as LoanLedgerTypeFilter);
+    }
+
+    if (
+      operationalFilter !== null &&
+      LOAN_QUERY_OPERATIONAL_FILTERS.includes(
+        operationalFilter as (typeof LOAN_QUERY_OPERATIONAL_FILTERS)[number],
+      )
+    ) {
+      setSelectedOperationalFilter(
+        operationalFilter as LoanLedgerOperationalFilter,
+      );
+    }
+
+    if (
+      sortBy !== null &&
+      LOAN_QUERY_SORT_FILTERS.includes(
+        sortBy as (typeof LOAN_QUERY_SORT_FILTERS)[number],
+      )
+    ) {
+      setSelectedSortBy(sortBy as LoanLedgerSortFilter);
+    }
+
+    if (search !== null) {
+      setSearchInput(search);
+    }
+
+    if (dateFrom !== null) {
+      setSelectedDateFrom(dateFrom);
+    }
+
+    if (dateTo !== null) {
+      setSelectedDateTo(dateTo);
+    }
+
+    if (minOutstanding !== null) {
+      setMinOutstandingRwf(minOutstanding);
+    }
+
+    if (maxOutstanding !== null) {
+      setMaxOutstandingRwf(maxOutstanding);
+    }
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
