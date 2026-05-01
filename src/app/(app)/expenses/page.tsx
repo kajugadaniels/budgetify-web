@@ -429,13 +429,7 @@ export default function ExpensesPage() {
       totals.set(day, (totals.get(day) ?? 0) + Number(entry.totalAmountRwf ?? 0));
     }
 
-    const today = new Date();
-    const isCurrentMonth =
-      selectedMonth === today.getMonth() &&
-      selectedYear === today.getFullYear();
-    const visibleDays = isCurrentMonth
-      ? today.getDate()
-      : new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const visibleDays = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
     return Array.from({ length: visibleDays }, (_, index) => {
       const date = new Date(selectedYear, selectedMonth, index + 1);
