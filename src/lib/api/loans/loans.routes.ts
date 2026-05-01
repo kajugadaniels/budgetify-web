@@ -61,6 +61,8 @@ export const LOANS_ROUTES = {
   create: BASE,
   byId: (id: string) => `${BASE}/${id}`,
   transactions: (id: string) => `${BASE}/${id}/transactions`,
+  reverseTransaction: (loanId: string, transactionId: string) =>
+    `${BASE}/${loanId}/transactions/${transactionId}/reverse`,
   transactionToExpense: (loanId: string, transactionId: string) =>
     `${BASE}/${loanId}/transactions/${transactionId}/send-to-expense`,
   transactionToIncome: (loanId: string, transactionId: string) =>
