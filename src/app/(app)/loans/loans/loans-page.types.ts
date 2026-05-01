@@ -50,6 +50,11 @@ export interface LoanTransactionFinancialFlowFormValues {
   note: string;
 }
 
+export interface LoanTransactionReversalFormValues {
+  date: string;
+  note: string;
+}
+
 export type LoanFormDialogState =
   | { mode: "create" }
   | { mode: "edit"; entry: LoanResponse }
@@ -68,5 +73,12 @@ export type LoanTransactionFinancialFlowDialogState =
       entry: LoanResponse;
       transactionId: string;
       target: "expense" | "income";
+    }
+  | null;
+
+export type LoanTransactionReversalDialogState =
+  | {
+      entry: LoanResponse;
+      transactionId: string;
     }
   | null;
