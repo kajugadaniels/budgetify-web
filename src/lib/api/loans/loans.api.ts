@@ -5,8 +5,11 @@ import type {
   CreateLoanRequest,
   LinkLoanTransactionFinancialRecordRequest,
   ListLoansParams,
+  LoanAgingResponse,
+  LoanAuditResponse,
   LoanSettlementResponse,
   LoanResponse,
+  LoanSummaryResponse,
   LoanTransactionResponse,
   ReverseLoanTransactionRequest,
   SendLoanToExpenseRequest,
@@ -30,6 +33,45 @@ export async function listLoans(
 ): Promise<LoanResponse[]> {
   return collectPaginatedItems((pagination) =>
     listLoansPage(token, { ...params, ...pagination }),
+  );
+}
+
+export async function getLoanSummary(
+  token: string,
+  params?: Omit<ListLoansParams, "page" | "limit">,
+): Promise<LoanSummaryResponse> {
+  return apiFetch<LoanSummaryResponse>(LOANS_ROUTES.summary(params), {
+    token,
+  });
+}
+
+export async function getLoanAudit(
+  token: string,
+  params?: Omit<ListLoansParams, "page" | "limit">,
+): Promise<LoanAuditResponse> {
+  return apiFetch<LoanAuditResponse>(LOANS_ROUTES.audit(params), {
+    token,
+  });
+}
+
+export async function getLoanAging(
+  token: string,
+  params?: Omit<ListLoansParams, "page" | "limit">,
+): Promise<LoanAgingResponse> {
+  return apiFetch<LoanAgingResponse>(LOANS_ROUTES.aging(params), {
+    token,
+  });
+}
+
+export async function listLoanTransactionIndex(
+  token: string,
+  params?: Omit<ListLoansParams, "page" | "limit">,
+): Promise<LoanTransactionResponse[]> {
+  return apiFetch<LoanTransactionResponse[]>(
+    LOANS_ROUTES.transactionsIndex(params),
+    {
+      token,
+    },
   );
 }
 
