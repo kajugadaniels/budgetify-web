@@ -10,7 +10,13 @@ import {
   listExpenses,
 } from "@/lib/api/expenses/expenses.api";
 import { listIncome } from "@/lib/api/income/income.api";
-import { listLoans } from "@/lib/api/loans/loans.api";
+import {
+  getLoanAging,
+  getLoanAudit,
+  getLoanSummary,
+  listLoans,
+  listLoansPage,
+} from "@/lib/api/loans/loans.api";
 import { getMyPartnership } from "@/lib/api/partnerships/partnerships.api";
 import { listSavings } from "@/lib/api/savings/savings.api";
 import { getTodoSummary, getTodoUpcoming } from "@/lib/api/todos/todos.api";
@@ -19,13 +25,19 @@ import type {
   ExpenseResponse,
 } from "@/lib/types/expense.types";
 import type { IncomeResponse } from "@/lib/types/income.types";
-import type { LoanResponse } from "@/lib/types/loan.types";
+import type {
+  LoanAgingResponse,
+  LoanAuditResponse,
+  LoanResponse,
+  LoanSummaryResponse,
+} from "@/lib/types/loan.types";
 import type { PartnershipResponse } from "@/lib/types/partnership.types";
 import type { SavingResponse } from "@/lib/types/saving.types";
 import type { TodoSummaryResponse, TodoUpcomingResponse } from "@/lib/types/todo.types";
 import { rwf, rwfCompact } from "@/lib/utils/currency";
 import { DashboardBarChart } from "./dashboard/dashboard-bar-chart";
 import { DashboardExpenseCategoriesChart } from "./dashboard/dashboard-expense-categories-chart";
+import { DashboardLoanCommandCenter } from "./dashboard/dashboard-loan-command-center";
 import { DashboardLoansChart } from "./dashboard/dashboard-loans-chart";
 import { DashboardMonthComparison } from "./dashboard/dashboard-month-comparison";
 import { DashboardMonthSwitcher } from "./dashboard/dashboard-month-switcher";
@@ -64,6 +76,11 @@ export default function DashboardPage() {
     ExpenseCategoryOptionResponse[]
   >([]);
   const [monthlyLoans, setMonthlyLoans] = useState<LoanResponse[]>([]);
+  const [loanSummary, setLoanSummary] = useState<LoanSummaryResponse | null>(null);
+  const [loanAudit, setLoanAudit] = useState<LoanAuditResponse | null>(null);
+  const [loanAging, setLoanAging] = useState<LoanAgingResponse | null>(null);
+  const [dueSoonLoans, setDueSoonLoans] = useState<LoanResponse[]>([]);
+  const [unlinkedLoans, setUnlinkedLoans] = useState<LoanResponse[]>([]);
   const [allIncome, setAllIncome] = useState<IncomeResponse[]>([]);
   const [allExpenses, setAllExpenses] = useState<ExpenseResponse[]>([]);
   const [allSavings, setAllSavings] = useState<SavingResponse[]>([]);
@@ -96,6 +113,11 @@ export default function DashboardPage() {
           incomeResponse,
           expenseResponse,
           monthlyLoanResponse,
+          loanSummaryResponse,
+          loanAuditResponse,
+          loanAgingResponse,
+          dueSoonLoanResponse,
+          unlinkedLoanResponse,
         ] = await Promise.all([
           listIncome(sessionToken),
           listExpenses(sessionToken),
@@ -116,6 +138,25 @@ export default function DashboardPage() {
             month: selectedMonth + 1,
             year: CURRENT_YEAR,
           }).catch(() => []),
+          getLoanSummary(sessionToken).catch(() => null),
+          getLoanAudit(sessionToken).catch(() => null),
+          getLoanAging(sessionToken).catch(() => null),
+          listLoansPage(sessionToken, {
+            operationalFilter: "DUE_SOON",
+            page: 1,
+            limit: 3,
+            sortBy: "DUE_ASC",
+          })
+            .then((response) => response.items)
+            .catch(() => []),
+          listLoansPage(sessionToken, {
+            operationalFilter: "UNLINKED_ELIGIBLE",
+            page: 1,
+            limit: 4,
+            sortBy: "LATEST_ACTIVITY_DESC",
+          })
+            .then((response) => response.items)
+            .catch(() => []),
         ]);
 
         if (!ignore) {
@@ -129,6 +170,11 @@ export default function DashboardPage() {
           setIncome(incomeResponse);
           setExpenses(expenseResponse);
           setMonthlyLoans(monthlyLoanResponse);
+          setLoanSummary(loanSummaryResponse);
+          setLoanAudit(loanAuditResponse);
+          setLoanAging(loanAgingResponse);
+          setDueSoonLoans(dueSoonLoanResponse);
+          setUnlinkedLoans(unlinkedLoanResponse);
         }
       } catch (loadError) {
         if (!ignore) {
@@ -370,6 +416,14 @@ export default function DashboardPage() {
           monthLabel={formatDashboardMonthLabel(selectedMonth)}
           summary={partnerActivitySummary}
           year={CURRENT_YEAR}
+        />
+
+        <DashboardLoanCommandCenter
+          aging={loanAging}
+          audit={loanAudit}
+          dueSoonLoans={dueSoonLoans}
+          summary={loanSummary}
+          unlinkedLoans={unlinkedLoans}
         />
 
         <DashboardUpcomingTodoSchedule summary={upcomingTodoSchedule} />
