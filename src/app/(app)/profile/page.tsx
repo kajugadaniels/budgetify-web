@@ -189,7 +189,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <div className="mx-auto flex max-w-none flex-col gap-6">
           <div className="glass-panel h-[220px] animate-pulse rounded-[36px]" />
           <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
             <div className="glass-panel h-[420px] animate-pulse rounded-[36px]" />
@@ -225,7 +225,7 @@ export default function ProfilePage() {
 
   return (
     <div className="px-4 pb-24 pt-4 md:px-8 md:py-8">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <div className="mx-auto flex max-w-none flex-col gap-6">
         <ProfileHeader
           displayName={displayName}
           email={profile.email}
