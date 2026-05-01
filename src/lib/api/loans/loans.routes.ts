@@ -9,6 +9,25 @@ type LoanRouteParams = {
   search?: string;
   dateFrom?: string;
   dateTo?: string;
+  operationalFilter?:
+    | "DUE_SOON"
+    | "OVERDUE"
+    | "OUTSTANDING"
+    | "HAS_LINKED_EXPENSE"
+    | "HAS_LINKED_INCOME"
+    | "UNLINKED_ELIGIBLE"
+    | "HAS_INTEREST";
+  sortBy?:
+    | "ISSUED_DESC"
+    | "ISSUED_ASC"
+    | "DUE_ASC"
+    | "DUE_DESC"
+    | "OUTSTANDING_DESC"
+    | "OUTSTANDING_ASC"
+    | "COUNTERPARTY_ASC"
+    | "LATEST_ACTIVITY_DESC";
+  minOutstandingRwf?: number;
+  maxOutstandingRwf?: number;
   page?: number;
   limit?: number;
 };
@@ -46,6 +65,22 @@ function buildLoanQuery(params?: LoanRouteParams): string {
 
   if (params?.dateTo !== undefined) {
     searchParams.set("dateTo", params.dateTo);
+  }
+
+  if (params?.operationalFilter !== undefined) {
+    searchParams.set("operationalFilter", params.operationalFilter);
+  }
+
+  if (params?.sortBy !== undefined) {
+    searchParams.set("sortBy", params.sortBy);
+  }
+
+  if (params?.minOutstandingRwf !== undefined) {
+    searchParams.set("minOutstandingRwf", String(params.minOutstandingRwf));
+  }
+
+  if (params?.maxOutstandingRwf !== undefined) {
+    searchParams.set("maxOutstandingRwf", String(params.maxOutstandingRwf));
   }
 
   if (params?.page !== undefined) {
