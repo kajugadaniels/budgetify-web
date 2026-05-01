@@ -28,6 +28,23 @@ export type LoanTransactionType =
   | "REVERSAL";
 export type LoanBalanceEffect = "INCREASE" | "DECREASE";
 export type LoanRepaymentAllocation = "INTEREST_FIRST" | "PRINCIPAL_FIRST";
+export type LoanOperationalFilter =
+  | "DUE_SOON"
+  | "OVERDUE"
+  | "OUTSTANDING"
+  | "HAS_LINKED_EXPENSE"
+  | "HAS_LINKED_INCOME"
+  | "UNLINKED_ELIGIBLE"
+  | "HAS_INTEREST";
+export type LoanSortOption =
+  | "ISSUED_DESC"
+  | "ISSUED_ASC"
+  | "DUE_ASC"
+  | "DUE_DESC"
+  | "OUTSTANDING_DESC"
+  | "OUTSTANDING_ASC"
+  | "COUNTERPARTY_ASC"
+  | "LATEST_ACTIVITY_DESC";
 
 export interface LoanResponse {
   id: string;
@@ -261,6 +278,10 @@ export interface ListLoansParams {
   search?: string;
   dateFrom?: string;
   dateTo?: string;
+  operationalFilter?: LoanOperationalFilter;
+  sortBy?: LoanSortOption;
+  minOutstandingRwf?: number;
+  maxOutstandingRwf?: number;
   page?: number;
   limit?: number;
 }
