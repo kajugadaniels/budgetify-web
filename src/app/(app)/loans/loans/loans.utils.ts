@@ -2,11 +2,14 @@ import { MONTH_OPTIONS } from "@/constant/months";
 import type {
   LoanBalanceEffect,
   LoanDirection,
+  LoanAgingResponse,
+  LoanAuditResponse,
   LoanOperationalFilter,
   LoanRepaymentAllocation,
   LoanResponse,
   LoanSortOption,
   LoanStatus,
+  LoanSummaryResponse,
   LoanTransactionType,
   LoanType,
 } from "@/lib/types/loan.types";
@@ -225,6 +228,357 @@ export function sortLoanEntries(entries: LoanResponse[]): LoanResponse[] {
       new Date(right.issuedDate).getTime() -
       new Date(left.issuedDate).getTime(),
   );
+}
+
+export interface ClientLoanFilters {
+  month?: number;
+  year?: number;
+  status?: LoanStatus;
+  direction?: LoanDirection;
+  type?: LoanType;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  operationalFilter?: LoanOperationalFilter;
+  sortBy?: LoanSortOption;
+  minOutstandingRwf?: number;
+  maxOutstandingRwf?: number;
+}
+
+export function filterLoansClientSide(
+  entries: LoanResponse[],
+  filters: ClientLoanFilters,
+): LoanResponse[] {
+  const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
+  const dateTo = filters.dateTo ? new Date(filters.dateTo) : null;
+  const normalizedSearch = filters.search?.trim().toLowerCase();
+
+  return sortLoansClientSide(
+    entries.filter((entry) => {
+      const issuedDate = new Date(entry.issuedDate);
+
+      if (
+        filters.month !== undefined &&
+        filters.year !== undefined &&
+        (issuedDate.getUTCMonth() + 1 !== filters.month ||
+          issuedDate.getUTCFullYear() !== filters.year)
+      ) {
+        return false;
+      }
+
+      if (dateFrom && issuedDate < dateFrom) {
+        return false;
+      }
+
+      if (dateTo) {
+        const exclusiveDateTo = new Date(dateTo);
+        exclusiveDateTo.setUTCDate(exclusiveDateTo.getUTCDate() + 1);
+
+        if (issuedDate >= exclusiveDateTo) {
+          return false;
+        }
+      }
+
+      if (filters.status !== undefined && entry.status !== filters.status) {
+        return false;
+      }
+
+      if (
+        filters.direction !== undefined &&
+        entry.direction !== filters.direction
+      ) {
+        return false;
+      }
+
+      if (filters.type !== undefined && entry.type !== filters.type) {
+        return false;
+      }
+
+      if (
+        filters.minOutstandingRwf !== undefined &&
+        Number(entry.totalOutstandingRwf) < filters.minOutstandingRwf
+      ) {
+        return false;
+      }
+
+      if (
+        filters.maxOutstandingRwf !== undefined &&
+        Number(entry.totalOutstandingRwf) > filters.maxOutstandingRwf
+      ) {
+        return false;
+      }
+
+      if (
+        normalizedSearch &&
+        ![
+          entry.label,
+          entry.counterpartyName,
+          entry.counterpartyContact ?? "",
+          entry.note ?? "",
+        ].some((value) => value.toLowerCase().includes(normalizedSearch))
+      ) {
+        return false;
+      }
+
+      return matchesLoanOperationalFilter(entry, filters.operationalFilter);
+    }),
+    filters.sortBy,
+  );
+}
+
+export function buildLoanReportsFromEntries(entries: LoanResponse[]): {
+  aging: LoanAgingResponse;
+  audit: LoanAuditResponse;
+  summary: LoanSummaryResponse;
+} {
+  const exposureByDirection = (["BORROWED", "LENT"] as const).map(
+    (direction) => {
+      const directionLoans = entries.filter(
+        (entry) => entry.direction === direction,
+      );
+
+      return {
+        direction,
+        loanCount: directionLoans.length,
+        originalPrincipalRwf: sumLoans(
+          directionLoans,
+          "originalPrincipalRwf",
+        ),
+        principalOutstandingRwf: sumLoans(
+          directionLoans,
+          "principalOutstandingRwf",
+        ),
+        interestOutstandingRwf: sumLoans(
+          directionLoans,
+          "interestOutstandingRwf",
+        ),
+        totalOutstandingRwf: sumLoans(directionLoans, "totalOutstandingRwf"),
+      };
+    },
+  );
+  const statusBreakdown = LOAN_STATUS_OPTIONS.map(({ value: status }) => {
+    const statusLoans = entries.filter((entry) => entry.status === status);
+
+    return {
+      status,
+      loanCount: statusLoans.length,
+      totalOutstandingRwf: sumLoans(statusLoans, "totalOutstandingRwf"),
+    };
+  });
+  const overdueLoans = entries.filter((entry) =>
+    matchesLoanOperationalFilter(entry, "OVERDUE"),
+  );
+  const overdueOutstandingRwf = sumLoans(overdueLoans, "totalOutstandingRwf");
+  const summary: LoanSummaryResponse = {
+    totalLoanCount: entries.length,
+    activeLoanCount: entries.filter((entry) => entry.status === "ACTIVE").length,
+    settledLoanCount: entries.filter((entry) => entry.status === "SETTLED").length,
+    overdueLoanCount: overdueLoans.length,
+    borrowedOutstandingRwf: sumLoans(
+      entries.filter((entry) => entry.direction === "BORROWED"),
+      "totalOutstandingRwf",
+    ),
+    lentOutstandingRwf: sumLoans(
+      entries.filter((entry) => entry.direction === "LENT"),
+      "totalOutstandingRwf",
+    ),
+    interestPayableOutstandingRwf: sumLoans(
+      entries.filter((entry) => entry.direction === "BORROWED"),
+      "interestOutstandingRwf",
+    ),
+    interestReceivableOutstandingRwf: sumLoans(
+      entries.filter((entry) => entry.direction === "LENT"),
+      "interestOutstandingRwf",
+    ),
+    repaymentsThisPeriodRwf: sumLoans(entries, "principalRepaidRwf"),
+    interestEarnedThisPeriodRwf: sumLoans(
+      entries.filter((entry) => entry.direction === "LENT"),
+      "interestPaidRwf",
+    ),
+    interestPaidThisPeriodRwf: sumLoans(
+      entries.filter((entry) => entry.direction === "BORROWED"),
+      "interestPaidRwf",
+    ),
+    linkedExpenseCount: 0,
+    linkedIncomeCount: 0,
+    reversedTransactionCount: 0,
+    exposureByDirection,
+    statusBreakdown,
+    latestTransaction: null,
+  };
+  const audit: LoanAuditResponse = {
+    periodStartDate: null,
+    periodEndDate: null,
+    loanCount: entries.length,
+    transactionCount: 0,
+    reversedTransactionCount: 0,
+    originalPrincipalRwf: sumLoans(entries, "originalPrincipalRwf"),
+    principalRepaidRwf: sumLoans(entries, "principalRepaidRwf"),
+    principalOutstandingRwf: sumLoans(entries, "principalOutstandingRwf"),
+    interestChargedRwf: sumLoans(entries, "interestChargedRwf"),
+    interestPaidRwf: sumLoans(entries, "interestPaidRwf"),
+    interestOutstandingRwf: sumLoans(entries, "interestOutstandingRwf"),
+    totalOutstandingRwf: sumLoans(entries, "totalOutstandingRwf"),
+    linkedExpenseCount: 0,
+    linkedIncomeCount: 0,
+    unlinkedEligibleTransactionCount: 0,
+    exposureByDirection,
+    statusBreakdown,
+  };
+
+  return {
+    aging: {
+      asOfDate: getTodayString(),
+      overdueLoanCount: overdueLoans.length,
+      overdueOutstandingRwf,
+      buckets: [
+        {
+          bucket: "OVERDUE",
+          loanCount: overdueLoans.length,
+          principalOutstandingRwf: sumLoans(
+            overdueLoans,
+            "principalOutstandingRwf",
+          ),
+          interestOutstandingRwf: sumLoans(
+            overdueLoans,
+            "interestOutstandingRwf",
+          ),
+          totalOutstandingRwf: overdueOutstandingRwf,
+        },
+      ],
+      byDirection: (["BORROWED", "LENT"] as const).map((direction) => {
+        const directionOverdueLoans = overdueLoans.filter(
+          (entry) => entry.direction === direction,
+        );
+        const directionOutstandingRwf = sumLoans(
+          directionOverdueLoans,
+          "totalOutstandingRwf",
+        );
+
+        return {
+          direction,
+          overdueLoanCount: directionOverdueLoans.length,
+          overdueOutstandingRwf: directionOutstandingRwf,
+          buckets: [
+            {
+              bucket: "OVERDUE",
+              loanCount: directionOverdueLoans.length,
+              principalOutstandingRwf: sumLoans(
+                directionOverdueLoans,
+                "principalOutstandingRwf",
+              ),
+              interestOutstandingRwf: sumLoans(
+                directionOverdueLoans,
+                "interestOutstandingRwf",
+              ),
+              totalOutstandingRwf: directionOutstandingRwf,
+            },
+          ],
+        };
+      }),
+    },
+    audit,
+    summary,
+  };
+}
+
+function sortLoansClientSide(
+  entries: LoanResponse[],
+  sortBy: LoanSortOption = "ISSUED_DESC",
+): LoanResponse[] {
+  return [...entries].sort((left, right) => {
+    switch (sortBy) {
+      case "ISSUED_ASC":
+        return (
+          new Date(left.issuedDate).getTime() -
+          new Date(right.issuedDate).getTime()
+        );
+      case "DUE_ASC":
+        return compareOptionalDates(left.dueDate, right.dueDate);
+      case "DUE_DESC":
+        return compareOptionalDates(right.dueDate, left.dueDate);
+      case "OUTSTANDING_DESC":
+        return Number(right.totalOutstandingRwf) - Number(left.totalOutstandingRwf);
+      case "OUTSTANDING_ASC":
+        return Number(left.totalOutstandingRwf) - Number(right.totalOutstandingRwf);
+      case "COUNTERPARTY_ASC":
+        return left.counterpartyName.localeCompare(right.counterpartyName);
+      case "LATEST_ACTIVITY_DESC":
+      case "ISSUED_DESC":
+      default:
+        return (
+          new Date(right.updatedAt ?? right.issuedDate).getTime() -
+          new Date(left.updatedAt ?? left.issuedDate).getTime()
+        );
+    }
+  });
+}
+
+function matchesLoanOperationalFilter(
+  entry: LoanResponse,
+  operationalFilter?: LoanOperationalFilter,
+): boolean {
+  if (operationalFilter === undefined) {
+    return true;
+  }
+
+  const outstanding = Number(entry.totalOutstandingRwf) > 0;
+  const dueDate = entry.dueDate ? new Date(entry.dueDate) : null;
+  const today = new Date(getTodayString());
+  const sevenDaysFromToday = new Date(today);
+  sevenDaysFromToday.setDate(today.getDate() + 7);
+
+  switch (operationalFilter) {
+    case "DUE_SOON":
+      return (
+        outstanding &&
+        dueDate !== null &&
+        dueDate >= today &&
+        dueDate <= sevenDaysFromToday
+      );
+    case "OVERDUE":
+      return (
+        outstanding &&
+        (entry.status === "OVERDUE" || (dueDate !== null && dueDate < today))
+      );
+    case "OUTSTANDING":
+      return outstanding;
+    case "HAS_INTEREST":
+      return (
+        Number(entry.interestChargedRwf) > 0 ||
+        Number(entry.interestOutstandingRwf) > 0
+      );
+    case "HAS_LINKED_EXPENSE":
+    case "HAS_LINKED_INCOME":
+    case "UNLINKED_ELIGIBLE":
+      return false;
+    default:
+      return true;
+  }
+}
+
+function compareOptionalDates(left: string | null, right: string | null): number {
+  if (left === null && right === null) return 0;
+  if (left === null) return 1;
+  if (right === null) return -1;
+
+  return new Date(left).getTime() - new Date(right).getTime();
+}
+
+function sumLoans(
+  entries: LoanResponse[],
+  key: keyof Pick<
+    LoanResponse,
+    | "interestChargedRwf"
+    | "interestOutstandingRwf"
+    | "interestPaidRwf"
+    | "originalPrincipalRwf"
+    | "principalOutstandingRwf"
+    | "principalRepaidRwf"
+    | "totalOutstandingRwf"
+  >,
+): number {
+  return entries.reduce((sum, entry) => sum + Number(entry[key] ?? 0), 0);
 }
 
 export function formatLoanDirection(direction: LoanDirection): string {
