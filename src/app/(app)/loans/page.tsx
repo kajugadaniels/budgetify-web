@@ -11,12 +11,8 @@ import {
   createLoanTransaction,
   createLoan,
   deleteLoan,
-  getLoanAging,
-  getLoanAudit,
-  getLoanSummary,
   listLoans,
   listLoanTransactions,
-  listLoansPage,
   reverseLoanTransaction,
   sendLoanToExpense,
   sendLoanTransactionToExpense,
@@ -65,6 +61,7 @@ import type {
 import { LoansTable } from "./loans/loans-table";
 import { LoansTableSkeleton } from "./loans/loans-table-skeleton";
 import {
+  buildLoanReportsFromEntries,
   createEmptyLoanForm,
   createEmptyLoanSettlementForm,
   createEmptyLoanTransactionFinancialFlowForm,
@@ -72,6 +69,7 @@ import {
   createEmptyLoanTransactionReversalForm,
   createLoanFormFromEntry,
   createLoanSettlementFormFromEntry,
+  filterLoansClientSide,
   formatLoanDirection,
   formatLoanStatus,
   getCurrentMonthIndex,
@@ -331,32 +329,34 @@ export default function LoansPage() {
               : parsedMaxOutstanding,
         };
 
-        const [summaryResponse, pageResponse, reportSummary, reportAudit, reportAging] = await Promise.all([
-          listLoans(sessionToken, filters),
-          listLoansPage(sessionToken, {
-            ...filters,
-            page: currentPage,
-            limit: DEFAULT_PAGE_SIZE,
-          }),
-          getLoanSummary(sessionToken, filters),
-          getLoanAudit(sessionToken, filters),
-          getLoanAging(sessionToken, filters),
-        ]);
+        const allLoans = await listLoans(sessionToken);
+        const summaryResponse = filterLoansClientSide(allLoans, filters);
+        const totalFilteredItems = summaryResponse.length;
+        const pageStart = (currentPage - 1) * DEFAULT_PAGE_SIZE;
+        const pageItems = summaryResponse.slice(
+          pageStart,
+          pageStart + DEFAULT_PAGE_SIZE,
+        );
+        const totalFilteredPages = Math.max(
+          Math.ceil(totalFilteredItems / DEFAULT_PAGE_SIZE),
+          1,
+        );
+        const reports = buildLoanReportsFromEntries(summaryResponse);
 
         if (!ignore) {
           setEntries(summaryResponse);
 
-          if (pageResponse.meta.totalPages < currentPage) {
-            setCurrentPage(pageResponse.meta.totalPages);
+          if (totalFilteredPages < currentPage) {
+            setCurrentPage(totalFilteredPages);
             return;
           }
 
-          setPageEntries(pageResponse.items);
-          setLoanSummary(reportSummary);
-          setLoanAudit(reportAudit);
-          setLoanAging(reportAging);
-          setTotalItems(pageResponse.meta.totalItems);
-          setTotalPages(pageResponse.meta.totalPages);
+          setPageEntries(pageItems);
+          setLoanSummary(reports.summary);
+          setLoanAudit(reports.audit);
+          setLoanAging(reports.aging);
+          setTotalItems(totalFilteredItems);
+          setTotalPages(totalFilteredPages);
         }
       } catch (loadError) {
         if (!ignore) {
