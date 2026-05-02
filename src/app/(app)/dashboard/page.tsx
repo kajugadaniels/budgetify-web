@@ -11,11 +11,7 @@ import {
 } from "@/lib/api/expenses/expenses.api";
 import { listIncome } from "@/lib/api/income/income.api";
 import {
-  getLoanAging,
-  getLoanAudit,
-  getLoanSummary,
   listLoans,
-  listLoansPage,
 } from "@/lib/api/loans/loans.api";
 import { getMyPartnership } from "@/lib/api/partnerships/partnerships.api";
 import { listSavings } from "@/lib/api/savings/savings.api";
@@ -64,6 +60,10 @@ import {
   sumIncomeAmounts,
   sumSavingAmounts,
 } from "./dashboard/dashboard.utils";
+import {
+  buildLoanReportsFromEntries,
+  filterLoansClientSide,
+} from "../loans/loans/loans.utils";
 
 const CURRENT_MONTH = new Date().getMonth();
 
@@ -112,12 +112,7 @@ export default function DashboardPage() {
           partnershipResponse,
           incomeResponse,
           expenseResponse,
-          monthlyLoanResponse,
-          loanSummaryResponse,
-          loanAuditResponse,
-          loanAgingResponse,
-          dueSoonLoanResponse,
-          unlinkedLoanResponse,
+          allLoanResponse,
         ] = await Promise.all([
           listIncome(sessionToken),
           listExpenses(sessionToken),
@@ -134,32 +129,24 @@ export default function DashboardPage() {
             month: selectedMonth + 1,
             year: CURRENT_YEAR,
           }),
-          listLoans(sessionToken, {
-            month: selectedMonth + 1,
-            year: CURRENT_YEAR,
-          }).catch(() => []),
-          getLoanSummary(sessionToken).catch(() => null),
-          getLoanAudit(sessionToken).catch(() => null),
-          getLoanAging(sessionToken).catch(() => null),
-          listLoansPage(sessionToken, {
-            operationalFilter: "DUE_SOON",
-            page: 1,
-            limit: 3,
-            sortBy: "DUE_ASC",
-          })
-            .then((response) => response.items)
-            .catch(() => []),
-          listLoansPage(sessionToken, {
-            operationalFilter: "UNLINKED_ELIGIBLE",
-            page: 1,
-            limit: 4,
-            sortBy: "LATEST_ACTIVITY_DESC",
-          })
-            .then((response) => response.items)
-            .catch(() => []),
+          listLoans(sessionToken).catch(() => []),
         ]);
 
         if (!ignore) {
+          const monthlyLoanResponse = filterLoansClientSide(allLoanResponse, {
+            month: selectedMonth + 1,
+            year: CURRENT_YEAR,
+          });
+          const loanReports = buildLoanReportsFromEntries(allLoanResponse);
+          const dueSoonLoanResponse = filterLoansClientSide(allLoanResponse, {
+            operationalFilter: "DUE_SOON",
+            sortBy: "DUE_ASC",
+          }).slice(0, 3);
+          const unlinkedLoanResponse = filterLoansClientSide(allLoanResponse, {
+            operationalFilter: "UNLINKED_ELIGIBLE",
+            sortBy: "LATEST_ACTIVITY_DESC",
+          }).slice(0, 4);
+
           setAllIncome(allIncomeResponse);
           setAllExpenses(allExpenseResponse);
           setAllSavings(allSavingResponse);
@@ -170,9 +157,9 @@ export default function DashboardPage() {
           setIncome(incomeResponse);
           setExpenses(expenseResponse);
           setMonthlyLoans(monthlyLoanResponse);
-          setLoanSummary(loanSummaryResponse);
-          setLoanAudit(loanAuditResponse);
-          setLoanAging(loanAgingResponse);
+          setLoanSummary(loanReports.summary);
+          setLoanAudit(loanReports.audit);
+          setLoanAging(loanReports.aging);
           setDueSoonLoans(dueSoonLoanResponse);
           setUnlinkedLoans(unlinkedLoanResponse);
         }
